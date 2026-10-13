@@ -59,7 +59,7 @@ export default async function LoginPage({
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Password
             </label>
-            <Link href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+             <Link href={`/forgot-password?next=${encodeURIComponent(next)}`} className="text-sm font-medium text-blue-600 hover:text-blue-500">
               Forgot password?
             </Link>
           </div>
