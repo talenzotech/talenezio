@@ -1,3 +1,5 @@
+import { getService, isServiceCode, serviceProductCode, type ServiceCode } from '@/lib/services/catalog';
+
 export const PRO_TEST_PRICE_PAISE = 3200;
 export const PRO_TEST_CURRENCY = 'INR';
 
@@ -13,3 +15,22 @@ export function proTestProductCode(category: TestCategory): string {
 }
 
 export const FREE_UNLOCK_PRODUCT_CODE = 'pro-test:all';
+
+export function paidProductDetails(productCode: string): { amountPaise: number; currency: 'INR'; serviceCode?: ServiceCode; category?: TestCategory } | null {
+  if (productCode.startsWith('pro-test:')) {
+    const category = productCode.replace('pro-test:', '');
+    return isTestCategory(category)
+      ? { amountPaise: PRO_TEST_PRICE_PAISE, currency: PRO_TEST_CURRENCY, category }
+      : null;
+  }
+
+  if (!productCode.startsWith('service:')) return null;
+  const serviceCode = productCode.replace('service:', '');
+  if (!isServiceCode(serviceCode)) return null;
+  const service = getService(serviceCode);
+  return service?.paid && service.pricePaise !== null
+    ? { amountPaise: service.pricePaise, currency: service.currency, serviceCode }
+    : null;
+}
+
+export { serviceProductCode };

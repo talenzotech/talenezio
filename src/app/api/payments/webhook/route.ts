@@ -73,6 +73,19 @@ export async function POST(request: Request) {
         source: 'payment',
         sourceId: payment.id,
       });
+
+      await admin.from('service_orders').update({ status: 'paid' })
+        .eq('payment_id', payment.id)
+        .in('status', ['pending_payment', 'paid']);
+      if (payment.product_code === 'service:career-starter-pack') {
+        await grantEntitlement({
+          userId: payment.user_id,
+          productCode: 'pro-test:attempts',
+          source: 'payment',
+          sourceId: payment.id,
+          remainingUses: 10,
+        });
+      }
     }
   } else if (body.event === 'payment.failed' && providerOrderId) {
     await admin.from('payments').update({
@@ -92,6 +105,9 @@ export async function POST(request: Request) {
         .update({ status: 'revoked' })
         .eq('source', 'payment')
         .eq('source_id', refundedPayment.id);
+      await admin.from('service_orders').update({ status: 'refunded' })
+        .eq('payment_id', refundedPayment.id)
+        .not('status', 'eq', 'completed');
     }
   }
 

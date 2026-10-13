@@ -1,31 +1,31 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { ArrowLeft, User, MessageCircle, FileText, CheckCircle, TrendingUp, ChevronRight, Compass } from 'lucide-react';
-import { requestService } from '../actions';
+import { ArrowLeft, User, CheckCircle, ChevronRight, Compass } from 'lucide-react';
+import ServiceCheckout from '@/components/services/ServiceCheckout';
 
 export default function CounselingPage() {
   const plans = [
     {
       title: "1-on-1 Guidance",
-      price: "₹999",
-      description: "A focused 45-minute Google Meet session to discuss your specific career hurdles.",
+      price: "₹299",
+      description: "A focused one-hour session to discuss your specific career hurdles.",
       features: [
-        "45-minute video call",
-        "Career trajectory analysis",
-        "Salary negotiation tips",
-        "Q&A session"
+        "One-hour video call",
+        "Career direction review",
+        "Action plan",
+        "Participation certificate"
       ],
       popular: false
     },
     {
       title: "Career Starter Pack",
-      price: "₹1,999",
-      description: "Our most comprehensive bundle for complete professional rebranding.",
+      price: "₹299",
+      description: "A compact launch package combining assessment, preparation, and resume review.",
       features: [
-        "Everything in 1-on-1 Guidance",
-        "Complete LinkedIn Profile Optimization",
-        "ATS Resume Rewrite",
-        "1 month email support"
+        "10 total test attempts",
+        "Interview preparation",
+        "Resume review",
+        "Certificate of Completion"
       ],
       popular: true
     }
@@ -87,7 +87,7 @@ export default function CounselingPage() {
                     <User className="w-6 h-6 text-gray-500" />
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-800">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">I've applied to 50 jobs this month and haven't gotten a single interview. What am I doing wrong?</p>
+                     <p className="text-sm text-gray-700 dark:text-gray-300">I&apos;ve applied to 50 jobs this month and haven&apos;t gotten a single interview. What am I doing wrong?</p>
                   </div>
                 </div>
 
@@ -96,7 +96,7 @@ export default function CounselingPage() {
                     <span className="text-white font-bold">T</span>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl rounded-tr-none border border-blue-100 dark:border-blue-900/50">
-                    <p className="text-sm text-gray-900 dark:text-gray-100">Let's look at your LinkedIn and Resume. The ATS systems are likely filtering you out before a human even sees it. We can fix this today.</p>
+                     <p className="text-sm text-gray-900 dark:text-gray-100">Let&apos;s look at your LinkedIn and Resume. The ATS systems are likely filtering you out before a human even sees it. We can fix this today.</p>
                   </div>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function CounselingPage() {
                 
                 <div className="mb-8">
                   <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{plan.price}</span>
-                  <span className="text-gray-500 dark:text-gray-400">/session</span>
+                   <span className="text-gray-500 dark:text-gray-400">{plan.title === 'Career Starter Pack' ? '/package' : '/session'}</span>
                 </div>
 
                 <ul className="space-y-4 mb-8">
@@ -139,15 +139,11 @@ export default function CounselingPage() {
                   ))}
                 </ul>
 
-                <form action={requestService.bind(null, 'career-counseling', plan.title)}>
-                  <button type="submit" className={`w-full py-4 font-bold rounded-xl transition-all ${
-                    plan.popular 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30' 
-                      : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}>
-                    Request Session (Free Beta)
-                  </button>
-                </form>
+                <ServiceCheckout
+                  productCode={plan.title === 'Career Starter Pack' ? 'service:career-starter-pack' : 'service:career-counseling'}
+                  title={plan.title}
+                />
+                <p className="mt-3 text-center text-xs text-gray-500">Available free with an approved unlock entitlement.</p>
               </div>
             ))}
           </div>
