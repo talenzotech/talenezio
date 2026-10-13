@@ -1,15 +1,17 @@
 import Link from 'next/link'
 import { login, loginWithOAuth } from '../actions'
 import { ArrowRight, Mail, Lock } from 'lucide-react'
+import { safeNextPath } from '@/lib/auth/redirect'
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; message?: string }>
+  searchParams?: Promise<{ error?: string; message?: string; next?: string }>
 }) {
   const params = await searchParams
   const error = params?.error
   const message = params?.message
+  const next = safeNextPath(params?.next)
 
   return (
     <div className="w-full">
@@ -32,6 +34,7 @@ export default async function LoginPage({
       )}
 
       <form className="space-y-5">
+        <input type="hidden" name="next" value={next} />
         <div className="space-y-1">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Email
@@ -99,7 +102,7 @@ export default async function LoginPage({
         <div className="mt-6 grid grid-cols-2 gap-4">
           <form action={async () => {
             'use server'
-            await loginWithOAuth('google')
+            await loginWithOAuth('google', next)
           }}>
             <button
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -116,7 +119,7 @@ export default async function LoginPage({
 
           <form action={async () => {
             'use server'
-            await loginWithOAuth('linkedin_oidc')
+            await loginWithOAuth('linkedin_oidc', next)
           }}>
             <button
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -131,8 +134,8 @@ export default async function LoginPage({
       </div>
 
       <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?{' '}
-        <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+         Don&apos;t have an account?{' '}
+         <Link href={`/register?next=${encodeURIComponent(next)}`} className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
           Sign up for free
         </Link>
       </p>
