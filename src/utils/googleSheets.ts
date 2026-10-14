@@ -15,6 +15,14 @@ export type Question = {
   category?: string;
 };
 
+export type PublicQuestion = Omit<Question, 'correct'>;
+
+export function toPublicQuestion(question: Question): PublicQuestion {
+  return Object.fromEntries(
+    Object.entries(question).filter(([key]) => key !== 'correct'),
+  ) as PublicQuestion;
+}
+
 export async function fetchGoogleSheetQuestions(
   category: string,
   type: 'free' | 'pro'
