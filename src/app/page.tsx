@@ -4,37 +4,57 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   FileText,
+  GraduationCap,
   Sparkles,
   Target,
+  UserCheck,
 } from "lucide-react";
 
 const features = [
   {
-    title: "Build a resume that gets noticed",
+    title: "Industry-Focused Skill Tests",
     description:
-      "Create an ATS-friendly resume with guided sections, useful templates, and an instant print-ready preview.",
-    href: "/resume-builder",
-    icon: FileText,
-    accent: "bg-emerald-500",
-    tint: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-  },
-  {
-    title: "Prove what you know",
-    description:
-      "Test your skills across AI, technology, finance, and digital marketing with certificates to show for it.",
+      "Assess your knowledge in Technology, Finance, Digital Marketing and AI to identify your strengths and areas for improvement.",
     href: "/tests",
     icon: Target,
     accent: "bg-blue-600",
     tint: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
   },
   {
-    title: "Prepare with people who have done it",
+    title: "ATS-Friendly Resume Builder",
     description:
-      "Get practical interview preparation and focused career guidance built around your next opportunity.",
+      "Create professional, recruiter-friendly resumes that showcase your skills, experience and potential.",
+    href: "/resume-builder",
+    icon: FileText,
+    accent: "bg-emerald-500",
+    tint: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+  },
+  {
+    title: "Internship Opportunities",
+    description:
+      "Explore opportunities to gain practical experience, develop valuable skills and take your first steps into the professional world.",
+    href: "/services",
+    icon: GraduationCap,
+    accent: "bg-amber-500",
+    tint: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  },
+  {
+    title: "Expert-Led Career Support",
+    description:
+      "Get personalized career guidance, interview preparation and practical advice to help you make informed career decisions.",
     href: "/services/counseling",
     icon: BriefcaseBusiness,
     accent: "bg-purple-600",
     tint: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+  },
+  {
+    title: "LinkedIn Profile Optimization",
+    description:
+      "Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.",
+    href: "/services",
+    icon: UserCheck,
+    accent: "bg-sky-600",
+    tint: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
   },
 ];
 
