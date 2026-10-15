@@ -1,13 +1,11 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Award,
   BriefcaseBusiness,
   CheckCircle2,
   FileText,
   Sparkles,
   Target,
-  Users,
 } from "lucide-react";
 
 const features = [
@@ -104,12 +102,6 @@ export default function Home() {
                 Start building your future
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link
-                href="/tests"
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-bold text-gray-700 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
-              >
-                Explore free tests
-              </Link>
             </div>
 
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -122,55 +114,6 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-lg">
-            <div className="absolute -inset-5 rounded-[2.5rem] bg-blue-500/10 blur-2xl dark:bg-blue-500/15" />
-            <div className="relative rounded-[2rem] border border-gray-200 bg-white p-6 shadow-2xl shadow-blue-900/10 dark:border-gray-800 dark:bg-gray-900 sm:p-8">
-              <div className="mb-8 flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Your career toolkit</p>
-                  <h2 className="mt-1 text-2xl font-bold">Make progress visible.</h2>
-                </div>
-                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
-                  <Award className="h-6 w-6" />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-950">
-                  <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="font-semibold">Career readiness</span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">82%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-                    <div className="h-full w-[82%] rounded-full bg-gradient-to-r from-blue-600 to-purple-500" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
-                    <FileText className="mb-5 h-5 w-5 text-emerald-500" />
-                    <p className="text-2xl font-bold">01</p>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Resume ready</p>
-                  </div>
-                  <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
-                    <Target className="mb-5 h-5 w-5 text-purple-500" />
-                    <p className="text-2xl font-bold">04</p>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Skills to prove</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-2xl bg-blue-600 p-4 text-white shadow-lg shadow-blue-500/20">
-                  <div className="rounded-xl bg-white/15 p-2">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">You do not have to figure it out alone.</p>
-                    <p className="mt-1 text-sm text-blue-100">Practice, improve, and keep moving.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
