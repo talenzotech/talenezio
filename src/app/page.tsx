@@ -88,10 +88,10 @@ export default function Home() {
             </div>
 
             <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
-              Turn your potential into a career you are proud of.
+              Turn Your Potential Into a Career You're Proud Of.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400 sm:text-xl">
-              Talenzo gives ambitious professionals the tools, practice, and guidance to move from unsure to job-ready.
+              From ATS-friendly resumes and industry-focused skill tests to internships, expert career guidance, and LinkedIn optimization, Talenezio helps you take the next step in your career.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
