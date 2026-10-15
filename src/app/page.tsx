@@ -19,7 +19,7 @@ const features = [
     href: "/tests",
     icon: Target,
     accent: "bg-blue-600",
-    tint: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+    tint: "bg-blue-50 text-blue-700",
   },
   {
     title: "ATS-Friendly Resume Builder",
@@ -28,7 +28,7 @@ const features = [
     href: "/resume-builder",
     icon: FileText,
     accent: "bg-emerald-500",
-    tint: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    tint: "bg-emerald-50 text-emerald-700",
   },
   {
     title: "Internship Opportunities",
@@ -37,7 +37,7 @@ const features = [
     href: "/services",
     icon: GraduationCap,
     accent: "bg-amber-500",
-    tint: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    tint: "bg-amber-50 text-amber-700",
   },
   {
     title: "Expert-Led Career Support",
@@ -46,7 +46,7 @@ const features = [
     href: "/services/counseling",
     icon: BriefcaseBusiness,
     accent: "bg-purple-600",
-    tint: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+    tint: "bg-purple-50 text-purple-700",
   },
   {
     title: "LinkedIn Profile Optimization",
@@ -55,7 +55,7 @@ const features = [
     href: "/services",
     icon: UserCheck,
     accent: "bg-sky-600",
-    tint: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
+    tint: "bg-sky-50 text-sky-700",
   },
 ];
 
@@ -67,10 +67,8 @@ const proofPoints = [
 
 export default function Home() {
   return (
-    <main className="overflow-hidden bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
-      <section className="relative isolate border-b border-gray-200 dark:border-gray-800">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.16),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(168,85,247,0.12),_transparent_35%)] dark:bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.22),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(126,34,206,0.18),_transparent_35%)]" />
-
+    <main className="overflow-hidden bg-gradient-to-b from-blue-100 to-white text-gray-900 min-h-screen">
+      <section className="relative isolate border-b border-blue-100">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
             <Image
@@ -87,19 +85,19 @@ export default function Home() {
           <div className="flex items-center gap-3 text-sm font-semibold sm:gap-6">
             <Link
               href="/tests"
-              className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
+              className="hidden text-gray-600 transition-colors hover:text-blue-600 sm:inline"
             >
               Skill tests
             </Link>
             <Link
               href="/services/counseling"
-              className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
+              className="hidden text-gray-600 transition-colors hover:text-blue-600 sm:inline"
             >
               Career support
             </Link>
             <Link
               href="/login"
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600"
             >
               Sign in
             </Link>
@@ -108,15 +106,15 @@ export default function Home() {
 
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 pb-20 pt-14 sm:px-8 md:pb-28 md:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
           <div>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
               <Sparkles className="h-4 w-4" />
               <span>Your next opportunity starts here</span>
             </div>
 
-            <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 sm:text-6xl lg:text-7xl">
               Turn Your Potential Into a Career You're Proud Of.
             </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400 sm:text-xl">
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 sm:text-xl">
               From ATS-friendly resumes and industry-focused skill tests to internships, expert career guidance, and LinkedIn optimization, Talenezio helps you take the next step in your career.
             </p>
 
@@ -130,7 +128,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600">
               {proofPoints.map((point) => (
                 <span key={point} className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -145,9 +143,9 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-8 lg:py-24">
         <div className="mb-12 max-w-2xl">
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Everything in one place</p>
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Build confidence at every step.</h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">From your first resume draft to your final interview, Talenezio helps you turn preparation into momentum.</p>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Everything in one place</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-950 sm:text-4xl">Build confidence at every step.</h2>
+          <p className="mt-4 text-lg leading-8 text-gray-600">From your first resume draft to your final interview, Talenezio helps you turn preparation into momentum.</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -157,13 +155,13 @@ export default function Home() {
               <Link
                 key={feature.title}
                 href={feature.href}
-                className="group rounded-3xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-900"
+                className="group rounded-3xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl"
               >
                 <div className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${feature.accent}`}>
                   <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400">{feature.title}</h3>
-                <p className="mt-3 min-h-20 leading-7 text-gray-600 dark:text-gray-400">{feature.description}</p>
+                <h3 className="text-xl font-bold tracking-tight text-gray-900 group-hover:text-blue-600">{feature.title}</h3>
+                <p className="mt-3 min-h-20 leading-7 text-gray-600">{feature.description}</p>
                 <span className={`mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${feature.tint}`}>
                   Explore feature <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
@@ -173,7 +171,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-4 mb-20 overflow-hidden rounded-[2rem] bg-gray-900 px-6 py-14 text-white shadow-2xl shadow-gray-900/20 dark:bg-blue-950 sm:mx-8 sm:px-12 lg:mx-auto lg:max-w-7xl lg:px-16">
+      <section className="mx-4 mb-20 overflow-hidden rounded-[2rem] bg-gray-900 px-6 py-14 text-white shadow-2xl shadow-blue-900/10 sm:mx-8 sm:px-12 lg:mx-auto lg:max-w-7xl lg:px-16">
         <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-300">Your unfair advantage</p>
