@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award } from 'lucide-react'
-import type { PublicQuestion } from '@/utils/googleSheets'
+import type { PublicQuestion } from '@/lib/tests/questionBank'
 
 export default function TestInterface({ 
   category, 
@@ -113,7 +113,7 @@ export default function TestInterface({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
         <div>
           <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
-          <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (45 Questions)'}</p>
+           <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (3 sections of 15 questions)'}</p>
         </div>
         <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
           <Clock className="w-5 h-5" />
@@ -124,9 +124,10 @@ export default function TestInterface({
       {/* Main Question Area */}
       <div className="bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 min-h-[400px] flex flex-col">
         <div className="mb-8">
-          <span className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 block">
-            Question {currentQuestion + 1} of {questions.length}
-          </span>
+           <span className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 block">
+             Question {currentQuestion + 1} of {questions.length}
+           </span>
+           {type === 'pro' && <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{question.section}</span>}
           <h2 className="text-2xl text-gray-900 dark:text-white font-medium leading-relaxed">
             {question.text}
           </h2>

@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import TestInterface from '@/components/tests/TestInterface'
 import { createClient } from '@/utils/supabase/server'
-import { fetchGoogleSheetQuestions, toPublicQuestion } from '@/utils/googleSheets'
+import { fetchGoogleSheetQuestions, QuestionBankError, toPublicQuestion, type Question } from '@/utils/googleSheets'
 import { hasProTestAccess } from '@/lib/payments/access'
 import { isTestCategory } from '@/lib/payments/products'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { QuestionSelectionError, selectQuestions } from '@/lib/tests/questionSelection'
 
 export default async function TestPage({
   params,
@@ -37,22 +38,19 @@ export default async function TestPage({
     redirect('/tests?error=payment_required')
   }
 
-  // Fetch questions from Google Sheets
-  const questions = await fetchGoogleSheetQuestions(category, type)
+  let formattedQuestions: Question[]
+  try {
+    const questions = await fetchGoogleSheetQuestions(category)
+    formattedQuestions = selectQuestions(questions, type)
+  } catch (error) {
+    const message = error instanceof QuestionBankError || error instanceof QuestionSelectionError
+      ? error.message
+      : 'The question bank is currently unavailable. Please try again later.'
 
-  // For free tier, we could limit it. The sheet might have all of them.
-  let formattedQuestions = questions
-  if (type === 'free' && formattedQuestions.length > 20) {
-    formattedQuestions = formattedQuestions.slice(0, 20)
-  } else if (type === 'pro' && formattedQuestions.length > 45) {
-    formattedQuestions = formattedQuestions.slice(0, 45)
-  }
-
-  if (formattedQuestions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-20 text-center dark:bg-gray-950">
-        <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No questions available</h2>
-        <p className="text-gray-500">We are currently updating the questions for {category}. Please check back later!</p>
+        <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Test unavailable</h2>
+        <p className="mx-auto max-w-2xl whitespace-pre-line text-gray-500">{message}</p>
       </div>
     )
   }

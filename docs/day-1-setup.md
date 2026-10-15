@@ -12,6 +12,7 @@
 1. Create the spreadsheet described in `docs/question-bank.md`.
 2. Create a Google Cloud service account and enable Google Sheets API.
 3. Share the spreadsheet with that service-account email as a Viewer.
+4. Set `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_WORKSHEET`, `GOOGLE_SHEETS_CLIENT_EMAIL`, and `GOOGLE_SHEETS_PRIVATE_KEY` in `.env.local` and the deployment environment.
 
 ## OAuth and deployment
 
