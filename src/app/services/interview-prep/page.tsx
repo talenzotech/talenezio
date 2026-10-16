@@ -33,9 +33,9 @@ export default function InterviewPrepPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Navigation */}
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
+      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3 sm:px-8 sm:py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/dashboard" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
               <ArrowLeft className="w-5 h-5" />
             </Link>
@@ -43,7 +43,7 @@ export default function InterviewPrepPage() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
                 <span className="text-white font-bold text-lg">T</span>
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenzo</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenzo</span>
             </div>
           </div>
           <ThemeToggle />
@@ -51,7 +51,7 @@ export default function InterviewPrepPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-32">
+      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-32">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent dark:from-purple-900/20"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/20 dark:bg-purple-900/20 blur-[120px] rounded-full pointer-events-none"></div>
         
@@ -61,7 +61,7 @@ export default function InterviewPrepPage() {
             <span>8-Day Intensive Program</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-8 leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-8 leading-tight">
             Crack Your Dream Job with <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400">
               Confidence
@@ -73,14 +73,14 @@ export default function InterviewPrepPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <form action={requestService.bind(null, 'interview-prep', undefined)}>
-              <button type="submit" className="w-full sm:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-purple-500/30 transition-all flex items-center justify-center gap-2 text-lg">
+            <form className="w-full sm:w-auto" action={requestService.bind(null, 'interview-prep', undefined)}>
+              <button type="submit" className="w-full sm:w-auto min-h-12 px-5 sm:px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-xl shadow-purple-500/30 transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
                 Request Session (Free Beta)
                 <ChevronRight className="w-5 h-5" />
               </button>
             </form>
             <p className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">or</p>
-            <Link href="/dashboard" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
+            <Link href="/dashboard" className="w-full sm:w-auto px-5 sm:px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
               View Syllabus
             </Link>
           </div>

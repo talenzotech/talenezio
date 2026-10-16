@@ -39,7 +39,7 @@ export default function TestsPage() {
         
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Skill Assessment Tests
           </h1>
           <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
@@ -48,22 +48,22 @@ export default function TestsPage() {
         </div>
 
         {/* Categories Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-5 sm:gap-8">
           {TEST_CATEGORIES.map((category) => (
             <div 
               key={category.id}
-              className="group bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+              className="group min-w-0 bg-white dark:bg-gray-900 rounded-3xl p-5 sm:p-8 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             >
               <div className={`absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full ${category.color}`}></div>
               
-              <div className="flex items-start gap-6 relative z-10">
-                <div className={`p-4 rounded-2xl text-white shadow-lg ${category.color}`}>
-                  <category.icon className="w-8 h-8" />
+              <div className="flex items-start gap-4 sm:gap-6 relative z-10">
+                <div className={`shrink-0 p-3 sm:p-4 rounded-2xl text-white shadow-lg ${category.color}`}>
+                  <category.icon className="w-7 h-7 sm:w-8 sm:h-8" />
                 </div>
                 
                 <div className="space-y-4 flex-1">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                       {category.title}
                     </h2>
                     <p className="text-gray-500 dark:text-gray-400">

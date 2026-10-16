@@ -40,7 +40,7 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
   return (
     <div className="space-y-6">
       {/* Submissions Table */}
-      <div className="bg-white dark:bg-zinc-900 shadow-sm rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 shadow-sm rounded-xl border border-gray-200 dark:border-zinc-800 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
           <thead className="bg-gray-50 dark:bg-zinc-950">
             <tr>

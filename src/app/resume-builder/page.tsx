@@ -99,14 +99,14 @@ export default function ResumeBuilderPage() {
   const progressPercentage = ((currentStep + 1) / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col lg:flex-row">
       
       {/* LEFT PANE: Form Editor */}
-      <div className="w-full md:w-[45%] h-screen flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <div className="w-full lg:w-[45%] lg:h-screen flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         
         {/* Header & Progress */}
-        <div className="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800 shrink-0">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Resume Builder</h1>
+        <div className="p-4 sm:p-6 md:p-8 border-b border-gray-200 dark:border-gray-800 shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Resume Builder</h1>
           <p className="text-gray-500 text-sm mb-6">Step {currentStep + 1} of {STEPS.length}: {STEPS[currentStep].title}</p>
           
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
@@ -121,7 +121,7 @@ export default function ResumeBuilderPage() {
         </div>
 
         {/* Scrollable Form Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+        <div className="p-4 sm:p-6 lg:flex-1 lg:overflow-y-auto lg:p-8 custom-scrollbar">
           
           {currentStep === 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -298,9 +298,9 @@ export default function ResumeBuilderPage() {
       </div>
 
       {/* RIGHT PANE: Live Preview */}
-      <div className="w-full md:w-[55%] h-screen overflow-y-auto bg-gray-200 dark:bg-gray-800 p-8 flex flex-col items-center custom-scrollbar">
+      <div className="w-full min-h-screen lg:w-[55%] lg:h-screen lg:min-h-0 overflow-y-auto bg-gray-200 dark:bg-gray-800 p-4 sm:p-8 flex flex-col items-center custom-scrollbar">
         
-        <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+        <div className="w-full max-w-4xl flex flex-wrap justify-between items-center gap-3 mb-6">
           <h3 className="text-gray-500 dark:text-gray-400 font-medium tracking-wide text-sm">LIVE PREVIEW</h3>
           <button 
             onClick={() => handlePrint()}
@@ -310,7 +310,7 @@ export default function ResumeBuilderPage() {
           </button>
         </div>
 
-        <div className="origin-top transform scale-[0.6] sm:scale-75 md:scale-[0.55] lg:scale-75 xl:scale-90 transition-transform shadow-2xl">
+        <div className="origin-top transform scale-[0.34] min-[360px]:scale-[0.39] min-[420px]:scale-[0.46] sm:scale-[0.6] lg:scale-[0.6] xl:scale-75 2xl:scale-[0.9] transition-transform shadow-2xl">
           <ResumePreview ref={printRef} data={data} />
         </div>
       </div>

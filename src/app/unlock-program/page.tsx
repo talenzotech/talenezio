@@ -116,7 +116,7 @@ export default function UnlockProgramPage() {
       <div className="max-w-3xl mx-auto space-y-8">
         
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Free Unlock Program
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400">
@@ -158,7 +158,7 @@ export default function UnlockProgramPage() {
               </div>
             )}
 
-            <div className="p-8 space-y-8">
+            <div className="p-4 sm:p-8 space-y-8">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function UnlockProgramPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   
                   <div 
-                    className="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-12 text-center hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition cursor-pointer"
+                    className="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 sm:p-12 text-center hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition cursor-pointer"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />

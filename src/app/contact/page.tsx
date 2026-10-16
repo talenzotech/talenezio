@@ -94,7 +94,7 @@ export default function ContactPage() {
                 type="text"
                 name="name"
                 id="name"
-                className="block w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
+                className="block min-h-11 w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
                 placeholder="John Doe"
               />
             </div>
@@ -108,7 +108,7 @@ export default function ContactPage() {
                 type="email"
                 name="email"
                 id="email"
-                className="block w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
+                className="block min-h-11 w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
                 placeholder="you@example.com"
               />
             </div>
@@ -122,7 +122,7 @@ export default function ContactPage() {
                 id="message"
                 name="message"
                 rows={4}
-                className="block w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
+                className="block min-h-11 w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"
                 placeholder="How can we help you?"
               />
             </div>

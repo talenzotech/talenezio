@@ -75,7 +75,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-12">
       
       {/* Top Navigation */}
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
+      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 py-3 sm:px-8 sm:py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
@@ -125,18 +125,18 @@ export default async function DashboardPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-blue-900/80 to-transparent"></div>
           
           {/* Content */}
-          <div className="relative z-10 p-8 sm:p-12 md:p-16 flex flex-col justify-center min-h-[320px] max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
+          <div className="relative z-10 p-6 sm:p-12 md:p-16 flex flex-col justify-center min-h-[320px] max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
               Ready to elevate your career, {firstName}?
             </h1>
             <p className="text-blue-100 text-lg md:text-xl mb-8 leading-relaxed">
               Build an ATS-friendly resume, take industry-standard mock tests, and practice with experts to land your dream job.
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <Link href="/resume-builder" className="bg-white text-blue-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-lg shadow-white/10 flex items-center gap-2">
+              <Link href="/resume-builder" className="w-full sm:w-auto justify-center bg-white text-blue-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-lg shadow-white/10 flex items-center gap-2">
                 <FileText className="w-5 h-5" /> Build Resume Now
               </Link>
-              <Link href="/tests" className="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-600 border border-blue-500 transition-colors flex items-center gap-2">
+              <Link href="/tests" className="w-full sm:w-auto justify-center bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-600 border border-blue-500 transition-colors flex items-center gap-2">
                 <CheckSquare className="w-5 h-5" /> Take a Free Test
               </Link>
             </div>

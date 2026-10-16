@@ -69,7 +69,8 @@ export default function Home() {
   return (
     <main className="overflow-hidden bg-gradient-to-b from-blue-100 to-white text-gray-900 min-h-screen">
       <section className="relative isolate border-b border-blue-100">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
+        <nav className="mx-auto max-w-7xl px-4 py-4 sm:px-8 sm:py-5">
+          <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
             <Image
               src="/talenezio-logo.png"
@@ -102,6 +103,15 @@ export default function Home() {
               Sign in
             </Link>
           </div>
+          </div>
+          <div className="mt-3 flex items-center gap-5 border-t border-blue-100 pt-3 text-sm font-semibold sm:hidden">
+            <Link href="/tests" className="text-gray-600 transition-colors hover:text-blue-600">
+              Skill tests
+            </Link>
+            <Link href="/services/counseling" className="text-gray-600 transition-colors hover:text-blue-600">
+              Career support
+            </Link>
+          </div>
         </nav>
 
         <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 pb-20 pt-14 sm:px-8 md:pb-28 md:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
@@ -111,7 +121,7 @@ export default function Home() {
               <span>Your next opportunity starts here</span>
             </div>
 
-            <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight text-gray-950 sm:text-6xl lg:text-7xl">
               Turn Your Potential Into a Career You're Proud Of.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 sm:text-xl">
