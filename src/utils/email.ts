@@ -1,7 +1,5 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_mock_key');
-
 interface SendUnlockEmailProps {
   to: string;
   name: string;
@@ -10,6 +8,18 @@ interface SendUnlockEmailProps {
 }
 
 export async function sendUnlockStatusEmail({ to, name, status, note }: SendUnlockEmailProps) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { success: false, error: new Error('RESEND_API_KEY is not configured') };
+
+  const escapeHtml = (value: string) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+  const safeName = escapeHtml(name);
+  const safeNote = note ? escapeHtml(note) : '';
+  const resend = new Resend(apiKey);
   const isApproved = status === 'approved';
   const subject = isApproved 
     ? 'Congratulations! Your Talenzo Free Unlock is Approved 🎉' 
@@ -20,7 +30,7 @@ export async function sendUnlockStatusEmail({ to, name, status, note }: SendUnlo
       <h2 style="color: ${isApproved ? '#22c55e' : '#eab308'};">
         ${isApproved ? 'Free Unlock Approved!' : 'Submission Update'}
       </h2>
-      <p>Hi ${name},</p>
+       <p>Hi ${safeName},</p>
       
       ${isApproved ? `
         <p>Great news! Your screenshots have been reviewed and approved. You now have full free access to Talenzo.</p>
@@ -28,7 +38,7 @@ export async function sendUnlockStatusEmail({ to, name, status, note }: SendUnlo
       ` : `
         <p>We have reviewed your recent submission for the Free Unlock Program.</p>
         <p>Unfortunately, we could not approve it at this time.</p>
-        ${note ? `<div style="background: #f3f4f6; padding: 12px; border-left: 4px solid #eab308; margin: 16px 0;"><strong>Reviewer Note:</strong><br/>${note}</div>` : ''}
+         ${safeNote ? `<div style="background: #f3f4f6; padding: 12px; border-left: 4px solid #eab308; margin: 16px 0;"><strong>Reviewer Note:</strong><br/>${safeNote}</div>` : ''}
         <p>Please feel free to submit again with the correct screenshots.</p>
       `}
       
@@ -38,7 +48,7 @@ export async function sendUnlockStatusEmail({ to, name, status, note }: SendUnlo
 
   try {
     const data = await resend.emails.send({
-      from: 'Talenzo <no-reply@talenzo.app>', // Update this with a verified domain
+      from: process.env.RESEND_FROM_EMAIL || 'Talenzo <no-reply@talenzo.app>',
       to,
       subject,
       html,

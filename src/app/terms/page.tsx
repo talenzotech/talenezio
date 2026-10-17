@@ -7,7 +7,7 @@ export default function TermsPage() {
       <div className="prose dark:prose-invert max-w-none">
         <p>
           Welcome to Talenzo. These terms and conditions outline the rules and
-          regulations for the use of Talenzo's Website.
+           regulations for the use of Talenzo&apos;s Website.
         </p>
         <h2 className="text-xl font-semibold mt-6 mb-4">1. Acceptance of Terms</h2>
         <p>

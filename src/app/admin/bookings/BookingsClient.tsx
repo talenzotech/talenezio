@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { updateBooking, createBooking } from './actions';
-import { CalendarDays, Link as LinkIcon, User, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { CalendarDays, Link as LinkIcon, User, Clock, Plus } from 'lucide-react';
 
 type Booking = {
   id: string;
@@ -49,7 +49,7 @@ export default function BookingsClient({ bookings }: { bookings: Booking[] }) {
     if (!selectedBooking) return;
     setIsUpdating(true);
 
-    const data: any = { status };
+    const data: Parameters<typeof updateBooking>[1] = { status };
     if (scheduledFor) {
       data.scheduled_for = new Date(scheduledFor).toISOString();
     } else {
@@ -223,7 +223,12 @@ export default function BookingsClient({ bookings }: { bookings: Booking[] }) {
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Status</label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
+                   onChange={(e) => {
+                     const nextStatus = e.target.value;
+                     if (['pending', 'confirmed', 'completed', 'cancelled'].includes(nextStatus)) {
+                       setStatus(nextStatus as Booking['status']);
+                     }
+                   }}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white"
                 >
                   <option value="pending">Pending</option>

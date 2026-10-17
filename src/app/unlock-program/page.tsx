@@ -2,30 +2,34 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { submitUnlockEvidence, getSubmissionStatus } from './actions';
+import { submitUnlockEvidence, cleanupUnlockEvidence, getSubmissionStatus } from './actions';
 import { Upload, X, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 const REQUIRED_SCREENSHOTS = 11;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+type SubmissionStatus = 'idle' | 'pending' | 'approved' | 'rejected';
 
 export default function UnlockProgramPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'pending' | 'approved' | 'rejected'>('idle');
+  const [status, setStatus] = useState<SubmissionStatus>('idle');
   const [reviewerNote, setReviewerNote] = useState<string | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
-  const router = useRouter();
+
+  const isSubmissionStatus = (value: string): value is Exclude<SubmissionStatus, 'idle'> => (
+    value === 'pending' || value === 'approved' || value === 'rejected'
+  );
 
   useEffect(() => {
     async function checkStatus() {
       const data = await getSubmissionStatus();
       if (data) {
-        setStatus(data.status as any);
+        if (isSubmissionStatus(data.status)) setStatus(data.status);
         setReviewerNote(data.reviewer_note);
       }
       setIsLoadingStatus(false);
@@ -36,7 +40,10 @@ export default function UnlockProgramPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      const validFiles = newFiles.filter(file => file.type.startsWith('image/'));
+      const validFiles = newFiles.filter(file => file.type.startsWith('image/') && file.size <= MAX_FILE_SIZE);
+      if (validFiles.length !== newFiles.length) {
+        setError('Only image files up to 5MB are accepted.');
+      }
       
       setFiles(prev => {
         const combined = [...prev, ...validFiles];
@@ -60,6 +67,7 @@ export default function UnlockProgramPage() {
     setIsSubmitting(true);
     setError(null);
 
+    const uploadedPaths: string[] = [];
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -69,16 +77,14 @@ export default function UnlockProgramPage() {
       }
 
       // Upload to Supabase Storage
-      const uploadedPaths: string[] = [];
-      
       for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('unlock_evidence')
-          .upload(filePath, file);
+          .upload(filePath, file, { contentType: file.type, upsert: false });
 
         if (uploadError) {
           throw new Error("Failed to upload images. Please try again.");
@@ -96,8 +102,9 @@ export default function UnlockProgramPage() {
 
       setStatus('pending');
       setFiles([]);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (err: unknown) {
+      if (uploadedPaths.length > 0) await cleanupUnlockEvidence(uploadedPaths);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);
     }
@@ -139,7 +146,7 @@ export default function UnlockProgramPage() {
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-8 text-center space-y-4">
             <Clock className="w-16 h-16 text-yellow-500 mx-auto" />
             <h2 className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">Review Pending</h2>
-            <p className="text-yellow-600 dark:text-yellow-300">We've received your screenshots and are reviewing them. We'll email you soon!</p>
+            <p className="text-yellow-600 dark:text-yellow-300">We&apos;ve received your screenshots and are reviewing them. We&apos;ll email you soon!</p>
           </div>
         )}
 
@@ -179,7 +186,7 @@ export default function UnlockProgramPage() {
                     Upload Proof
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Upload exactly <strong>{REQUIRED_SCREENSHOTS} screenshots</strong> proving you've completed all the steps above.
+                    Upload exactly <strong>{REQUIRED_SCREENSHOTS} screenshots</strong> proving you&apos;ve completed all the steps above.
                   </p>
                 </div>
               </div>
