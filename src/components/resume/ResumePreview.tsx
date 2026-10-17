@@ -1,305 +1,127 @@
-import React, { forwardRef } from 'react'
-import { ResumeData } from './types'
+import { forwardRef, type ReactNode } from 'react'
+import { ResumeData, ResumeSectionId } from './types'
 
 interface Props {
   data: ResumeData;
 }
 
+const sectionContent: Record<ResumeSectionId, (data: ResumeData) => ReactNode> = {
+  personal: data => data.summary ? (
+    <p className="whitespace-pre-wrap leading-relaxed text-gray-700">{data.summary}</p>
+  ) : null,
+  education: data => data.education.map(education => (
+    <article key={education.id} className="mb-4 break-inside-avoid">
+      <div className="flex flex-wrap justify-between gap-x-4">
+        <h3 className="font-semibold">{education.degree}</h3>
+        <span className="text-sm text-gray-500">{[education.startDate, education.endDate].filter(Boolean).join(' – ')}</span>
+      </div>
+      <p className="text-gray-700">{[education.institution, education.location].filter(Boolean).join(' · ')}</p>
+      {education.score && <p className="text-sm text-gray-600">Score: {education.score}</p>}
+      {education.gpa && <p className="text-sm text-gray-600">GPA: {education.gpa}</p>}
+      {education.courses && <p className="text-sm text-gray-600">Courses: {education.courses}</p>}
+    </article>
+  )),
+  experience: data => data.experience.map(experience => (
+    <article key={experience.id} className="mb-5 break-inside-avoid">
+      <div className="flex flex-wrap justify-between gap-x-4">
+        <h3 className="font-semibold">{experience.title}</h3>
+        <span className="text-sm text-gray-500">{[experience.startDate, experience.endDate].filter(Boolean).join(' – ')}</span>
+      </div>
+      <p className="text-gray-700">{[experience.company, experience.location].filter(Boolean).join(' · ')}</p>
+      {experience.description && <p className="mt-1 whitespace-pre-wrap leading-relaxed text-gray-600">{experience.description}</p>}
+    </article>
+  )),
+  projects: data => data.projects.map(project => (
+    <article key={project.id} className="mb-4 break-inside-avoid">
+      <div className="flex flex-wrap items-baseline gap-x-3">
+        <h3 className="font-semibold">{project.title}</h3>
+        {project.link && <span className="text-sm text-gray-500">{project.link}</span>}
+      </div>
+      {project.description && <p className="mt-1 whitespace-pre-wrap leading-relaxed text-gray-600">{project.description}</p>}
+    </article>
+  )),
+  skills: data => data.skills ? <p className="whitespace-pre-wrap leading-relaxed text-gray-700">{data.skills}</p> : null,
+  awards: data => data.awards.map(award => (
+    <article key={award.id} className="mb-4 break-inside-avoid">
+      <div className="flex flex-wrap justify-between gap-x-4">
+        <h3 className="font-semibold">{award.title}</h3>
+        {award.date && <span className="text-sm text-gray-500">{award.date}</span>}
+      </div>
+      {award.issuer && <p className="text-gray-700">{award.issuer}</p>}
+      {award.description && <p className="mt-1 whitespace-pre-wrap leading-relaxed text-gray-600">{award.description}</p>}
+    </article>
+  )),
+};
+
+const sectionHasContent = (id: ResumeSectionId, data: ResumeData) => {
+  if (id === 'personal') return Boolean(data.summary.trim());
+  if (id === 'skills') return Boolean(data.skills.trim());
+  return data[id].length > 0;
+};
+
 const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
-  const { layout } = data;
+  const modern = data.layout === 'modern';
+  const minimalist = data.layout === 'minimalist';
+  const contactLinks = [
+    ...data.links.filter(link => link.label.trim() && link.url.trim()),
+    ...(!data.links.some(link => link.label.toLowerCase() === 'linkedin') && data.personalInfo.linkedin
+      ? [{ id: 'legacy-linkedin', label: 'LinkedIn', url: data.personalInfo.linkedin }]
+      : []),
+    ...(!data.links.some(link => link.label.toLowerCase() === 'portfolio') && data.personalInfo.portfolio
+      ? [{ id: 'legacy-portfolio', label: 'Portfolio', url: data.personalInfo.portfolio }]
+      : []),
+  ];
+  const wrapperClass = modern
+    ? 'min-h-[297mm] w-[210mm] bg-white text-gray-900 shadow-xl'
+    : 'min-h-[297mm] w-[210mm] bg-white px-[20mm] py-[18mm] text-gray-900 shadow-xl';
 
-  if (layout === 'modern') {
-    return <ModernLayout data={data} ref={ref} />
-  }
-  if (layout === 'minimalist') {
-    return <MinimalistLayout data={data} ref={ref} />
-  }
-  
-  return <ClassicLayout data={data} ref={ref} />
-})
-
-ResumePreview.displayName = 'ResumePreview'
-
-// --- CLASSIC LAYOUT ---
-const ClassicLayout = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
-  const { personalInfo, summary, experience, education, skills, projects } = data;
   return (
-    <div ref={ref} className="bg-white text-gray-900 mx-auto" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', fontFamily: "'Times New Roman', Times, serif", boxSizing: 'border-box' }}>
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold uppercase tracking-wider mb-2">{personalInfo.fullName || 'Your Name'}</h1>
-        <div className="text-sm space-x-2 text-gray-700 flex flex-wrap justify-center gap-y-1">
-          {personalInfo.email && <span>{personalInfo.email}</span>}
-          {personalInfo.phone && <><span className="mx-1">•</span><span>{personalInfo.phone}</span></>}
-          {personalInfo.location && <><span className="mx-1">•</span><span>{personalInfo.location}</span></>}
+    <div
+      ref={ref}
+      className={`${wrapperClass} mx-auto`}
+      style={{ boxSizing: 'border-box', fontFamily: modern ? 'Arial, Helvetica, sans-serif' : minimalist ? "'Helvetica Neue', Helvetica, Arial, sans-serif" : "'Times New Roman', Times, serif" }}
+    >
+      <header className={`${modern ? 'bg-emerald-700 px-[18mm] py-[12mm] text-white' : 'mb-8 border-b border-gray-300 pb-5'} ${minimalist ? 'border-b-2 border-gray-900' : ''}`}>
+        <h1 className={`${modern ? 'text-4xl' : 'text-3xl'} font-bold tracking-tight`}>
+          {data.personalInfo.fullName || 'Your Name'}
+        </h1>
+        {data.personalInfo.jobTitle && <p className={`mt-1 ${modern ? 'text-lg text-emerald-50' : 'text-lg text-gray-600'}`}>{data.personalInfo.jobTitle}</p>}
+        <div className={`mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm ${modern ? 'text-emerald-50' : 'text-gray-600'}`}>
+          {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
+          {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
+          {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
+          {contactLinks.map(link => <span key={link.id}>{link.label}: {link.url}</span>)}
         </div>
-        <div className="text-sm space-x-2 text-gray-700 flex flex-wrap justify-center mt-1 gap-y-1">
-          {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
-          {personalInfo.portfolio && <><span className="mx-1">•</span><span>{personalInfo.portfolio}</span></>}
-        </div>
-      </div>
+      </header>
 
-      {summary && (
-        <div className="mb-5">
-          <h2 className="text-sm font-bold uppercase border-b border-gray-400 mb-2 pb-1">Professional Summary</h2>
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">{summary}</p>
-        </div>
-      )}
-
-      {experience.length > 0 && (
-        <div className="mb-5">
-          <h2 className="text-sm font-bold uppercase border-b border-gray-400 mb-2 pb-1">Experience</h2>
-          <div className="space-y-4">
-            {experience.map(exp => (
-              <div key={exp.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-sm font-bold">{exp.title}</h3>
-                  <span className="text-sm italic">{exp.startDate} {exp.endDate ? `- ${exp.endDate}` : ''}</span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-sm">{exp.company}</span>
-                  <span className="text-sm italic">{exp.location}</span>
-                </div>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{exp.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {education.length > 0 && (
-        <div className="mb-5">
-          <h2 className="text-sm font-bold uppercase border-b border-gray-400 mb-2 pb-1">Education</h2>
-          <div className="space-y-3">
-            {education.map(edu => (
-              <div key={edu.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-sm font-bold">{edu.institution}</h3>
-                  <span className="text-sm italic">{edu.startDate} {edu.endDate ? `- ${edu.endDate}` : ''}</span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm">{edu.degree}</span>
-                  <span className="text-sm italic">{edu.location}</span>
-                </div>
-                {edu.gpa && <p className="text-sm mt-1">GPA: {edu.gpa}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {projects.length > 0 && (
-        <div className="mb-5">
-          <h2 className="text-sm font-bold uppercase border-b border-gray-400 mb-2 pb-1">Projects</h2>
-          <div className="space-y-3">
-            {projects.map(proj => (
-              <div key={proj.id}>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <h3 className="text-sm font-bold">{proj.title}</h3>
-                  {proj.link && <span className="text-sm text-gray-600">| {proj.link}</span>}
-                </div>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{proj.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {skills && (
-        <div className="mb-5">
-          <h2 className="text-sm font-bold uppercase border-b border-gray-400 mb-2 pb-1">Skills</h2>
-          <p className="text-sm leading-relaxed">{skills}</p>
-        </div>
-      )}
-    </div>
-  )
-})
-ClassicLayout.displayName = 'ClassicLayout'
-
-// --- MODERN LAYOUT ---
-const ModernLayout = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
-  const { personalInfo, summary, experience, education, skills, projects } = data;
-  return (
-    <div ref={ref} className="bg-white text-gray-900 mx-auto flex flex-col" style={{ width: '210mm', minHeight: '297mm', fontFamily: "'Inter', sans-serif", boxSizing: 'border-box' }}>
-      
-      {/* Modern Header */}
-      <div className="bg-blue-800 text-white p-8" style={{ padding: '30px 40px' }}>
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2">{personalInfo.fullName || 'Your Name'}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-blue-100 mt-4">
-          {personalInfo.email && <div className="flex items-center gap-1">✉ {personalInfo.email}</div>}
-          {personalInfo.phone && <div className="flex items-center gap-1">☎ {personalInfo.phone}</div>}
-          {personalInfo.location && <div className="flex items-center gap-1">📍 {personalInfo.location}</div>}
-          {personalInfo.linkedin && <div className="flex items-center gap-1">in {personalInfo.linkedin}</div>}
-          {personalInfo.portfolio && <div className="flex items-center gap-1">🔗 {personalInfo.portfolio}</div>}
-        </div>
-      </div>
-
-      <div className="flex-1" style={{ padding: '40px' }}>
-        {summary && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-blue-800 uppercase tracking-wider mb-2">Professional Summary</h2>
-            <div className="w-12 h-1 bg-blue-800 mb-3"></div>
-            <p className="text-sm whitespace-pre-wrap leading-relaxed text-gray-700">{summary}</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-3 gap-8">
-          <div className="col-span-2">
-            {experience.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-blue-800 uppercase tracking-wider mb-2">Experience</h2>
-                <div className="w-12 h-1 bg-blue-800 mb-3"></div>
-                <div className="space-y-5">
-                  {experience.map(exp => (
-                    <div key={exp.id}>
-                      <h3 className="text-md font-bold text-gray-900">{exp.title}</h3>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-600">{exp.company} • {exp.location}</span>
-                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">{exp.startDate} - {exp.endDate || 'Present'}</span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed text-gray-700">{exp.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {projects.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-blue-800 uppercase tracking-wider mb-2">Projects</h2>
-                <div className="w-12 h-1 bg-blue-800 mb-3"></div>
-                <div className="space-y-4">
-                  {projects.map(proj => (
-                    <div key={proj.id}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-md font-bold text-gray-900">{proj.title}</h3>
-                        {proj.link && <span className="text-xs text-blue-600">{proj.link}</span>}
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed text-gray-700">{proj.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="col-span-1">
-            {education.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-blue-800 uppercase tracking-wider mb-2">Education</h2>
-                <div className="w-12 h-1 bg-blue-800 mb-3"></div>
-                <div className="space-y-4">
-                  {education.map(edu => (
-                    <div key={edu.id}>
-                      <h3 className="text-sm font-bold text-gray-900">{edu.degree}</h3>
-                      <p className="text-sm text-gray-600">{edu.institution}</p>
-                      <p className="text-xs text-gray-500 mt-1">{edu.startDate} - {edu.endDate}</p>
-                      {edu.gpa && <p className="text-xs text-gray-500">GPA: {edu.gpa}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {skills && (
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-blue-800 uppercase tracking-wider mb-2">Skills</h2>
-                <div className="w-12 h-1 bg-blue-800 mb-3"></div>
-                <p className="text-sm leading-relaxed text-gray-700">{skills}</p>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className={`${modern ? 'px-[18mm] py-[12mm]' : ''} ${modern ? '' : 'mt-6'}`}>
+        {data.sectionOrder
+          .filter(id => !data.hiddenSections.includes(id))
+          .map(id => {
+            if (!sectionHasContent(id, data)) return null;
+            const title = id === 'personal' ? 'Professional Summary' : data.sectionLabels[id];
+            return (
+              <section key={id} className="mb-6 break-inside-avoid-page">
+                <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-emerald-700 text-emerald-800' : minimalist ? 'border-gray-300 text-gray-500' : 'border-gray-400 text-gray-900'}`}>
+                  {title}
+                </h2>
+                <div className="text-sm">{sectionContent[id](data)}</div>
+              </section>
+            );
+          })}
+        {data.customSections.map(section => (
+          section.content.trim() ? (
+            <section key={section.id} className="mb-6 break-inside-avoid-page">
+              <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-emerald-700 text-emerald-800' : 'border-gray-400 text-gray-900'}`}>{section.title}</h2>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{section.content}</p>
+            </section>
+          ) : null
+        ))}
       </div>
     </div>
-  )
-})
-ModernLayout.displayName = 'ModernLayout'
+  );
+});
 
+ResumePreview.displayName = 'ResumePreview';
 
-// --- MINIMALIST LAYOUT ---
-const MinimalistLayout = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
-  const { personalInfo, summary, experience, education, skills, projects } = data;
-  return (
-    <div ref={ref} className="bg-white text-gray-900 mx-auto" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", boxSizing: 'border-box' }}>
-      <div className="mb-10">
-        <h1 className="text-4xl font-light tracking-tight mb-2">{personalInfo.fullName || 'Your Name'}</h1>
-        <div className="text-xs text-gray-500 flex flex-wrap gap-3">
-          {personalInfo.email && <span>{personalInfo.email}</span>}
-          {personalInfo.phone && <span>{personalInfo.phone}</span>}
-          {personalInfo.location && <span>{personalInfo.location}</span>}
-          {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
-          {personalInfo.portfolio && <span>{personalInfo.portfolio}</span>}
-        </div>
-      </div>
-
-      {summary && (
-        <div className="mb-8 grid grid-cols-4 gap-4">
-          <div className="col-span-1 text-sm font-semibold text-gray-400 uppercase tracking-widest">Profile</div>
-          <div className="col-span-3 text-sm leading-relaxed">{summary}</div>
-        </div>
-      )}
-
-      {experience.length > 0 && (
-        <div className="mb-8 grid grid-cols-4 gap-4">
-          <div className="col-span-1 text-sm font-semibold text-gray-400 uppercase tracking-widest">Experience</div>
-          <div className="col-span-3 space-y-6">
-            {experience.map(exp => (
-              <div key={exp.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-sm font-medium">{exp.title}, {exp.company}</h3>
-                  <span className="text-xs text-gray-500">{exp.startDate} — {exp.endDate || 'Present'}</span>
-                </div>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{exp.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {projects.length > 0 && (
-        <div className="mb-8 grid grid-cols-4 gap-4">
-          <div className="col-span-1 text-sm font-semibold text-gray-400 uppercase tracking-widest">Projects</div>
-          <div className="col-span-3 space-y-4">
-            {projects.map(proj => (
-              <div key={proj.id}>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <h3 className="text-sm font-medium">{proj.title}</h3>
-                  {proj.link && <span className="text-xs text-gray-500">{proj.link}</span>}
-                </div>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{proj.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {education.length > 0 && (
-        <div className="mb-8 grid grid-cols-4 gap-4">
-          <div className="col-span-1 text-sm font-semibold text-gray-400 uppercase tracking-widest">Education</div>
-          <div className="col-span-3 space-y-4">
-            {education.map(edu => (
-              <div key={edu.id}>
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="text-sm font-medium">{edu.degree}</h3>
-                  <span className="text-xs text-gray-500">{edu.startDate} — {edu.endDate}</span>
-                </div>
-                <p className="text-sm text-gray-600">{edu.institution}, {edu.location}</p>
-                {edu.gpa && <p className="text-xs text-gray-500 mt-1">GPA: {edu.gpa}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {skills && (
-        <div className="mb-8 grid grid-cols-4 gap-4">
-          <div className="col-span-1 text-sm font-semibold text-gray-400 uppercase tracking-widest">Skills</div>
-          <div className="col-span-3 text-sm leading-relaxed text-gray-600">{skills}</div>
-        </div>
-      )}
-    </div>
-  )
-})
-MinimalistLayout.displayName = 'MinimalistLayout'
-
-export default ResumePreview
+export default ResumePreview;
