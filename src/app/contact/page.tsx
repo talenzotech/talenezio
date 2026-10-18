@@ -14,7 +14,7 @@ export default function ContactPage() {
               <strong>Email:</strong> <a href="mailto:support@example.com" className="hover:text-zinc-900 dark:hover:text-zinc-100 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">[Email to be provided]</a>
             </p>
             <p>
-              <strong>LinkedIn:</strong> <a href="https://www.linkedin.com/company/talenzoofficial/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-900 dark:hover:text-zinc-100 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Talenzo Official</a>
+              <strong>LinkedIn:</strong> <a href="https://www.linkedin.com/company/talenezioofficial/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-900 dark:hover:text-zinc-100 underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Talenezio Official</a>
             </p>
           </div>
         </div>

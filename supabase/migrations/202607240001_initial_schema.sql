@@ -1,4 +1,4 @@
--- Talenzo Day 1 schema. Auth identities are owned by Supabase Auth.
+-- Talenezio Day 1 schema. Auth identities are owned by Supabase Auth.
 create extension if not exists "pgcrypto";
 
 create type public.payment_status as enum ('created', 'paid', 'failed', 'refunded');

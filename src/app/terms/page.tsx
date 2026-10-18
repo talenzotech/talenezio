@@ -6,19 +6,19 @@ export default function TermsPage() {
       </h1>
       <div className="prose dark:prose-invert max-w-none">
         <p>
-          Welcome to Talenzo. These terms and conditions outline the rules and
-           regulations for the use of Talenzo&apos;s Website.
+          Welcome to Talenezio. These terms and conditions outline the rules and
+           regulations for the use of Talenezio&apos;s Website.
         </p>
         <h2 className="text-xl font-semibold mt-6 mb-4">1. Acceptance of Terms</h2>
         <p>
           By accessing this website we assume you accept these terms and conditions.
-          Do not continue to use Talenzo if you do not agree to take all of the
+          Do not continue to use Talenezio if you do not agree to take all of the
           terms and conditions stated on this page.
         </p>
         <h2 className="text-xl font-semibold mt-6 mb-4">2. License</h2>
         <p>
-          Unless otherwise stated, Talenzo and/or its licensors own the
-          intellectual property rights for all material on Talenzo. All
+           Unless otherwise stated, Talenezio and/or its licensors own the
+           intellectual property rights for all material on Talenezio. All
           intellectual property rights are reserved.
         </p>
         {/* Add more terms content as needed */}

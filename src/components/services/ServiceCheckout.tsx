@@ -51,7 +51,7 @@ export default function ServiceCheckout({ productCode, title }: { productCode: s
         order_id: order.orderId,
         amount: order.amount,
         currency: order.currency,
-        name: 'Talenzo',
+        name: 'Talenezio',
         description: title,
         handler: async (payment: Record<string, string>) => {
           const verifyResponse = await fetch('/api/payments/verify', {

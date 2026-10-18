@@ -53,7 +53,7 @@ export default function ProTestCheckout({ category }: Props) {
         order_id: order.orderId,
         amount: order.amount,
         currency: order.currency,
-        name: 'Talenzo',
+        name: 'Talenezio',
         description: `Pro ${category} assessment`,
         handler: async (response: Record<string, string>) => {
           const verifyResponse = await fetch('/api/payments/verify', {

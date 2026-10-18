@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const receipt = `talenzo_${user.id.slice(0, 8)}_${Date.now()}`;
+  const receipt = `talenezio_${user.id.slice(0, 8)}_${Date.now()}`;
   let order;
   try {
     order = await createRazorpayOrder({

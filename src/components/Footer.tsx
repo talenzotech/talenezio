@@ -6,10 +6,10 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex flex-col items-center md:items-start">
           <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Talenzo
+            Talenezio
           </span>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            © {new Date().getFullYear()} Talenzo. All rights reserved.
+            © {new Date().getFullYear()} Talenezio. All rights reserved.
           </p>
         </div>
         
