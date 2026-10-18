@@ -88,7 +88,7 @@ export default function ResumeBuilderPage() {
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `${data.personalInfo.fullName || 'Resume'}_Talenzo`,
+    documentTitle: `${data.personalInfo.fullName || 'Resume'}_Talenezio`,
   })
 
   const updatePersonalInfo = (field: keyof ResumeData['personalInfo'], value: string) => {

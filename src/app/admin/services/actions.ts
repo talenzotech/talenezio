@@ -46,7 +46,7 @@ export async function updateServiceOrder(formData: FormData) {
       certificate_number: `TAL-SVC-${order.id.slice(0, 8).toUpperCase()}`,
       certificate_type: order.service_code === 'career-counseling' ? 'participation' : 'completion',
       topic: order.service_code,
-      performance_statement: order.service_code === 'career-counseling' ? 'Participated in a Talenzo career counselling session.' : `Completed the Talenzo ${order.service_code === 'interview-prep' ? 'Interview Preparation' : 'Career Starter Pack'} program.`,
+      performance_statement: order.service_code === 'career-counseling' ? 'Participated in a Talenezio career counselling session.' : `Completed the Talenezio ${order.service_code === 'interview-prep' ? 'Interview Preparation' : 'Career Starter Pack'} program.`,
     }, { onConflict: 'service_order_id' });
   }
 

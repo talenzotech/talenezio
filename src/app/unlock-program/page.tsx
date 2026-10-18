@@ -127,7 +127,7 @@ export default function UnlockProgramPage() {
             Free Unlock Program
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400">
-            Share Talenzo and get full access for free.
+            Share Talenezio and get full access for free.
           </p>
         </div>
 
@@ -135,7 +135,7 @@ export default function UnlockProgramPage() {
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
             <h2 className="text-2xl font-bold text-green-700 dark:text-green-400">Congratulations!</h2>
-            <p className="text-green-600 dark:text-green-300">Your submission has been approved. You now have full free access to Talenzo.</p>
+            <p className="text-green-600 dark:text-green-300">Your submission has been approved. You now have full free access to Talenezio.</p>
             <Link href="/dashboard" className="inline-block mt-4 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition">
               Go to Dashboard
             </Link>
@@ -174,7 +174,7 @@ export default function UnlockProgramPage() {
                   </h3>
                   <ul className="space-y-2 text-gray-600 dark:text-gray-400 text-sm list-disc list-inside">
                     <li>Take a free test</li>
-                    <li>Share your certificate on LinkedIn and tag Talenzo</li>
+                    <li>Share your certificate on LinkedIn and tag Talenezio</li>
                     <li>Share the app with 10 friends</li>
                     <li>Share the app in 3 student WhatsApp groups</li>
                   </ul>

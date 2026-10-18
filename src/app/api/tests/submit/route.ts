@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not save test result' }, { status: 500 });
   }
 
-  const candidateName = (await admin.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.user_metadata?.full_name || 'Talenzo learner';
+  const candidateName = (await admin.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.user_metadata?.full_name || 'Talenezio learner';
   const percentage = Math.round((score / attempt.total_questions) * 10000) / 100;
   const certificateNumber = `TAL-TEST-${attempt.id.slice(0, 8).toUpperCase()}`;
   const performanceStatement = `Scored ${score} out of ${attempt.total_questions} (${percentage}%).`;

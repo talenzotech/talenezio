@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
 
 export function GET() {
-  return Response.json({ status: "ok", service: "talenzo-api" });
+  return Response.json({ status: "ok", service: "talenezio-api" });
 }

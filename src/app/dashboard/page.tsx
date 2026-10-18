@@ -95,7 +95,7 @@ export default async function DashboardPage() {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
               <span className="text-white font-bold text-lg">T</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenzo</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
           </div>
           
           <div className="flex items-center gap-4">

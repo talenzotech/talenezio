@@ -53,11 +53,11 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.16),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(168,85,247,0.12),_transparent_35%)] dark:bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.22),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(126,34,206,0.18),_transparent_35%)]" />
 
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2" aria-label="Talenzo home">
+          <Link href="/" className="flex items-center gap-2" aria-label="Talenezio home">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-500/20">
               T
             </span>
-            <span className="text-xl font-bold tracking-tight">Talenzo</span>
+            <span className="text-xl font-bold tracking-tight">Talenezio</span>
           </Link>
 
           <div className="flex items-center gap-3 text-sm font-semibold sm:gap-6">
@@ -93,7 +93,7 @@ export default function Home() {
               Turn your potential into a career you are proud of.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400 sm:text-xl">
-              Talenzo gives ambitious professionals the tools, practice, and guidance to move from unsure to job-ready.
+              Talenezio gives ambitious professionals the tools, practice, and guidance to move from unsure to job-ready.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -178,7 +178,7 @@ export default function Home() {
         <div className="mb-12 max-w-2xl">
           <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Everything in one place</p>
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Build confidence at every step.</h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">From your first resume draft to your final interview, Talenzo helps you turn preparation into momentum.</p>
+          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">From your first resume draft to your final interview, Talenezio helps you turn preparation into momentum.</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -212,7 +212,7 @@ export default function Home() {
             <p className="mt-4 text-lg leading-8 text-gray-300">Create your free account and start with the tool that will make the biggest difference today.</p>
           </div>
           <Link href="/register" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-bold text-gray-900 transition-colors hover:bg-blue-50">
-            Join Talenzo <ArrowRight className="h-5 w-5" />
+            Join Talenezio <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
       </section>
