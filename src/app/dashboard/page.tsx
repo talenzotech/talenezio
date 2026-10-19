@@ -62,8 +62,8 @@ export default async function DashboardPage() {
       tag: 'Pro'
     },
     {
-      title: 'Free Unlock Program',
-      description: 'Bypass paywalls completely! Share the app and upload proof to access premium features for free.',
+      title: 'How to Get Features for Free',
+      description: 'Request eligible features for free by completing the sharing steps and submitting proof for manual review.',
       icon: Unlock,
       href: '/unlock-program',
       color: 'bg-amber-500',

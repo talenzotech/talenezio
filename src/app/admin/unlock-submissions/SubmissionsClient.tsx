@@ -9,6 +9,9 @@ export type Submission = {
   status: string;
   created_at: string;
   reviewer_note: string | null;
+  feature_code: string;
+  contact_email: string | null;
+  whatsapp_phone: string | null;
   profiles: { full_name: string | null; avatar_url: string | null } | null;
   unlock_evidence: { id: string; storage_path: string; evidence_type: string; url: string | null }[];
 };
@@ -45,6 +48,7 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
           <thead className="bg-gray-50 dark:bg-zinc-950">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Feature</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
@@ -71,6 +75,9 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                       </div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {sub.feature_code === 'skill_test_pro' ? 'Premium Skill Tests' : sub.feature_code === 'linkedin_optimization' ? 'LinkedIn Optimization' : 'General Access'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {new Date(sub.created_at).toLocaleDateString()}
@@ -99,7 +106,7 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
             ))}
             {submissions.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                   No submissions found.
                 </td>
               </tr>
@@ -130,6 +137,12 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                     </h3>
                     
                     <div className="mt-6">
+                      <div className="mb-5 grid gap-3 rounded-lg bg-gray-50 p-4 text-sm dark:bg-zinc-800 sm:grid-cols-2">
+                        <p><span className="font-semibold">Requested feature:</span> {selectedSub.feature_code === 'skill_test_pro' ? 'Premium Skill Tests' : selectedSub.feature_code === 'linkedin_optimization' ? 'LinkedIn Optimization' : 'General Access'}</p>
+                        <p><span className="font-semibold">Contact email:</span> {selectedSub.contact_email || 'Not provided'}</p>
+                        <p><span className="font-semibold">WhatsApp:</span> {selectedSub.whatsapp_phone || 'Not provided'}</p>
+                        <p><span className="font-semibold">Evidence:</span> {selectedSub.unlock_evidence.length} screenshots</p>
+                      </div>
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Evidence Screenshots ({selectedSub.unlock_evidence.length})</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {selectedSub.unlock_evidence.map((ev, i) => (
@@ -148,6 +161,9 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                               <ExternalLink className="w-6 h-6 text-white" />
                             </div>
+                            <span className="absolute bottom-0 inset-x-0 bg-black/65 px-2 py-1 text-left text-xs font-medium text-white">
+                              {ev.evidence_type === 'linkedin_post' ? 'LinkedIn post' : ev.evidence_type === 'friend_share' ? 'Friend chat' : ev.evidence_type === 'group_share' ? 'Student group share' : 'Screenshot'}
+                            </span>
                           </a>
                         ))}
                       </div>

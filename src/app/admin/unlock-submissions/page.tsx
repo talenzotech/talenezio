@@ -10,10 +10,13 @@ export default async function AdminUnlockSubmissionsPage() {
   const { data: submissions, error } = await supabase
     .from('unlock_submissions')
     .select(`
-      id, 
-      status, 
+      id,
+      status,
       created_at,
       reviewer_note,
+      feature_code,
+      contact_email,
+      whatsapp_phone,
       profiles (full_name, avatar_url),
       unlock_evidence (id, storage_path, evidence_type)
     `)
@@ -32,8 +35,8 @@ export default async function AdminUnlockSubmissionsPage() {
   // It's easier to generate signed URLs here.
   
   const submissionsWithUrls: Submission[] = await Promise.all(
-    (submissions || []).map(async (sub: any) => {
-      const evidence = await Promise.all((sub.unlock_evidence || []).map(async (ev: any) => {
+    (submissions || []).map(async (sub) => {
+      const evidence = await Promise.all((sub.unlock_evidence || []).map(async (ev) => {
         const { data } = await supabase.storage
           .from('unlock_evidence')
           .createSignedUrl(ev.storage_path, 60 * 60); // 1 hour
@@ -50,6 +53,9 @@ export default async function AdminUnlockSubmissionsPage() {
         status: sub.status,
         created_at: sub.created_at,
         reviewer_note: sub.reviewer_note ?? null,
+        feature_code: sub.feature_code,
+        contact_email: sub.contact_email ?? null,
+        whatsapp_phone: sub.whatsapp_phone ?? null,
         profiles: profileData ? {
           full_name: profileData.full_name ?? null,
           avatar_url: profileData.avatar_url ?? null,

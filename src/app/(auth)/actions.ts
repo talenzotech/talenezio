@@ -26,7 +26,14 @@ export async function login(formData: FormData): Promise<void> {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  const nextPath = formData.get('next')
+  const returnPath = typeof nextPath === 'string'
+    && nextPath.startsWith('/')
+    && !nextPath.startsWith('//')
+    && !nextPath.includes('\\')
+    ? nextPath
+    : '/dashboard'
+  redirect(returnPath)
 }
 
 export async function signup(formData: FormData): Promise<void> {

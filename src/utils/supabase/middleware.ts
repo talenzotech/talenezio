@@ -32,25 +32,7 @@ export async function updateSession(request: NextRequest) {
   // issues with users being randomly logged out.
 
   // IMPORTANT: DO NOT REMOVE auth.getUser()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/register') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-    // dashboard login check removed
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    // you can put protected routes here, for example:
-    if (request.nextUrl.pathname.startsWith('/tests/') && !request.nextUrl.pathname.endsWith('/tests')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-  }
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }
