@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award } from 'lucide-react'
 import type { Question } from '@/utils/googleSheets'
+import { consumeAttemptForSubmission } from '@/app/tests/actions'
 
 export default function TestInterface({ 
   category, 
@@ -44,8 +45,10 @@ export default function TestInterface({
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (confirm("Are you sure you want to submit the test?")) {
+      const attempt = await consumeAttemptForSubmission()
+      if (!attempt.success) return
       setIsSubmitted(true)
     }
   }

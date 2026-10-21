@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  PRO_TEST_CURRENCY,
-  PRO_TEST_PRICE_PAISE,
   isTestCategory,
+  paidProductDetails,
   proTestProductCode,
 } from '@/lib/payments/products';
 import { createRazorpayOrder } from '@/lib/payments/razorpay';
 import { env } from '@/lib/env';
+import { hasFreeUnlock } from '@/lib/payments/access';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -16,16 +16,36 @@ export async function POST(request: Request) {
 
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
-  const body = await request.json().catch(() => null) as { category?: string } | null;
-  if (!body?.category || !isTestCategory(body.category)) {
-    return NextResponse.json({ error: 'Invalid test category' }, { status: 400 });
+  const body = await request.json().catch(() => null) as { category?: string; productCode?: string } | null;
+  const productCode = body?.category && isTestCategory(body.category)
+    ? proTestProductCode(body.category)
+    : body?.productCode;
+  const product = productCode ? paidProductDetails(productCode) : null;
+  if (!productCode || !product) {
+    return NextResponse.json({ error: 'Invalid service or test product' }, { status: 400 });
   }
-
-  const productCode = proTestProductCode(body.category);
   const admin = createAdminClient();
+
+  if (product.serviceCode && await hasFreeUnlock(user.id)) {
+    const { error } = await admin.from('service_orders').insert({
+      user_id: user.id,
+      service_code: product.serviceCode,
+      product_code: productCode,
+      amount_paise: product.amountPaise,
+      currency: product.currency,
+      status: 'requested',
+    });
+
+    if (error) {
+      console.error('Unable to create free service order:', error);
+      return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
+    }
+
+    return NextResponse.json({ freeAccess: true });
+  }
   const { data: existing } = await admin
     .from('payments')
-    .select('provider_order_id')
+    .select('provider_order_id, amount_paise, currency')
     .eq('user_id', user.id)
     .eq('product_code', productCode)
     .in('status', ['created', 'pending'])
@@ -38,8 +58,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       keyId: env.razorpayKeyId(),
       orderId: existing.provider_order_id,
-      amount: PRO_TEST_PRICE_PAISE,
-      currency: PRO_TEST_CURRENCY,
+      amount: existing.amount_paise,
+      currency: existing.currency,
       productCode,
     });
   }
@@ -48,8 +68,8 @@ export async function POST(request: Request) {
   let order;
   try {
     order = await createRazorpayOrder({
-      amount: PRO_TEST_PRICE_PAISE,
-      currency: PRO_TEST_CURRENCY,
+      amount: product.amountPaise,
+      currency: product.currency,
       receipt,
       notes: { user_id: user.id, product_code: productCode },
     });
@@ -58,20 +78,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unable to start payment' }, { status: 502 });
   }
 
-  const { error } = await admin.from('payments').insert({
+  const { data: payment, error } = await admin.from('payments').insert({
     user_id: user.id,
     product_code: productCode,
-    amount_paise: PRO_TEST_PRICE_PAISE,
-    currency: PRO_TEST_CURRENCY,
+    amount_paise: product.amountPaise,
+    currency: product.currency,
     provider: 'razorpay',
     provider_order_id: order.id,
     status: 'pending',
-    metadata: { category: body.category, receipt },
-  });
+    metadata: { category: product.category ?? null, service_code: product.serviceCode ?? null, receipt },
+  }).select('id').single();
 
   if (error) {
     console.error('Unable to store payment order:', error);
     return NextResponse.json({ error: 'Unable to store payment order' }, { status: 500 });
+  }
+
+  if (product.serviceCode) {
+    const { error: serviceOrderError } = await admin.from('service_orders').insert({
+      user_id: user.id,
+      service_code: product.serviceCode,
+      product_code: productCode,
+      amount_paise: product.amountPaise,
+      currency: product.currency,
+      status: 'pending_payment',
+      payment_id: payment?.id,
+    });
+
+    if (serviceOrderError) {
+      console.error('Unable to store service order:', serviceOrderError);
+      return NextResponse.json({ error: 'Unable to store service order' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({

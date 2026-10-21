@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Unlock, CalendarDays, LogOut } from 'lucide-react';
+import { LayoutDashboard, Unlock, CalendarDays, LogOut, BriefcaseBusiness, Inbox } from 'lucide-react';
 
 export default async function AdminLayout({
   children,
@@ -60,6 +60,14 @@ export default async function AdminLayout({
           <Link href="/admin/bookings" className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-medium text-sm">
             <CalendarDays className="w-5 h-5 text-gray-500" />
             Session Scheduling
+          </Link>
+          <Link href="/admin/services" className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-medium text-sm">
+            <BriefcaseBusiness className="w-5 h-5 text-gray-500" />
+            Service Fulfilment
+          </Link>
+          <Link href="/admin/enquiries" className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-medium text-sm">
+            <Inbox className="w-5 h-5 text-gray-500" />
+            Enquiries
           </Link>
         </nav>
         

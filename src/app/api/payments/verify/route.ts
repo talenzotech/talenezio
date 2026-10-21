@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { grantEntitlement } from '@/lib/payments/access';
 import { verifyPaymentSignature } from '@/lib/payments/razorpay';
-import { isTestCategory, proTestProductCode } from '@/lib/payments/products';
+import { paidProductDetails } from '@/lib/payments/products';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -43,13 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Payment is not eligible for verification' }, { status: 409 });
   }
 
-  if (payment.amount_paise !== 3200 || payment.currency !== 'INR') {
+  const product = paidProductDetails(payment.product_code);
+  if (!product || payment.amount_paise !== product.amountPaise || payment.currency !== product.currency) {
     return NextResponse.json({ error: 'Payment amount mismatch' }, { status: 400 });
-  }
-
-  const category = payment.product_code.replace('pro-test:', '');
-  if (!isTestCategory(category)) {
-    return NextResponse.json({ error: 'Invalid payment product' }, { status: 400 });
   }
 
   const { error } = await admin
@@ -66,10 +62,25 @@ export async function POST(request: Request) {
 
   await grantEntitlement({
     userId: user.id,
-    productCode: proTestProductCode(category),
+    productCode: payment.product_code,
     source: 'payment',
     sourceId: payment.id,
   });
+
+  if (product.serviceCode) {
+    await admin.from('service_orders').update({ status: 'paid' })
+      .eq('payment_id', payment.id)
+      .in('status', ['pending_payment', 'paid']);
+    if (product.serviceCode === 'career-starter-pack') {
+      await grantEntitlement({
+        userId: user.id,
+        productCode: 'pro-test:attempts',
+        source: 'payment',
+        sourceId: payment.id,
+        remainingUses: 10,
+      });
+    }
+  }
 
   return NextResponse.json({ verified: true });
 }

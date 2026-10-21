@@ -28,6 +28,12 @@ export default async function DashboardPage() {
     .order('scheduled_for', { ascending: true, nullsFirst: false })
     .limit(3);
 
+  const { data: serviceOrders } = await supabase
+    .from('service_orders')
+    .select('id, service_code, status, scheduled_for, meeting_url, fulfilment_note')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
   const features = [
     {
       title: 'Skill Assessment Tests',
@@ -60,6 +66,14 @@ export default async function DashboardPage() {
       href: '/services/counseling',
       color: 'bg-rose-500',
       tag: 'Pro'
+    },
+    {
+      title: 'Service Catalogue',
+      description: 'Compare verified prices, buy career services, or enquire about courses and internships.',
+      icon: Briefcase,
+      href: '/services',
+      color: 'bg-indigo-500',
+      tag: 'New'
     },
     {
       title: 'Free Unlock Program',
@@ -190,6 +204,25 @@ export default async function DashboardPage() {
                       Link pending
                     </button>
                   )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {serviceOrders && serviceOrders.length > 0 && (
+          <div className="mb-12">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Your Service Orders</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {serviceOrders.map((order) => (
+                <div key={order.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-bold capitalize text-gray-900 dark:text-white">{order.service_code.replaceAll('-', ' ')}</p>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold capitalize text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">{order.status.replaceAll('_', ' ')}</span>
+                  </div>
+                  {order.scheduled_for && <p className="mt-3 text-sm text-gray-500"><span suppressHydrationWarning>{new Date(order.scheduled_for).toLocaleString()}</span></p>}
+                  {order.fulfilment_note && <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">{order.fulfilment_note}</p>}
+                  {order.meeting_url && <a href={order.meeting_url} target="_blank" rel="noopener noreferrer" className="mt-4 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-bold text-white">Open delivery link</a>}
                 </div>
               ))}
             </div>
