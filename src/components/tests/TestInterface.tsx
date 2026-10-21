@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 
 export default function TestInterface({ 
@@ -34,13 +34,27 @@ export default function TestInterface({
 
   const handleOptionSelect = (optionIndex: number) => {
     if (isSubmitted) return
-    setAnswers({ ...answers, [questions[currentQuestion].id]: optionIndex })
+    setAnswers(currentAnswers => ({
+      ...currentAnswers,
+      [questions[currentQuestion].id]: optionIndex,
+    }))
   }
 
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(curr => curr + 1)
     }
+  }
+
+  const handleSkip = () => {
+    if (currentQuestion >= questions.length - 1) return
+
+    setAnswers(currentAnswers => {
+      const nextAnswers = { ...currentAnswers }
+      delete nextAnswers[questions[currentQuestion].id]
+      return nextAnswers
+    })
+    setCurrentQuestion(questionIndex => questionIndex + 1)
   }
 
   const handlePrev = () => {
@@ -151,6 +165,46 @@ export default function TestInterface({
         </div>
       </div>
 
+      {/* Question Number Navigator */}
+      <div className="bg-white dark:bg-gray-900 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-white">Question numbers</h2>
+            <p className="text-sm text-gray-500">Select a number to review or change your answer.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Current</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Answered</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-700" /> Unanswered</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2" role="list" aria-label="Question navigation">
+          {questions.map((item, index) => {
+            const isCurrent = currentQuestion === index
+            const isAnswered = answers[item.id] !== undefined
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setCurrentQuestion(index)}
+                aria-current={isCurrent ? 'step' : undefined}
+                aria-label={`Question ${index + 1}${isAnswered ? ', answered' : ', unanswered'}${isCurrent ? ', current' : ''}`}
+                className={`h-10 rounded-lg border-2 text-sm font-semibold transition-colors ${
+                  isCurrent
+                    ? 'border-blue-600 bg-blue-600 text-white'
+                    : isAnswered
+                      ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300'
+                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500'
+                }`}
+              >
+                {index + 1}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Navigation Footer */}
       <div className="flex items-center justify-between">
         <button
@@ -161,22 +215,35 @@ export default function TestInterface({
           <ArrowLeft className="w-4 h-4" /> Previous
         </button>
         
-        {currentQuestion === questions.length - 1 ? (
-          <button
-             onClick={handleSubmit}
-             disabled={isSubmitting}
-            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
-          >
-             {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={handleNext}
-            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
-          >
-            Next <ArrowRight className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {currentQuestion < questions.length - 1 && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              Skip Question <SkipForward className="w-4 h-4" />
+            </button>
+          )}
+          {currentQuestion === questions.length - 1 ? (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
+            >
+              Next <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
       {submitError && <p className="mt-4 text-center text-sm text-red-600">{submitError}</p>}
     </div>
