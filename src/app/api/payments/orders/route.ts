@@ -8,7 +8,8 @@ import {
 } from '@/lib/payments/products';
 import { createRazorpayOrder } from '@/lib/payments/razorpay';
 import { env } from '@/lib/env';
-import { hasFreeUnlock } from '@/lib/payments/access';
+import { hasServiceAccess } from '@/lib/payments/access';
+import { getService } from '@/lib/services/catalog';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
   }
   const admin = createAdminClient();
 
-  if (product.serviceCode && await hasFreeUnlock(user.id)) {
+  const service = product.serviceCode ? getService(product.serviceCode) : null;
+  if (product.serviceCode && service?.freeUnlock && await hasServiceAccess(user.id, product.serviceCode)) {
     const { error } = await admin.from('service_orders').insert({
       user_id: user.id,
       service_code: product.serviceCode,
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const receipt = `talenzo_${user.id.slice(0, 8)}_${Date.now()}`;
+  const receipt = `talenezio_${user.id.slice(0, 8)}_${Date.now()}`;
   let order;
   try {
     order = await createRazorpayOrder({

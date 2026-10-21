@@ -12,7 +12,7 @@ export default function ServicesPage() {
           <ArrowLeft className="h-4 w-4" /> Back to dashboard
         </Link>
         <div className="mb-12 max-w-2xl">
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Talenzo services</p>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Talenezio services</p>
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">Choose the support you need next.</h1>
           <p className="mt-5 text-lg leading-8 text-gray-600 dark:text-gray-400">Every paid offer has a clear price and delivery path. Approved free-unlock users can access eligible services without payment.</p>
         </div>

@@ -37,7 +37,7 @@ export const SERVICE_CATALOG: Record<ServiceCode, ServiceCatalogItem> = {
     pricePaise: 29900,
     currency: 'INR',
     paid: true,
-    freeUnlock: true,
+    freeUnlock: false,
     fulfilment: 'session',
     inclusions: ['One-hour counselling session', 'Career direction review', 'Action plan', 'Participation certificate'],
   },

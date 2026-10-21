@@ -1,5 +1,5 @@
 {
-  "name": "talenzo",
+  "name": "talenezio",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:auth": "node --experimental-strip-types --test tests/auth-redirect.test.mjs",
     "test:scoring": "node --experimental-strip-types --test tests/test-scoring.test.mjs",
-    "test:question-bank": "node --experimental-strip-types --test tests/question-bank.test.mjs"
+    "test:question-bank": "node --experimental-strip-types --test tests/question-bank.test.mjs",
+    "test:unlock-entitlements": "node --experimental-strip-types --test tests/unlock-entitlements.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

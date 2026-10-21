@@ -1,13 +1,31 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import SubmissionsClient, { type Submission } from './SubmissionsClient';
 
 export const dynamic = 'force-dynamic';
 
+type RawEvidence = { id: string; storage_path: string; evidence_type: string };
+type RawProfile = { full_name: string | null; avatar_url: string | null };
+type RawSubmission = {
+  id: string;
+  status: string;
+  created_at: string;
+  reviewer_note: string | null;
+  profiles: RawProfile | RawProfile[] | null;
+  unlock_evidence: RawEvidence[] | null;
+};
+
 export default async function AdminUnlockSubmissionsPage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return <div>Unauthorized.</div>;
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', user.id).single();
+  if (!profile?.is_admin) return <div>Unauthorized.</div>;
   
   // Fetch pending submissions along with evidence and user details
-  const { data: submissions, error } = await supabase
+  const { data: submissions, error } = await admin
     .from('unlock_submissions')
     .select(`
       id, 
@@ -32,9 +50,9 @@ export default async function AdminUnlockSubmissionsPage() {
   // It's easier to generate signed URLs here.
   
   const submissionsWithUrls: Submission[] = await Promise.all(
-    (submissions || []).map(async (sub: any) => {
-      const evidence = await Promise.all((sub.unlock_evidence || []).map(async (ev: any) => {
-        const { data } = await supabase.storage
+    ((submissions || []) as unknown as RawSubmission[]).map(async (sub) => {
+      const evidence = await Promise.all((sub.unlock_evidence || []).map(async (ev) => {
+        const { data } = await admin.storage
           .from('unlock_evidence')
           .createSignedUrl(ev.storage_path, 60 * 60); // 1 hour
         return {

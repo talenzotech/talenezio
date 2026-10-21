@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="p-2 bg-blue-500 rounded-xl">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
-          <span className="text-2xl font-bold tracking-tight">Talenzo</span>
+          <span className="text-2xl font-bold tracking-tight">Talenezio</span>
         </div>
 
         <div className="relative z-10 max-w-md">
@@ -46,7 +46,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <div className="p-2 bg-blue-600 rounded-xl">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Talenzo</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
           </div>
           {children}
         </div>

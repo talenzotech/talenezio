@@ -1,104 +1,58 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { FREE_UNLOCK_PRODUCT_CODE } from '@/lib/payments/products';
-import { grantEntitlement } from '@/lib/payments/access';
 import { sendUnlockStatusEmail } from '@/utils/email';
-import { revalidatePath } from 'next/cache';
 
 export async function reviewSubmission(
-  submissionId: string, 
-  status: 'approved' | 'rejected', 
-  note?: string
+  submissionId: string,
+  status: 'approved' | 'rejected',
+  note?: string,
 ) {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
-  // Verify admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
+  const admin = createAdminClient();
+  const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', user.id).single();
   if (!profile?.is_admin) return { error: 'Unauthorized' };
 
-  const adminClient = createAdminClient();
-
-  // Get submission user details for email
-  const { data: submission } = await adminClient
-    .from('unlock_submissions')
-    .select('user_id')
-    .eq('id', submissionId)
+  const cleanNote = note?.trim().slice(0, 2000) || null;
+  const { data: rawReview, error: reviewError } = await admin
+    .rpc('review_unlock_submission', {
+      p_submission_id: submissionId,
+      p_reviewer_id: user.id,
+      p_status: status,
+      p_note: cleanNote,
+    })
     .single();
-    
-  if (!submission) return { error: 'Submission not found' };
+  const review = rawReview as { reviewed_user_id: string } | null;
 
-  const { data: submissionProfile } = await adminClient
+  if (reviewError || !review) {
+    console.error('Unable to review unlock submission:', reviewError);
+    return { error: 'The submission may already have been reviewed or could not be updated.' };
+  }
+
+  const { data: submissionProfile } = await admin
     .from('profiles')
     .select('full_name')
-    .eq('id', submission.user_id)
+    .eq('id', review.reviewed_user_id)
     .maybeSingle();
+  const { data: userData } = await admin.auth.admin.getUserById(review.reviewed_user_id);
 
-  const { error: updateError } = await adminClient
-    .from('unlock_submissions')
-    .update({ 
-      status, 
-      reviewer_note: note, 
-      reviewer_id: user.id, 
-      reviewed_at: new Date().toISOString() 
-    })
-    .eq('id', submissionId);
-
-  if (updateError) {
-    console.error('Error updating submission:', updateError);
-    return { error: 'Failed to update submission' };
-  }
-
-  if (status === 'approved') {
-    await grantEntitlement({
-      userId: submission.user_id,
-      productCode: FREE_UNLOCK_PRODUCT_CODE,
-      source: 'free_unlock',
-      sourceId: submissionId,
+  if (userData.user?.email) {
+    const emailResult = await sendUnlockStatusEmail({
+      to: userData.user.email,
+      name: submissionProfile?.full_name || 'User',
+      status,
+      note: cleanNote || undefined,
     });
-
-  } else {
-    await adminClient
-      .from('entitlements')
-      .update({ status: 'revoked' })
-      .eq('user_id', submission.user_id)
-      .eq('source', 'free_unlock')
-      .eq('product_code', FREE_UNLOCK_PRODUCT_CODE);
-  }
-
-  // Attempt to send email after the access decision is persisted.
-  try {
-    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-    const adminAuthClient = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    
-    const { data: userData, error: userError } = await adminAuthClient.auth.admin.getUserById(submission.user_id);
-    if (!userError && userData?.user?.email) {
-      const emailRes = await sendUnlockStatusEmail({
-        to: userData.user.email,
-        name: submissionProfile?.full_name || 'User',
-        status,
-        note
-      });
-      if (!emailRes.success) {
-         console.error('Email failed to send, but status was updated.');
-      }
-    }
-  } catch (err) {
-    console.error('Failed to send email:', err);
+    if (!emailResult.success) console.error('Unlock status email failed:', emailResult.error);
   }
 
   revalidatePath('/admin/unlock-submissions');
+  revalidatePath('/unlock-program');
+  revalidatePath('/dashboard');
   return { success: true };
 }

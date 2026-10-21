@@ -6,9 +6,9 @@ export default function PrivacyPage() {
       </h1>
       <div className="prose dark:prose-invert max-w-none">
         <p>
-          At Talenzo, accessible from our website, one of our main priorities is the
+          At Talenezio, accessible from our website, one of our main priorities is the
           privacy of our visitors. This Privacy Policy document contains types of
-          information that is collected and recorded by Talenzo and how we use it.
+          information that is collected and recorded by Talenezio and how we use it.
         </p>
         <h2 className="text-xl font-semibold mt-6 mb-4">Information we collect</h2>
         <p>

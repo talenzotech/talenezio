@@ -18,7 +18,7 @@ export default async function RegisterPage({
       <div className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create an account</h2>
         <p className="text-gray-500 dark:text-gray-400">
-          Start your journey with Talenzo today
+          Start your journey with Talenezio today
         </p>
       </div>
 
