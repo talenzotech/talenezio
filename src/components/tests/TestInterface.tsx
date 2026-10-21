@@ -2,21 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award } from 'lucide-react'
-import type { Question } from '@/utils/googleSheets'
-import { consumeAttemptForSubmission } from '@/app/tests/actions'
+import type { PublicQuestion } from '@/utils/googleSheets'
 
 export default function TestInterface({ 
   category, 
   type,
+  attemptId,
   initialQuestions
 }: { 
   category: string, 
   type: 'free' | 'pro',
-  initialQuestions: Question[]
+  attemptId: string,
+  initialQuestions: PublicQuestion[]
 }) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<Record<number, number>>({})
+  const [answers, setAnswers] = useState<Record<string, number>>({})
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [result, setResult] = useState<{ score: number; total: number; certificateId: string | null } | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
 
   // Fallback to empty array if no questions
@@ -30,7 +34,7 @@ export default function TestInterface({
 
   const handleOptionSelect = (optionIndex: number) => {
     if (isSubmitted) return
-    setAnswers({ ...answers, [currentQuestion]: optionIndex })
+    setAnswers({ ...answers, [questions[currentQuestion].id]: optionIndex })
   }
 
   const handleNext = () => {
@@ -46,11 +50,22 @@ export default function TestInterface({
   }
 
   const handleSubmit = async () => {
-    if (confirm("Are you sure you want to submit the test?")) {
-      const attempt = await consumeAttemptForSubmission()
-      if (!attempt.success) return
-      setIsSubmitted(true)
+    if (!confirm("Are you sure you want to submit the test?")) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    const response = await fetch('/api/tests/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attemptId, answers }),
+    })
+    const payload = await response.json().catch(() => null)
+    setIsSubmitting(false)
+    if (!response.ok) {
+      setSubmitError(payload?.error || 'Could not submit the test')
+      return
     }
+    setResult(payload)
+    setIsSubmitted(true)
   }
 
   const formatTime = (seconds: number) => {
@@ -60,27 +75,22 @@ export default function TestInterface({
   }
 
   if (isSubmitted) {
-    const score = Object.keys(answers).reduce((acc, qIndex) => {
-      if (answers[parseInt(qIndex)] === questions[parseInt(qIndex)].correct) {
-        return acc + 1
-      }
-      return acc
-    }, 0)
-    
     return (
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <Award className="w-10 h-10" />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Test Completed!</h2>
-        <p className="text-gray-500 mb-8">You scored {score} out of {questions.length}</p>
+         <p className="text-gray-500 mb-8">You scored {result?.score} out of {result?.total}</p>
         
         <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Certificate is ready</h3>
           <p className="text-sm text-gray-500 mb-4">Download your verified certificate for {category.toUpperCase()}.</p>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-            Download Certificate (PDF)
-          </button>
+           {result?.certificateId ? (
+             <a href={`/api/certificates/${result.certificateId}/download`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+               Download Certificate (PDF)
+             </a>
+           ) : <p className="text-sm text-amber-600">Your certificate is being prepared. Refresh shortly.</p>}
         </div>
       </div>
     )
@@ -128,13 +138,13 @@ export default function TestInterface({
               key={idx}
               onClick={() => handleOptionSelect(idx)}
               className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between
-                ${answers[currentQuestion] === idx 
+                ${answers[question.id] === idx
                   ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100' 
                   : 'border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
             >
               <span>{opt}</span>
-              {answers[currentQuestion] === idx && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
+              {answers[question.id] === idx && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
             </button>
           ))}
         </div>
@@ -152,10 +162,11 @@ export default function TestInterface({
         
         {currentQuestion === questions.length - 1 ? (
           <button
-            onClick={handleSubmit}
+             onClick={handleSubmit}
+             disabled={isSubmitting}
             className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
           >
-            Submit Test <CheckCircle2 className="w-4 h-4" />
+             {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
           </button>
         ) : (
           <button
@@ -166,6 +177,7 @@ export default function TestInterface({
           </button>
         )}
       </div>
+      {submitError && <p className="mt-4 text-center text-sm text-red-600">{submitError}</p>}
     </div>
   )
 }
