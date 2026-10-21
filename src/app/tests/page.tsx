@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { BrainCircuit, MonitorSmartphone, TrendingUp, Megaphone, Lock, CheckCircle2 } from 'lucide-react'
+import { BrainCircuit, MonitorSmartphone, TrendingUp, Megaphone, CheckCircle2 } from 'lucide-react'
+import ProTestCheckout from '@/components/tests/ProTestCheckout'
 
 const TEST_CATEGORIES = [
   {
@@ -101,12 +102,7 @@ export default function TestsPage() {
                         <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> 45 Questions (3 Sec)</li>
                         <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> Premium Certificate</li>
                       </ul>
-                      <Link 
-                        href={`/tests/${category.id}?type=pro`}
-                        className="block text-center w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
-                      >
-                        Unlock Pro Test
-                      </Link>
+                      <ProTestCheckout category={category.id} />
                     </div>
                   </div>
 

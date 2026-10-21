@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import TestInterface from '@/components/tests/TestInterface'
 import { createClient } from '@/utils/supabase/server'
 import { fetchGoogleSheetQuestions } from '@/utils/googleSheets'
+import { hasProTestAccess } from '@/lib/payments/access'
+import { isTestCategory } from '@/lib/payments/products'
 
 export default async function TestPage({
   params,
@@ -14,11 +16,11 @@ export default async function TestPage({
   const resolvedSearchParams = await searchParams
   
   const category = resolvedParams.category
-  const type = (resolvedSearchParams.type as 'free' | 'pro') || 'free'
+  const requestedType = resolvedSearchParams.type
+  const type = requestedType === 'pro' ? 'pro' : 'free'
 
   // Validate category
-  const validCategories = ['ai', 'technology', 'finance', 'digital-marketing']
-  if (!validCategories.includes(category)) {
+  if (!isTestCategory(category)) {
     redirect('/tests')
   }
 
@@ -28,6 +30,10 @@ export default async function TestPage({
 
   if (!user) {
     redirect(`/login?next=/tests/${category}?type=${type}`)
+  }
+
+  if (type === 'pro' && !(await hasProTestAccess(user.id, category))) {
+    redirect('/tests?error=payment_required')
   }
 
   // Fetch questions from Google Sheets

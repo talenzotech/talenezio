@@ -1,6 +1,9 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { FREE_UNLOCK_PRODUCT_CODE } from '@/lib/payments/products';
+import { grantEntitlement } from '@/lib/payments/access';
 import { sendUnlockStatusEmail } from '@/utils/email';
 import { revalidatePath } from 'next/cache';
 
@@ -23,21 +26,24 @@ export async function reviewSubmission(
 
   if (!profile?.is_admin) return { error: 'Unauthorized' };
 
+  const adminClient = createAdminClient();
+
   // Get submission user details for email
-  const { data: submission } = await supabase
+  const { data: submission } = await adminClient
     .from('unlock_submissions')
-    .select('user_id, profiles (full_name, email:id)') // We might not have email in profiles directly, need to check if we can get email from auth.users or profiles. 
+    .select('user_id')
     .eq('id', submissionId)
     .single();
     
   if (!submission) return { error: 'Submission not found' };
 
-  // Actually, Supabase doesn't expose auth.users to public schema by default easily unless we join, 
-  // Let's just do a service role query or get email from a secure route.
-  // We can use the service role key to get the user email if we need it, or we can fetch it if it's in the profile.
-  // I will use service role client if needed, but first let's just update the status.
+  const { data: submissionProfile } = await adminClient
+    .from('profiles')
+    .select('full_name')
+    .eq('id', submission.user_id)
+    .maybeSingle();
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from('unlock_submissions')
     .update({ 
       status, 
@@ -52,12 +58,24 @@ export async function reviewSubmission(
     return { error: 'Failed to update submission' };
   }
 
-  // Attempt to send email
-  // We need an admin client to fetch user's email from auth.users
-  const supabaseAdmin = await createClient(); // Wait, createClient uses user's cookies. We need a service role client to fetch auth.users.
-  // I will implement a quick service role client here just for this, or check if we can get email from profiles (some apps copy it there).
-  // Assuming they don't have email in profiles, I'll use the service role key from env.
-  
+  if (status === 'approved') {
+    await grantEntitlement({
+      userId: submission.user_id,
+      productCode: FREE_UNLOCK_PRODUCT_CODE,
+      source: 'free_unlock',
+      sourceId: submissionId,
+    });
+
+  } else {
+    await adminClient
+      .from('entitlements')
+      .update({ status: 'revoked' })
+      .eq('user_id', submission.user_id)
+      .eq('source', 'free_unlock')
+      .eq('product_code', FREE_UNLOCK_PRODUCT_CODE);
+  }
+
+  // Attempt to send email after the access decision is persisted.
   try {
     const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
     const adminAuthClient = createSupabaseClient(
@@ -69,7 +87,7 @@ export async function reviewSubmission(
     if (!userError && userData?.user?.email) {
       const emailRes = await sendUnlockStatusEmail({
         to: userData.user.email,
-        name: (submission.profiles as any)?.full_name || 'User',
+        name: submissionProfile?.full_name || 'User',
         status,
         note
       });
