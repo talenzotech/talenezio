@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { safeNextPath } from '@/lib/auth/redirect'
 
 export async function login(formData: FormData): Promise<void> {
   const supabase = await createClient()
@@ -11,9 +12,10 @@ export async function login(formData: FormData): Promise<void> {
   // in practice, you should validate your inputs
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const next = safeNextPath(formData.get('next') as string | null)
 
   if (!email || !password) {
-    redirect('/login?error=' + encodeURIComponent('Email and password are required'))
+    redirect(`/login?error=${encodeURIComponent('Email and password are required')}&next=${encodeURIComponent(next)}`)
   }
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -22,11 +24,11 @@ export async function login(formData: FormData): Promise<void> {
   })
 
   if (error) {
-    redirect('/login?error=' + encodeURIComponent(error.message))
+    redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect(next)
 }
 
 export async function signup(formData: FormData): Promise<void> {
@@ -38,9 +40,10 @@ export async function signup(formData: FormData): Promise<void> {
   const password = formData.get('password') as string
   const fullName = formData.get('fullName') as string
   const referralCode = formData.get('referralCode') as string
+  const next = safeNextPath(formData.get('next') as string | null)
 
   if (!email || !password || !fullName) {
-    redirect('/register?error=' + encodeURIComponent('All fields are required'))
+    redirect(`/register?error=${encodeURIComponent('All fields are required')}&next=${encodeURIComponent(next)}`)
   }
 
   const { error, data } = await supabase.auth.signUp({
@@ -55,25 +58,27 @@ export async function signup(formData: FormData): Promise<void> {
   })
 
   if (error) {
-    redirect('/register?error=' + encodeURIComponent(error.message))
+    redirect(`/register?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
   }
   
   if (data.session) {
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect(next)
   }
 
-  redirect('/login?message=' + encodeURIComponent('Check your email for the confirmation link.'))
+  redirect(`/login?message=${encodeURIComponent('Check your email for the confirmation link.')}&next=${encodeURIComponent(next)}`)
 }
 
-export async function loginWithOAuth(provider: 'google' | 'linkedin_oidc'): Promise<void> {
+export async function loginWithOAuth(provider: 'google' | 'linkedin_oidc', requestedNext?: string): Promise<void> {
   const supabase = await createClient()
+  const next = safeNextPath(requestedNext)
   
   // NOTE: Assuming your NEXT_PUBLIC_APP_URL is set in .env.local
   // Or fallback to localhost for development
+  const callbackPath = `/auth/callback?next=${encodeURIComponent(next)}`
   const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` 
-    : 'http://localhost:3000/auth/callback'
+    ? `${process.env.NEXT_PUBLIC_APP_URL}${callbackPath}`
+    : `http://localhost:3000${callbackPath}`
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,

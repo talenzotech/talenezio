@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Plus, Trash2, Download, ChevronRight, ChevronLeft, LayoutTemplate } from 'lucide-react'
 import ResumePreview from '@/components/resume/ResumePreview'
@@ -20,6 +20,71 @@ export default function ResumeBuilderPage() {
   const [data, setData] = useState<ResumeData>(initialResumeData)
   const [currentStep, setCurrentStep] = useState(0)
   const printRef = useRef<HTMLDivElement>(null)
+  const lastSavedDraft = useRef<ResumeData>(initialResumeData)
+  const saveRequest = useRef(0)
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false)
+  const [draftStatus, setDraftStatus] = useState<'loading' | 'saved' | 'saving' | 'error'>('loading')
+  const [draftError, setDraftError] = useState<string | null>(null)
+
+  const saveDraft = useCallback(async (draft: ResumeData) => {
+    const requestId = ++saveRequest.current
+    setDraftStatus('saving')
+    setDraftError(null)
+
+    try {
+      const response = await fetch('/api/resume/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not save your draft')
+
+      if (requestId === saveRequest.current) {
+        lastSavedDraft.current = draft
+        setDraftStatus('saved')
+      }
+    } catch (error) {
+      if (requestId === saveRequest.current) {
+        setDraftStatus('error')
+        setDraftError(error instanceof Error ? error.message : 'Could not save your draft')
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadDraft() {
+      try {
+        const response = await fetch('/api/resume/draft', { cache: 'no-store' })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Could not load your draft')
+
+        if (!cancelled && result.draft) {
+          lastSavedDraft.current = result.draft
+          setData(result.draft)
+        }
+        if (!cancelled) setDraftStatus('saved')
+      } catch (error) {
+        if (!cancelled) {
+          setDraftStatus('error')
+          setDraftError(error instanceof Error ? error.message : 'Could not load your draft')
+        }
+      } finally {
+        if (!cancelled) setIsDraftLoaded(true)
+      }
+    }
+
+    loadDraft()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!isDraftLoaded || JSON.stringify(data) === JSON.stringify(lastSavedDraft.current)) return
+    const timer = window.setTimeout(() => { void saveDraft(data) }, 800)
+    return () => window.clearTimeout(timer)
+  }, [data, isDraftLoaded, saveDraft])
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -107,7 +172,19 @@ export default function ResumeBuilderPage() {
         {/* Header & Progress */}
         <div className="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800 shrink-0">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Resume Builder</h1>
-          <p className="text-gray-500 text-sm mb-6">Step {currentStep + 1} of {STEPS.length}: {STEPS[currentStep].title}</p>
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <p className="text-gray-500 text-sm">Step {currentStep + 1} of {STEPS.length}: {STEPS[currentStep].title}</p>
+            <div className="text-right text-xs" aria-live="polite">
+              {draftStatus === 'loading' && <span className="text-gray-400">Loading draft...</span>}
+              {draftStatus === 'saving' && <span className="text-blue-600">Saving...</span>}
+              {draftStatus === 'saved' && <span className="text-emerald-600">Saved</span>}
+              {draftStatus === 'error' && (
+                <button type="button" onClick={() => { void saveDraft(data) }} className="font-semibold text-red-600 underline">
+                  {draftError || 'Save failed'} Retry
+                </button>
+              )}
+            </div>
+          </div>
           
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progressPercentage}%` }}></div>
