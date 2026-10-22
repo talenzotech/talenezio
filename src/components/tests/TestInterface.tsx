@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 
@@ -95,16 +96,31 @@ export default function TestInterface({
           <Award className="w-10 h-10" />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Test Completed!</h2>
-         <p className="text-gray-500 mb-8">You scored {result?.score} out of {result?.total}</p>
+        <p className="text-gray-500 mb-8">You scored {result?.score} out of {result?.total}</p>
         
         <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Certificate is ready</h3>
           <p className="text-sm text-gray-500 mb-4">Download your verified certificate for {category.toUpperCase()}.</p>
-           {result?.certificateId ? (
-             <a href={`/api/certificates/${result.certificateId}/download`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-               Download Certificate (PDF)
-             </a>
-           ) : <p className="text-sm text-amber-600">Your certificate is being prepared. Refresh shortly.</p>}
+          {result?.certificateId ? (
+            <a href={`/api/certificates/${result.certificateId}/download`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+              Download Certificate (PDF)
+            </a>
+          ) : <p className="text-sm text-amber-600">Your certificate is being prepared. Refresh shortly.</p>}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/tests"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            All Skill Tests
+          </Link>
+          <Link
+            href={`/tests/${category}?type=${type}`}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+          >
+            Retake Assessment
+          </Link>
         </div>
       </div>
     )
@@ -127,7 +143,7 @@ export default function TestInterface({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
         <div>
           <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
-           <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (3 sections of 15 questions)'}</p>
+          <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (3 sections of 15 questions)'}</p>
         </div>
         <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
           <Clock className="w-5 h-5" />
@@ -138,10 +154,10 @@ export default function TestInterface({
       {/* Main Question Area */}
       <div className="bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 min-h-[400px] flex flex-col">
         <div className="mb-8">
-           <span className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 block">
-             Question {currentQuestion + 1} of {questions.length}
-           </span>
-           {type === 'pro' && <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{question.section}</span>}
+          <span className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 block">
+            Question {currentQuestion + 1} of {questions.length}
+          </span>
+          {type === 'pro' && <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{question.section}</span>}
           <h2 className="text-2xl text-gray-900 dark:text-white font-medium leading-relaxed">
             {question.text}
           </h2>
