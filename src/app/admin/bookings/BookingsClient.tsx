@@ -107,22 +107,22 @@ export default function BookingsClient({ bookings }: { bookings: Booking[] }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Filters */}
-        <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl w-fit">
+        <div className="flex w-full flex-col bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl sm:w-fit sm:flex-row">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            className={`min-h-11 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'all' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             All Sessions
           </button>
           <button
             onClick={() => setFilter('interview-prep')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'interview-prep' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            className={`min-h-11 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'interview-prep' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             Interview Prep
           </button>
           <button
             onClick={() => setFilter('career-counseling')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'career-counseling' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            className={`min-h-11 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === 'career-counseling' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             Career Counseling
           </button>
@@ -130,7 +130,7 @@ export default function BookingsClient({ bookings }: { bookings: Booking[] }) {
 
         <button 
           onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
+          className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Create Session

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -5,38 +6,58 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   FileText,
+  GraduationCap,
   Sparkles,
   Target,
+  UserCheck,
   Users,
 } from "lucide-react";
 
 const features = [
   {
-    title: "Build a resume that gets noticed",
+    title: "Industry-Focused Skill Tests",
     description:
-      "Create an ATS-friendly resume with guided sections, useful templates, and an instant print-ready preview.",
-    href: "/resume-builder",
-    icon: FileText,
-    accent: "bg-emerald-500",
-    tint: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-  },
-  {
-    title: "Prove what you know",
-    description:
-      "Test your skills across AI, technology, finance, and digital marketing with certificates to show for it.",
+      "Assess your knowledge in Technology, Finance, Digital Marketing and AI to identify your strengths and areas for improvement.",
     href: "/tests",
     icon: Target,
     accent: "bg-blue-600",
     tint: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
   },
   {
-    title: "Prepare with people who have done it",
+    title: "ATS-Friendly Resume Builder",
+    description:
+      "Create professional, recruiter-friendly resumes that showcase your skills, experience and potential.",
+    href: "/resume-builder",
+    icon: FileText,
+    accent: "bg-emerald-500",
+    tint: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+  },
+  {
+    title: "Internship Opportunities",
+    description:
+      "Explore opportunities to gain practical experience, develop valuable skills and take your first steps into the professional world.",
+    href: "/services",
+    icon: GraduationCap,
+    accent: "bg-amber-500",
+    tint: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  },
+  {
+    title: "Expert-Led Career Support",
     description:
       "Get practical interview preparation and focused career guidance built around your next opportunity.",
     href: "/services/counseling",
     icon: BriefcaseBusiness,
     accent: "bg-purple-600",
     tint: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+  },
+  {
+    title: "LinkedIn Profile Optimization",
+    description:
+      "Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.",
+    href: "/services",
+    icon: UserCheck,
+    accent: "bg-sky-600",
+    tint: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
   },
 ];
 
@@ -53,10 +74,15 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.16),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(168,85,247,0.12),_transparent_35%)] dark:bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.22),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(126,34,206,0.18),_transparent_35%)]" />
 
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2" aria-label="Talenezio home">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-500/20">
-              T
-            </span>
+          <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
+            <Image
+              src="/talenezio-logo.png"
+              alt="Talenezio Logo"
+              width={40}
+              height={40}
+              priority
+              className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
+            />
             <span className="text-xl font-bold tracking-tight">Talenezio</span>
           </Link>
 
@@ -90,10 +116,10 @@ export default function Home() {
             </div>
 
             <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
-              Turn your potential into a career you are proud of.
+              Build your skills, stand out, and get hired faster.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400 sm:text-xl">
-              Talenezio gives ambitious professionals the tools, practice, and guidance to move from unsure to job-ready.
+              From skill assessments to professional resumes and career support, Talenezio helps you prepare for what is next.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -181,7 +207,7 @@ export default function Home() {
           <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">From your first resume draft to your final interview, Talenezio helps you turn preparation into momentum.</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
@@ -193,7 +219,7 @@ export default function Home() {
                 <div className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${feature.accent}`}>
                   <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400">{feature.title}</h3>
+                <h3 className="text-xl font-bold tracking-tight text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">{feature.title}</h3>
                 <p className="mt-3 min-h-20 leading-7 text-gray-600 dark:text-gray-400">{feature.description}</p>
                 <span className={`mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${feature.tint}`}>
                   Explore feature <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
