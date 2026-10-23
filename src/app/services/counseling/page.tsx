@@ -71,10 +71,10 @@ export default function CounselingPage() {
               Feeling stuck? Not getting callbacks? Talk to industry veterans who have successfully navigated the modern job market and get actionable advice.
             </p>
 
-            <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/30 transition-all flex items-center gap-2 text-lg">
+            <a href="#pricing" className="inline-flex px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/30 transition-all items-center gap-2 text-lg">
               View Pricing Plans
               <ChevronRight className="w-5 h-5" />
-            </button>
+            </a>
           </div>
 
           <div className="flex-1 w-full max-w-lg">
@@ -106,7 +106,7 @@ export default function CounselingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-24 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+      <section id="pricing" className="py-24 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Simple, transparent pricing</h2>

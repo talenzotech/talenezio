@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import type { ResumeData } from '@/components/resume/types';
 
 const MAX_DRAFT_BYTES = 100_000;
@@ -19,6 +20,10 @@ function isResumeData(value: unknown): value is ResumeData {
 }
 
 export async function GET() {
+  if (await isLocalDemoSession()) {
+    return NextResponse.json({ draft: null, updatedAt: null });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -38,29 +43,33 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-
   const body = await request.json().catch(() => null) as { draft?: unknown } | null;
   if (!isResumeData(body?.draft)) {
     return NextResponse.json({ error: 'Invalid resume draft' }, { status: 400 });
   }
 
-  if (JSON.stringify(body.draft).length > MAX_DRAFT_BYTES) {
-    return NextResponse.json({ error: 'Resume draft is too large' }, { status: 413 });
+  if (await isLocalDemoSession()) {
+    return NextResponse.json({ success: true });
   }
 
-  const { data, error } = await supabase
-    .from('resume_drafts')
-    .upsert({ user_id: user.id, resume_data: body.draft }, { onConflict: 'user_id' })
-    .select('updated_at')
-    .single();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+  if (JSON.stringify(body.draft).length > MAX_DRAFT_BYTES) {
+    return NextResponse.json({ error: 'Resume draft exceeds maximum allowed size' }, { status: 413 });
+  }
+
+  const { error } = await supabase.from('resume_drafts').upsert({
+    user_id: user.id,
+    resume_data: body.draft,
+    updated_at: new Date().toISOString(),
+  });
 
   if (error) {
     console.error('Unable to save resume draft:', error);
     return NextResponse.json({ error: 'Could not save resume draft' }, { status: 500 });
   }
 
-  return NextResponse.json({ saved: true, updatedAt: data.updated_at });
+  return NextResponse.json({ success: true });
 }

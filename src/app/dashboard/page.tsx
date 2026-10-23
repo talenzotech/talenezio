@@ -2,37 +2,47 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
-import { LogOut, FileText, CheckSquare, Video, Briefcase, Unlock, ArrowRight, Sparkles, TrendingUp, BookOpen, CalendarDays, Clock } from 'lucide-react'
+import { LogOut, FileText, CheckSquare, Video, Briefcase, Unlock, ArrowRight, Sparkles, CalendarDays, Clock } from 'lucide-react'
 
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { isLocalDemoSession } from '@/lib/auth/local-demo'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const localDemoSession = await isLocalDemoSession()
+  const supabase = localDemoSession ? null : await createClient()
+  const { data: { user } } = supabase
+    ? await supabase.auth.getUser()
+    : { data: { user: null } }
 
-  if (!user) {
+  if (!user && !localDemoSession) {
     redirect('/login')
   }
 
-  const userMetadata = user.user_metadata || {}
-  const fullName = userMetadata.full_name || 'Guest'
+  const userMetadata = user?.user_metadata || {}
+  const fullName = localDemoSession ? 'Demo User' : userMetadata.full_name || 'Guest'
   const firstName = fullName.split(' ')[0]
   const avatarUrl = userMetadata.avatar_url || null
 
   // Fetch upcoming sessions for this user
-  const { data: upcomingSessions } = await supabase
-    .from('bookings')
+  const upcomingSessionsQuery = supabase
+    ?.from('bookings')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', user?.id || '')
     .in('status', ['pending', 'confirmed'])
     .order('scheduled_for', { ascending: true, nullsFirst: false })
-    .limit(3);
+    .limit(3)
+  const { data: upcomingSessions } = upcomingSessionsQuery
+    ? await upcomingSessionsQuery
+    : { data: [] }
 
-  const { data: serviceOrders } = await supabase
-    .from('service_orders')
+  const serviceOrdersQuery = supabase
+    ?.from('service_orders')
     .select('id, service_code, status, scheduled_for, meeting_url, fulfilment_note')
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(5)
+  const { data: serviceOrders } = serviceOrdersQuery
+    ? await serviceOrdersQuery
+    : { data: [] }
 
   const features = [
     {

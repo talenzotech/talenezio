@@ -72,15 +72,15 @@ export default function InterviewPrepPage() {
             Stop getting rejected in the final rounds. Practice with MAANG engineers, take rigorous mock tests, and get the feedback you need to succeed.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div id="enroll" className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <div className="w-full sm:w-auto sm:min-w-64">
               <ServiceCheckout productCode="service:interview-prep" title="Interview Preparation" />
               <p className="mt-2 text-center text-xs text-gray-500">₹399 or free with an approved unlock entitlement.</p>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">or</p>
-            <Link href="/dashboard" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
+            <a href="#syllabus" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
               View Syllabus
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -103,10 +103,10 @@ export default function InterviewPrepPage() {
       </section>
 
       {/* Syllabus & Trust */}
-      <section className="py-24">
+      <section id="syllabus" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 grid lg:grid-cols-2 gap-16 items-center">
           <div>
-             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">What you&apos;ll learn in 8 days</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">What you&apos;ll learn in 8 days</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
               Our curriculum is designed by industry experts to simulate the exact pressure and expectations of top-tier company interviews.
             </p>
@@ -148,9 +148,9 @@ export default function InterviewPrepPage() {
                 </li>
               </ul>
               
-              <button className="w-full py-4 bg-white text-purple-900 font-bold rounded-xl hover:bg-gray-50 transition-colors">
+              <a href="#enroll" className="block text-center w-full py-4 bg-white text-purple-900 font-bold rounded-xl hover:bg-gray-50 transition-colors">
                 Start Your Journey Today
-              </button>
+              </a>
             </div>
           </div>
         </div>

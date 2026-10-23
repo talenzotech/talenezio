@@ -4,20 +4,49 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
+import {
+  endLocalDemoSession,
+  isLocalDemoSession,
+  startLocalDemoSession,
+} from '@/lib/auth/local-demo'
+import {
+  isLocalDemoEnabled,
+  LOCAL_DEMO_EMAIL,
+  LOCAL_DEMO_PASSWORD,
+} from '@/lib/auth/local-demo-config'
+
+export async function loginAsDemo(formData: FormData): Promise<void> {
+  const next = safeNextPath(formData.get('next') as string | null)
+  if (!isLocalDemoEnabled()) {
+    redirect(`/login?error=${encodeURIComponent('Demo login is only available in development')}&next=${encodeURIComponent(next)}`)
+  }
+  await startLocalDemoSession()
+  revalidatePath('/', 'layout')
+  redirect(next)
+}
 
 export async function login(formData: FormData): Promise<void> {
-  const supabase = await createClient()
-
   // type-casting here for convenience
   // in practice, you should validate your inputs
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+  const email = String(formData.get('email') || '').trim()
+  const password = String(formData.get('password') || '')
   const next = safeNextPath(formData.get('next') as string | null)
 
   if (!email || !password) {
     redirect(`/login?error=${encodeURIComponent('Email and password are required')}&next=${encodeURIComponent(next)}`)
   }
 
+  if (isLocalDemoEnabled() && email.toLowerCase() === LOCAL_DEMO_EMAIL) {
+    if (password !== LOCAL_DEMO_PASSWORD) {
+      redirect(`/login?error=${encodeURIComponent('Invalid email or password')}&next=${encodeURIComponent(next)}`)
+    }
+
+    await startLocalDemoSession()
+    revalidatePath('/', 'layout')
+    redirect(next)
+  }
+
+  const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -157,6 +186,12 @@ export async function updatePassword(formData: FormData): Promise<void> {
 }
 
 export async function signout() {
+  if (await isLocalDemoSession()) {
+    await endLocalDemoSession()
+    revalidatePath('/', 'layout')
+    redirect('/login')
+  }
+
   const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')

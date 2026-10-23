@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import TestInterface from '@/components/tests/TestInterface'
 import { createClient } from '@/utils/supabase/server'
@@ -6,6 +7,7 @@ import { hasProTestAccess } from '@/lib/payments/access'
 import { isTestCategory } from '@/lib/payments/products'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { QuestionSelectionError, selectQuestions } from '@/lib/tests/questionSelection'
+import { isLocalDemoSession } from '@/lib/auth/local-demo'
 
 export default async function TestPage({
   params,
@@ -27,14 +29,15 @@ export default async function TestPage({
   }
 
   // Check auth
+  const isDemo = await isLocalDemoSession()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (!user && !isDemo) {
     redirect(`/login?next=/tests/${category}?type=${type}`)
   }
 
-  if (type === 'pro' && !(await hasProTestAccess(user.id, category))) {
+  if (type === 'pro' && user && !(await hasProTestAccess(user.id, category))) {
     redirect('/tests?error=payment_required')
   }
 
@@ -50,36 +53,49 @@ export default async function TestPage({
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-20 text-center dark:bg-gray-950">
         <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Test unavailable</h2>
-        <p className="mx-auto max-w-2xl whitespace-pre-line text-gray-500">{message}</p>
+        <p className="mx-auto max-w-2xl whitespace-pre-line text-gray-500 mb-8">{message}</p>
+        <Link
+          href="/tests"
+          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          Return to Skill Tests
+        </Link>
       </div>
     )
   }
 
-  const expiresAtDate = new Date()
-  expiresAtDate.setMinutes(expiresAtDate.getMinutes() + (type === 'free' ? 20 : 45))
-  const expiresAt = expiresAtDate.toISOString()
-  const admin = createAdminClient()
-  const { data: attempt, error: attemptError } = await admin.from('test_attempts').insert({
-    user_id: user.id,
-    category,
-    test_type: type,
-    question_snapshot: formattedQuestions,
-    total_questions: formattedQuestions.length,
-    expires_at: expiresAt,
-  }).select('id').single()
+  let attemptId = 'demo-attempt-session'
+  if (user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const expiresAtDate = new Date()
+      expiresAtDate.setMinutes(expiresAtDate.getMinutes() + (type === 'free' ? 20 : 45))
+      const expiresAt = expiresAtDate.toISOString()
 
-  if (attemptError || !attempt) {
-    console.error('Unable to create test attempt:', attemptError)
-    redirect('/tests?error=Could%20not%20start%20test')
+      const admin = createAdminClient()
+      const { data: attempt } = await admin.from('test_attempts').insert({
+        user_id: user.id,
+        category,
+        test_type: type,
+        question_snapshot: formattedQuestions,
+        total_questions: formattedQuestions.length,
+        expires_at: expiresAt,
+      }).select('id').single()
+
+      if (attempt?.id) {
+        attemptId = attempt.id
+      }
+    } catch (attemptError) {
+      console.warn('Could not record attempt in DB, using session attempt:', attemptError)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
-        <TestInterface
-          category={category}
-          type={type}
-          attemptId={attempt.id}
-          initialQuestions={formattedQuestions.map(toPublicQuestion)}
+      <TestInterface
+        category={category}
+        type={type}
+        attemptId={attemptId}
+        initialQuestions={formattedQuestions.map(toPublicQuestion)}
       />
     </div>
   )
