@@ -6,6 +6,8 @@ const REQUIRED_HEADERS = [
 const CATEGORY_ALIASES: Record<string, string> = {
   ai: 'ai',
   technology: 'technology',
+  'software engineering': 'technology',
+  'software-engineering': 'technology',
   finance: 'finance',
   'digital marketing': 'digital-marketing',
   'digital-marketing': 'digital-marketing',
@@ -21,7 +23,7 @@ export type Question = {
   text: string;
   options: string[];
   correct: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard' | '';
   isActive: boolean;
 };
 
@@ -50,9 +52,9 @@ function normalizeHeader(value: string): string {
 
 function parseBoolean(value: string, rowNumber: number): boolean {
   const normalized = value.trim().toUpperCase();
-  if (normalized === 'TRUE') return true;
-  if (normalized === 'FALSE') return false;
-  throw new QuestionBankError(`Question bank row ${rowNumber}: is_active must be TRUE or FALSE.`);
+  if (normalized === 'TRUE' || normalized === '1') return true;
+  if (normalized === 'FALSE' || normalized === '0') return false;
+  throw new QuestionBankError(`Question bank row ${rowNumber}: is_active must be TRUE, FALSE, 1, or 0.`);
 }
 
 export function parseQuestionRows(rows: string[][]): Question[] {
@@ -92,7 +94,7 @@ export function parseQuestionRows(rows: string[][]): Question[] {
       if (!text) throw new QuestionBankError(`Question bank row ${rowNumber}: question is required.`);
       if (options.some((option) => !option)) throw new QuestionBankError(`Question bank row ${rowNumber}: all four options are required.`);
       if (!/^[A-D]$/.test(correctOption)) throw new QuestionBankError(`Question bank row ${rowNumber}: correct_option must be A, B, C, or D.`);
-      if (!VALID_DIFFICULTIES.has(difficulty)) throw new QuestionBankError(`Question bank row ${rowNumber}: difficulty must be easy, medium, or hard.`);
+      if (difficulty && !VALID_DIFFICULTIES.has(difficulty)) throw new QuestionBankError(`Question bank row ${rowNumber}: difficulty must be easy, medium, or hard.`);
 
       ids.add(id);
       questions.push({

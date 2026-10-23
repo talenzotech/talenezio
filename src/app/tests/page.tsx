@@ -117,7 +117,7 @@ export default async function TestsPage({
                         <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full uppercase tracking-wider">₹32</span>
                       </div>
                       <ul className="text-sm text-blue-800/70 dark:text-blue-200/70 space-y-2 mb-4">
-                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> 45 Questions (3 Sec)</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> 45 Questions</li>
                         <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> Premium Certificate</li>
                       </ul>
                       <ProTestCheckout category={category.id} />
