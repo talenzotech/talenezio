@@ -43,7 +43,7 @@ export default async function TestPage({
 
   let formattedQuestions: Question[]
   try {
-    const questions = await fetchGoogleSheetQuestions(category)
+    const questions = await fetchGoogleSheetQuestions(category, type)
     formattedQuestions = selectQuestions(questions, type)
   } catch (error) {
     const message = error instanceof QuestionBankError || error instanceof QuestionSelectionError

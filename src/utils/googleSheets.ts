@@ -12,13 +12,15 @@ import { getBuiltinQuestions } from '@/lib/tests/defaultQuestions';
 export type { PublicQuestion, Question } from '@/lib/tests/questionBank';
 export { normalizeCategory, parseQuestionRows, QuestionBankError, toPublicQuestion } from '@/lib/tests/questionBank';
 
-export async function fetchGoogleSheetQuestions(category: string): Promise<Question[]> {
+export async function fetchGoogleSheetQuestions(category: string, type: 'free' | 'pro' = 'free'): Promise<Question[]> {
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
   const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
   if (clientEmail && privateKey && spreadsheetId) {
-    const worksheet = process.env.GOOGLE_SHEETS_WORKSHEET || 'questions';
+    const worksheet = type === 'pro'
+      ? process.env.GOOGLE_SHEETS_PAID_WORKSHEET || 'Paid'
+      : process.env.GOOGLE_SHEETS_FREE_WORKSHEET || 'Free';
     const auth = new google.auth.JWT({
       email: clientEmail,
       key: privateKey,
@@ -35,6 +37,7 @@ export async function fetchGoogleSheetQuestions(category: string): Promise<Quest
       const normalizedCategory = normalizeCategory(category);
       const filtered = questions.filter((question) => question.category === normalizedCategory && question.isActive);
       if (filtered.length > 0) return filtered;
+      throw new QuestionBankError(`No active questions available for ${category} in the ${worksheet} worksheet.`);
     } catch (error) {
       console.warn('Unable to read Google question bank, using default verified question bank:', error);
     }
