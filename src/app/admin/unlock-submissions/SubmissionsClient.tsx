@@ -9,6 +9,9 @@ export type Submission = {
   status: string;
   created_at: string;
   reviewer_note: string | null;
+  feature_code: string;
+  contact_email: string | null;
+  whatsapp_phone: string | null;
   profiles: { full_name: string | null; avatar_url: string | null } | null;
   unlock_evidence: { id: string; storage_path: string; evidence_type: string; url: string | null }[];
 };
@@ -130,6 +133,11 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                     </h3>
                     
                     <div className="mt-6">
+                      <div className="mb-5 grid gap-3 rounded-lg bg-gray-50 p-4 text-sm dark:bg-zinc-950 sm:grid-cols-2">
+                        <p><span className="font-semibold">Feature:</span> {selectedSub.feature_code.replaceAll('_', ' ')}</p>
+                        <p><span className="font-semibold">Email:</span> {selectedSub.contact_email || 'Not provided'}</p>
+                        <p><span className="font-semibold">WhatsApp:</span> {selectedSub.whatsapp_phone || 'Not provided'}</p>
+                      </div>
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Evidence Screenshots ({selectedSub.unlock_evidence.length})</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {selectedSub.unlock_evidence.map((ev, i) => (

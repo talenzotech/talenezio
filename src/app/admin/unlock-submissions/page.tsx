@@ -11,6 +11,9 @@ type RawSubmission = {
   status: string;
   created_at: string;
   reviewer_note: string | null;
+  feature_code: string | null;
+  contact_email: string | null;
+  whatsapp_phone: string | null;
   profiles: RawProfile | RawProfile[] | null;
   unlock_evidence: RawEvidence[] | null;
 };
@@ -32,6 +35,9 @@ export default async function AdminUnlockSubmissionsPage() {
       status, 
       created_at,
       reviewer_note,
+      feature_code,
+      contact_email,
+      whatsapp_phone,
       profiles (full_name, avatar_url),
       unlock_evidence (id, storage_path, evidence_type)
     `)
@@ -68,6 +74,9 @@ export default async function AdminUnlockSubmissionsPage() {
         status: sub.status,
         created_at: sub.created_at,
         reviewer_note: sub.reviewer_note ?? null,
+        feature_code: sub.feature_code ?? 'general_access',
+        contact_email: sub.contact_email ?? null,
+        whatsapp_phone: sub.whatsapp_phone ?? null,
         profiles: profileData ? {
           full_name: profileData.full_name ?? null,
           avatar_url: profileData.avatar_url ?? null,

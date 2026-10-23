@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
 
 export default async function ResumeBuilderLayout({ children }: { children: React.ReactNode }) {
-  if (await isLocalDemoSession()) {
+  if (process.env.NODE_ENV === 'development' || (await isLocalDemoSession())) {
     return children;
   }
 

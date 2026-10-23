@@ -87,7 +87,7 @@ export default async function DashboardPage() {
     },
     {
       title: 'Free Unlock Program',
-      description: 'Bypass paywalls completely! Share the app and upload proof to access premium features for free.',
+      description: 'Choose a Paid Test or LinkedIn Optimization and follow the steps to request free access.',
       icon: Unlock,
       href: '/unlock-program',
       color: 'bg-amber-500',

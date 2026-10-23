@@ -29,7 +29,7 @@ export default async function TestPage({
   }
 
   // Check auth
-  const isDemo = await isLocalDemoSession()
+  const isDemo = process.env.NODE_ENV === 'development' || (await isLocalDemoSession())
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

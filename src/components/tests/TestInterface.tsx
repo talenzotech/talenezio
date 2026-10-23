@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 
 export default function TestInterface({ 
@@ -23,6 +23,7 @@ export default function TestInterface({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
+  const [candidateName, setCandidateName] = useState('Talenezio Learner')
 
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
@@ -90,22 +91,60 @@ export default function TestInterface({
   }
 
   if (isSubmitted) {
+    const categoryTitle = ({
+      technology: 'Technology & Software Engineering',
+      finance: 'Finance & Economics',
+      'digital-marketing': 'Digital Marketing',
+      ai: 'Artificial Intelligence',
+    } as Record<string, string>)[category] || category.toUpperCase()
+
+    const downloadUrl = result?.certificateId
+      ? `/api/certificates/${result.certificateId}/download?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}`
+      : null
+
     return (
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
-        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
           <Award className="w-10 h-10" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Test Completed!</h2>
-        <p className="text-gray-500 mb-8">You scored {result?.score} out of {result?.total}</p>
+        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">Test Completed!</h2>
+        <p className="text-gray-500 mb-6">
+          You scored <span className="font-bold text-gray-900 dark:text-white">{result?.score}</span> out of <span className="font-bold text-gray-900 dark:text-white">{result?.total}</span> ({Math.round(((result?.score ?? 0) / (result?.total || 1)) * 100)}%)
+        </p>
         
-        <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Certificate is ready</h3>
-          <p className="text-sm text-gray-500 mb-4">Download your verified certificate for {category.toUpperCase()}.</p>
-          {result?.certificateId ? (
-            <a href={`/api/certificates/${result.certificateId}/download`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              Download Certificate (PDF)
+        <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800 text-left">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-bold text-gray-900 dark:text-white">Accredited Certificate Ready</h3>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.
+          </p>
+
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Name on Certificate:
+            </label>
+            <input
+              type="text"
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+              placeholder="Enter your full name"
+              className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          {downloadUrl ? (
+            <a
+              href={downloadUrl}
+              download
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+            >
+              <Download className="w-4 h-4" /> Download Official Certificate (PDF)
             </a>
-          ) : <p className="text-sm text-amber-600">Your certificate is being prepared. Refresh shortly.</p>}
+          ) : (
+            <p className="text-sm text-amber-600 text-center py-2">Preparing your credential… Refresh shortly.</p>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -117,7 +156,7 @@ export default function TestInterface({
           </Link>
           <Link
             href={`/tests/${category}?type=${type}`}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors"
           >
             Retake Assessment
           </Link>

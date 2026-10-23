@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const REQUIRED_EVIDENCE = 11;
+const REQUIRED_EVIDENCE = 8;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp']);
 
@@ -59,10 +59,23 @@ export async function cleanupUnlockEvidence(paths: string[]) {
   return { success: true };
 }
 
-export async function submitUnlockEvidence(paths: string[]) {
+export async function submitUnlockEvidence(
+  paths: string[],
+  contactEmail: string,
+  whatsappPhone: string,
+  featureCode: 'linkedin_optimization',
+) {
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return { error: 'You must be logged in to submit.' };
+  if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(contactEmail.trim())) {
+    return { error: 'Enter a valid email address.' };
+  }
+  const phoneDigits = whatsappPhone.replace(/\D/g, '');
+  if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+    return { error: 'Enter a valid WhatsApp phone number.' };
+  }
+  if (featureCode !== 'linkedin_optimization') return { error: 'Select a valid unlock feature.' };
 
   const validationError = await validateEvidence(paths, user.id);
   if (validationError) {
@@ -81,7 +94,13 @@ export async function submitUnlockEvidence(paths: string[]) {
 
   const { data: submission, error: submissionError } = await admin
     .from('unlock_submissions')
-    .insert({ user_id: user.id, status: 'pending' })
+    .insert({
+      user_id: user.id,
+      status: 'pending',
+      feature_code: featureCode,
+      contact_email: contactEmail.trim().toLowerCase(),
+      whatsapp_phone: whatsappPhone.trim(),
+    })
     .select('id')
     .single();
 
@@ -94,7 +113,7 @@ export async function submitUnlockEvidence(paths: string[]) {
   const { error: evidenceError } = await admin.from('unlock_evidence').insert(
     paths.map((path, position) => ({
       submission_id: submission.id,
-      evidence_type: 'screenshot',
+      evidence_type: position === 0 ? 'linkedin_post' : position <= 5 ? 'friend_share' : 'group_share',
       storage_path: path,
       position,
     })),
@@ -118,7 +137,7 @@ export async function getSubmissionStatus() {
 
   const { data } = await supabase
     .from('unlock_submissions')
-    .select('status, reviewer_note, created_at')
+    .select('status, reviewer_note, created_at, feature_code, contact_email, whatsapp_phone')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)

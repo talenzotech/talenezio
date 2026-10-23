@@ -43,14 +43,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
 
-  const isDemo = await isLocalDemoSession();
+  const isDemo = process.env.NODE_ENV === 'development' || (await isLocalDemoSession());
   if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
     const answeredCount = Object.keys(body.answers).length;
     return NextResponse.json({
       submitted: true,
       score: Math.min(answeredCount, 18),
       total: 20,
-      certificateId: null,
+      certificateId: 'demo-cert-' + Date.now().toString(36),
     });
   }
 
