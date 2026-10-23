@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import TestInterface from '@/components/tests/TestInterface'
 import { createClient } from '@/utils/supabase/server'
@@ -50,7 +51,13 @@ export default async function TestPage({
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-20 text-center dark:bg-gray-950">
         <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Test unavailable</h2>
-        <p className="mx-auto max-w-2xl whitespace-pre-line text-gray-500">{message}</p>
+        <p className="mx-auto max-w-2xl whitespace-pre-line text-gray-500 mb-8">{message}</p>
+        <Link
+          href="/tests"
+          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          Return to Skill Tests
+        </Link>
       </div>
     )
   }
@@ -75,11 +82,11 @@ export default async function TestPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
-        <TestInterface
-          category={category}
-          type={type}
-          attemptId={attempt.id}
-          initialQuestions={formattedQuestions.map(toPublicQuestion)}
+      <TestInterface
+        category={category}
+        type={type}
+        attemptId={attempt.id}
+        initialQuestions={formattedQuestions.map(toPublicQuestion)}
       />
     </div>
   )

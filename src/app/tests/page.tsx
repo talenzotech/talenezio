@@ -33,7 +33,14 @@ const TEST_CATEGORIES = [
   },
 ]
 
-export default function TestsPage() {
+export default async function TestsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string }>
+}) {
+  const params = await searchParams
+  const error = params?.error
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -47,6 +54,17 @@ export default function TestsPage() {
             Take our industry-standard tests to evaluate your proficiency, earn certificates, and boost your resume.
           </p>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/40 p-4 text-center text-sm text-amber-800 dark:text-amber-300"
+          >
+            {error === 'payment_required'
+              ? 'Pro assessment requires payment or an approved free unlock. Please purchase Pro access or take the free test below.'
+              : decodeURIComponent(error)}
+          </div>
+        )}
 
         {/* Categories Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
