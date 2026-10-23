@@ -1,265 +1,93 @@
-'use client';
+'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { submitUnlockEvidence, cleanupUnlockEvidence, getSubmissionStatus } from './actions';
-import { Upload, X, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-
-const REQUIRED_SCREENSHOTS = 11;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-type SubmissionStatus = 'idle' | 'pending' | 'approved' | 'rejected';
+import { useState } from 'react'
+import Link from 'next/link'
+import { ArrowRight, GraduationCap, Unlock } from 'lucide-react'
 
 export default function UnlockProgramPage() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<SubmissionStatus>('idle');
-  const [reviewerNote, setReviewerNote] = useState<string | null>(null);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
-
-  const isSubmissionStatus = (value: string): value is Exclude<SubmissionStatus, 'idle'> => (
-    value === 'pending' || value === 'approved' || value === 'rejected'
-  );
-
-  useEffect(() => {
-    async function checkStatus() {
-      const data = await getSubmissionStatus();
-      if (data) {
-        if (isSubmissionStatus(data.status)) setStatus(data.status);
-        setReviewerNote(data.reviewer_note);
-      }
-      setIsLoadingStatus(false);
-    }
-    checkStatus();
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      const validFiles = newFiles.filter(file => file.type.startsWith('image/') && file.size <= MAX_FILE_SIZE);
-      if (validFiles.length !== newFiles.length) {
-        setError('Only image files up to 5MB are accepted.');
-      }
-      
-      setFiles(prev => {
-        const combined = [...prev, ...validFiles];
-        return combined.slice(0, REQUIRED_SCREENSHOTS); // Limit to max 11
-      });
-      setError(null);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (files.length !== REQUIRED_SCREENSHOTS) {
-      setError(`Please upload exactly ${REQUIRED_SCREENSHOTS} screenshots.`);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    const uploadedPaths: string[] = [];
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError("You must be logged in.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Upload to Supabase Storage
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('unlock_evidence')
-          .upload(filePath, file, { contentType: file.type, upsert: false });
-
-        if (uploadError) {
-          throw new Error("Failed to upload images. Please try again.");
-        }
-        
-        uploadedPaths.push(filePath);
-      }
-
-      // Submit paths to database
-      const result = await submitUnlockEvidence(uploadedPaths);
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setStatus('pending');
-      setFiles([]);
-    } catch (err: unknown) {
-      if (uploadedPaths.length > 0) await cleanupUnlockEvidence(uploadedPaths);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isLoadingStatus) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const [feature, setFeature] = useState<'skill_test_pro' | 'linkedin_optimization'>('linkedin_optimization')
+  const destination = feature === 'skill_test_pro'
+    ? '/tests?type=pro'
+    : '/unlock-program/linkedin-optimization'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Free Unlock Program
-          </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400">
-            Share Talenezio and get full access for free.
+    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-3xl space-y-5">
+        <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">
+            <Unlock className="h-3.5 w-3.5" /> Free Access Pathway
+          </span>
+          <span className="ml-2 text-sm text-slate-500">Access follows manual approval</span>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">How to Get Features for Free</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+            Choose one feature. Complete its steps and submit eight screenshots as proof. Your selected feature stays locked until your request is reviewed and approved.
           </p>
-        </div>
+        </header>
 
-        {status === 'approved' && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-8 text-center space-y-4">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-green-700 dark:text-green-400">Congratulations!</h2>
-            <p className="text-green-600 dark:text-green-300">Your submission has been approved. You now have full free access to Talenezio.</p>
-            <Link href="/dashboard" className="inline-block mt-4 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition">
-              Go to Dashboard
-            </Link>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800">Choose one feature to unlock for free:</h2>
+          <div role="radiogroup" aria-label="Feature to unlock" className="mt-4 space-y-3">
+            <FeatureOption
+              selected={feature === 'skill_test_pro'}
+              title="1. Paid Test (₹32 Value)"
+              description="Premium skill assessment with ten skill-specific questions and scored results."
+              icon={<GraduationCap className="h-4 w-4 text-blue-700" />}
+              onSelect={() => setFeature('skill_test_pro')}
+            />
+            <FeatureOption
+              selected={feature === 'linkedin_optimization'}
+              title="2. LinkedIn Optimization (₹499 Value)"
+              description="Submit the requested sharing proof for review by the Talenzo team."
+              icon={<span className="text-sm font-black text-blue-700">in</span>}
+              onSelect={() => setFeature('linkedin_optimization')}
+            />
           </div>
-        )}
 
-        {status === 'pending' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-8 text-center space-y-4">
-            <Clock className="w-16 h-16 text-yellow-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">Review Pending</h2>
-            <p className="text-yellow-600 dark:text-yellow-300">We&apos;ve received your screenshots and are reviewing them. We&apos;ll email you soon!</p>
-          </div>
-        )}
-
-        {(status === 'idle' || status === 'rejected') && (
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
-            
-            {status === 'rejected' && (
-              <div className="bg-red-50 dark:bg-red-900/20 p-6 border-b border-red-100 dark:border-red-900 flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-red-800 dark:text-red-400">Submission Rejected</h3>
-                  <p className="text-red-600 dark:text-red-300 mt-1 text-sm">
-                    {reviewerNote || "Unfortunately, your previous submission was not approved. Please ensure all 11 screenshots are clear and meet the requirements."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="p-8 space-y-8">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-4">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm">1</span>
-                    Share & Earn
-                  </h3>
-                  <ul className="space-y-2 text-gray-600 dark:text-gray-400 text-sm list-disc list-inside">
-                    <li>Take a free test</li>
-                    <li>Share your certificate on LinkedIn and tag Talenezio</li>
-                    <li>Share the app with 10 friends</li>
-                    <li>Share the app in 3 student WhatsApp groups</li>
-                  </ul>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm">2</span>
-                    Upload Proof
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Upload exactly <strong>{REQUIRED_SCREENSHOTS} screenshots</strong> proving you&apos;ve completed all the steps above.
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 dark:border-zinc-800 pt-8">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  
-                  <div 
-                    className="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-12 text-center hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      Click to upload screenshots
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PNG, JPG up to 5MB ({files.length}/{REQUIRED_SCREENSHOTS} uploaded)
-                    </p>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      multiple 
-                      accept="image/*"
-                      className="hidden" 
-                    />
-                  </div>
-
-                  {files.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {files.map((file, idx) => (
-                        <div key={idx} className="relative group rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-zinc-800">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={URL.createObjectURL(file)} 
-                            alt={`Upload ${idx + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeFile(idx)}
-                            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl">
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || files.length !== REQUIRED_SCREENSHOTS}
-                    className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</>
-                    ) : (
-                      `Submit ${REQUIRED_SCREENSHOTS} Screenshots`
-                    )}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
+          <Link
+            href={destination}
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            {feature === 'skill_test_pro' ? 'Continue to Skill Tests' : 'Continue to LinkedIn proof submission'}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </section>
       </div>
-    </div>
-  );
+    </main>
+  )
+}
+
+function FeatureOption({
+  selected,
+  title,
+  description,
+  icon,
+  onSelect,
+}: {
+  selected: boolean
+  title: string
+  description: string
+  icon: React.ReactNode
+  onSelect: () => void
+}) {
+  return (
+    <label
+      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors focus-within:ring-2 focus-within:ring-blue-500 ${selected ? 'border-blue-600 bg-blue-50/60' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+    >
+      <input
+        type="radio"
+        name="unlock-feature"
+        checked={selected}
+        onChange={onSelect}
+        className="sr-only"
+      />
+      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-blue-600' : 'border-slate-400'}`}>
+        {selected && <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />}
+      </span>
+      {icon}
+      <span>
+        <span className="block text-sm font-semibold text-slate-900">{title}</span>
+        <span className="mt-1 block text-sm leading-5 text-slate-500">{description}</span>
+      </span>
+    </label>
+  )
 }

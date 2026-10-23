@@ -19,7 +19,7 @@ export default function ServicesPage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           {Object.values(SERVICE_CATALOG).map((service) => (
-            <article key={service.code} className="rounded-3xl border border-gray-200 bg-white p-7 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <article id={service.code === 'internships' ? 'internships' : undefined} key={service.code} className="rounded-3xl border border-gray-200 bg-white p-7 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"><BriefcaseBusiness className="h-5 w-5" /></div>
