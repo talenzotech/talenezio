@@ -10,3 +10,4 @@ export default async function TestsPage({
 
   return <TestsClient error={error} />
 }
+

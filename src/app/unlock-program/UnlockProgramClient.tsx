@@ -46,7 +46,10 @@ export default function UnlockProgramClient() {
   const [error, setError] = useState<string | null>(null)
   const previewUrls = useRef<string[]>([])
   const inputRefs = useRef<Partial<Record<EvidenceGroup, HTMLInputElement | null>>>({})
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => {
+    if (typeof window === 'undefined') return null
+    return createClient()
+  }, [])
   const router = useRouter()
   const totalFiles = evidenceGroups.reduce((total, group) => total + files[group.id].length, 0)
 
@@ -144,7 +147,8 @@ export default function UnlockProgramClient() {
     setUploadProgress(0)
     const uploadedPaths: string[] = []
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      const client = supabase || createClient()
+      const { data: { user }, error: authError } = await client.auth.getUser()
       if (authError) throw authError
       if (!user) {
         router.push(`/login?next=${encodeURIComponent('/unlock-program/linkedin-optimization')}`)
@@ -155,7 +159,7 @@ export default function UnlockProgramClient() {
       for (const [index, file] of orderedFiles.entries()) {
         const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
         const path = `${user.id}/${crypto.randomUUID()}.${extension}`
-        const { error: uploadError } = await supabase.storage.from('unlock_evidence').upload(path, file, {
+        const { error: uploadError } = await client.storage.from('unlock_evidence').upload(path, file, {
           contentType: file.type,
           upsert: false,
         })
