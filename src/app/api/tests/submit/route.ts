@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeTestAttempt } from '@/lib/payments/access';
 import { scoreAnswers } from '@/lib/tests/scoring';
 import { buildCertificatePdf } from '@/lib/certificates/pdf';
+import { isLocalDemoSession } from '@/lib/auth/local-demo';
 
 type SnapshotQuestion = { id: string; text: string; options: string[]; correct: number };
 
@@ -34,10 +35,6 @@ async function saveCertificatePdf(input: {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-
   const body = await request.json().catch(() => null) as {
     attemptId?: string;
     answers?: Record<string, number>;
@@ -45,6 +42,21 @@ export async function POST(request: Request) {
   if (!body?.attemptId || !body.answers || typeof body.answers !== 'object' || Array.isArray(body.answers)) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
+
+  const isDemo = await isLocalDemoSession();
+  if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
+    const answeredCount = Object.keys(body.answers).length;
+    return NextResponse.json({
+      submitted: true,
+      score: Math.min(answeredCount, 18),
+      total: 20,
+      certificateId: null,
+    });
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
   const admin = createAdminClient();
   const { data: attempt } = await admin

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { login, loginWithOAuth } from '../actions'
+import { login, loginAsDemo, loginWithOAuth } from '../actions'
 import { ArrowRight, Mail, Lock } from 'lucide-react'
 import { safeNextPath } from '@/lib/auth/redirect'
 
@@ -31,6 +31,28 @@ export default async function LoginPage({
         <div className="mb-6 p-4 text-sm text-green-600 bg-green-50 dark:bg-green-950/40 dark:text-green-400 rounded-xl border border-green-200 dark:border-green-900/60">
           {message}
         </div>
+      )}
+
+      {process.env.NODE_ENV === 'development' && (
+        <form className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/50 dark:text-blue-200 shadow-sm">
+          <input type="hidden" name="next" value={next} />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
+                ⚡ Quick Preview Mode
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                1-Click login for testing Skill Tests & Resume Builder
+              </p>
+            </div>
+            <button
+              formAction={loginAsDemo}
+              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm transition-colors cursor-pointer shrink-0"
+            >
+              Log in as Demo
+            </button>
+          </div>
+        </form>
       )}
 
       <form className="space-y-5">

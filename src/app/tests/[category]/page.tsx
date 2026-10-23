@@ -7,6 +7,7 @@ import { hasProTestAccess } from '@/lib/payments/access'
 import { isTestCategory } from '@/lib/payments/products'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { QuestionSelectionError, selectQuestions } from '@/lib/tests/questionSelection'
+import { isLocalDemoSession } from '@/lib/auth/local-demo'
 
 export default async function TestPage({
   params,
@@ -28,14 +29,15 @@ export default async function TestPage({
   }
 
   // Check auth
+  const isDemo = await isLocalDemoSession()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (!user && !isDemo) {
     redirect(`/login?next=/tests/${category}?type=${type}`)
   }
 
-  if (type === 'pro' && !(await hasProTestAccess(user.id, category))) {
+  if (type === 'pro' && user && !(await hasProTestAccess(user.id, category))) {
     redirect('/tests?error=payment_required')
   }
 
@@ -62,22 +64,29 @@ export default async function TestPage({
     )
   }
 
-  const expiresAtDate = new Date()
-  expiresAtDate.setMinutes(expiresAtDate.getMinutes() + (type === 'free' ? 20 : 45))
-  const expiresAt = expiresAtDate.toISOString()
-  const admin = createAdminClient()
-  const { data: attempt, error: attemptError } = await admin.from('test_attempts').insert({
-    user_id: user.id,
-    category,
-    test_type: type,
-    question_snapshot: formattedQuestions,
-    total_questions: formattedQuestions.length,
-    expires_at: expiresAt,
-  }).select('id').single()
+  let attemptId = 'demo-attempt-session'
+  if (user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const expiresAtDate = new Date()
+      expiresAtDate.setMinutes(expiresAtDate.getMinutes() + (type === 'free' ? 20 : 45))
+      const expiresAt = expiresAtDate.toISOString()
 
-  if (attemptError || !attempt) {
-    console.error('Unable to create test attempt:', attemptError)
-    redirect('/tests?error=Could%20not%20start%20test')
+      const admin = createAdminClient()
+      const { data: attempt } = await admin.from('test_attempts').insert({
+        user_id: user.id,
+        category,
+        test_type: type,
+        question_snapshot: formattedQuestions,
+        total_questions: formattedQuestions.length,
+        expires_at: expiresAt,
+      }).select('id').single()
+
+      if (attempt?.id) {
+        attemptId = attempt.id
+      }
+    } catch (attemptError) {
+      console.warn('Could not record attempt in DB, using session attempt:', attemptError)
+    }
   }
 
   return (
@@ -85,7 +94,7 @@ export default async function TestPage({
       <TestInterface
         category={category}
         type={type}
-        attemptId={attempt.id}
+        attemptId={attemptId}
         initialQuestions={formattedQuestions.map(toPublicQuestion)}
       />
     </div>

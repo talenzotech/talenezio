@@ -1,7 +1,17 @@
 import { type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { hasLocalDemoCookie, LOCAL_DEMO_COOKIE } from '@/lib/auth/local-demo-config'
 import { updateSession } from '@/utils/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
+  if (
+    hasLocalDemoCookie(request.cookies.get(LOCAL_DEMO_COOKIE)?.value) ||
+    (process.env.NODE_ENV === 'development' &&
+      (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY))
+  ) {
+    return NextResponse.next()
+  }
+
   return await updateSession(request)
 }
 

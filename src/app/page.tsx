@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -99,6 +100,7 @@ export default function Home() {
             >
               Career support
             </Link>
+            <ThemeToggle />
             <Link
               href="/login"
               className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"

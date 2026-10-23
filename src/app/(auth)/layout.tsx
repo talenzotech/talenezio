@@ -1,5 +1,4 @@
 import { ReactNode } from 'react'
-import Link from 'next/link'
 import { GraduationCap } from 'lucide-react'
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -24,18 +23,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <p className="text-blue-200 text-lg mb-8">
             Join thousands of professionals taking mock tests, securing internships, and unlocking their true potential.
           </p>
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-10 h-10 rounded-full border-2 border-blue-900 overflow-hidden bg-gray-200">
-                  <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User avatar" />
-                </div>
-              ))}
-            </div>
-            <span className="text-sm font-medium text-blue-200">
-              Trusted by 10k+ users
-            </span>
-          </div>
         </div>
       </div>
 
