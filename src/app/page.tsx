@@ -1,9 +1,7 @@
-import { ThemeToggle } from "@/components/ThemeToggle";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  Award,
   BriefcaseBusiness,
   CheckCircle2,
   FileText,
@@ -62,6 +60,49 @@ const features = [
   },
 ];
 
+const boxItems = [
+  {
+    num: "1",
+    title: "Skill Assessments",
+    href: "/tests",
+    icon: Target,
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-950/50",
+  },
+  {
+    num: "2",
+    title: "Resume Building",
+    href: "/resume-builder",
+    icon: FileText,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/50",
+  },
+  {
+    num: "3",
+    title: "Internship Opportunities",
+    href: "/services",
+    icon: GraduationCap,
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/50",
+  },
+  {
+    num: "4",
+    title: "Expert-Led Career Support",
+    href: "/services/counseling",
+    icon: BriefcaseBusiness,
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-950/50",
+  },
+  {
+    num: "5",
+    title: "LinkedIn Optimization.",
+    href: "/services/linkedin-optimization",
+    icon: UserCheck,
+    color: "text-sky-600 dark:text-sky-400",
+    bg: "bg-sky-50 dark:bg-sky-950/50",
+  },
+];
+
 const proofPoints = [
   "ATS-friendly resume builder",
   "Industry-focused skill tests",
@@ -74,7 +115,8 @@ export default function Home() {
       <section className="relative isolate border-b border-gray-200 dark:border-gray-800">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.16),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(168,85,247,0.12),_transparent_35%)] dark:bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.22),_transparent_42%),radial-gradient(circle_at_15%_35%,_rgba(126,34,206,0.18),_transparent_35%)]" />
 
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
+        {/* Navbar */}
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 sm:py-5">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
             <Image
               src="/talenezio-logo.png"
@@ -95,12 +137,11 @@ export default function Home() {
               Skill tests
             </Link>
             <Link
-              href="/services/counseling"
+              href="/resume-builder"
               className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
             >
-              Career support
+              Resume Building
             </Link>
-            <ThemeToggle />
             <Link
               href="/login"
               className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
@@ -110,21 +151,22 @@ export default function Home() {
           </div>
         </nav>
 
-        <div className="mx-auto grid max-w-7xl items-center gap-16 px-4 pb-20 pt-14 sm:px-8 md:pb-28 md:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        {/* Hero Section with balanced laptop spacing */}
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-8 sm:px-8 sm:pb-16 sm:pt-10 md:gap-14 md:pb-16 md:pt-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
               <Sparkles className="h-4 w-4" />
               <span>Your next opportunity starts here</span>
             </div>
 
-            <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
-              Build your skills, stand out, and get hired faster.
+            <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-950 dark:text-white sm:text-5xl md:text-6xl lg:text-[4rem]">
+              Your Career Journey Starts Here.
             </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400 sm:text-xl">
+            <p className="mt-5 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-400 sm:text-lg sm:leading-8">
               From skill assessments to professional resumes and career support, Talenezio helps you prepare for what is next.
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-bold text-white shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
@@ -140,7 +182,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
               {proofPoints.map((point) => (
                 <span key={point} className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -150,51 +192,55 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Starting Box */}
           <div className="relative mx-auto w-full max-w-lg">
-            <div className="absolute -inset-5 rounded-[2.5rem] bg-blue-500/10 blur-2xl dark:bg-blue-500/15" />
-            <div className="relative rounded-[2rem] border border-gray-200 bg-white p-6 shadow-2xl shadow-blue-900/10 dark:border-gray-800 dark:bg-gray-900 sm:p-8">
-              <div className="mb-8 flex items-start justify-between">
+            <div className="absolute -inset-4 rounded-[2.5rem] bg-blue-500/10 blur-2xl dark:bg-blue-500/15" />
+            <div className="relative rounded-[2rem] border border-gray-200 bg-white p-6 shadow-2xl shadow-blue-900/10 dark:border-gray-800 dark:bg-gray-900 sm:p-7">
+              <div className="mb-5 flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Your career toolkit</p>
-                  <h2 className="mt-1 text-2xl font-bold">Make progress visible.</h2>
+                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-950 dark:text-white">
+                    Everything You Need to Move Forward.
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Your career, your next big step.
+                  </p>
                 </div>
-                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
-                  <Award className="h-6 w-6" />
+                <div className="ml-3 shrink-0 rounded-2xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                  <Sparkles className="h-5 w-5" />
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-950">
-                  <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="font-semibold">Career readiness</span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">82%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-                    <div className="h-full w-[82%] rounded-full bg-gradient-to-r from-blue-600 to-purple-500" />
-                  </div>
-                </div>
+              <div className="space-y-2.5">
+                {boxItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.num}
+                      href={item.href}
+                      className="group flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm dark:border-gray-800/80 dark:bg-gray-950/60 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${item.bg} ${item.color}`}
+                        >
+                          {item.num}
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+                          {item.num}. {item.title}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600 dark:text-gray-500" />
+                    </Link>
+                  );
+                })}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
-                    <FileText className="mb-5 h-5 w-5 text-emerald-500" />
-                    <p className="text-2xl font-bold">01</p>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Resume ready</p>
+                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-3.5 text-white shadow-lg shadow-blue-500/20">
+                  <div className="shrink-0 rounded-xl bg-white/15 p-2">
+                    <Users className="h-4 w-4" />
                   </div>
-                  <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
-                    <Target className="mb-5 h-5 w-5 text-purple-500" />
-                    <p className="text-2xl font-bold">04</p>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Skills to prove</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-2xl bg-blue-600 p-4 text-white shadow-lg shadow-blue-500/20">
-                  <div className="rounded-xl bg-white/15 p-2">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">You do not have to figure it out alone.</p>
-                    <p className="mt-1 text-sm text-blue-100">Practice, improve, and keep moving.</p>
-                  </div>
+                  <p className="text-xs sm:text-sm font-semibold leading-tight">
+                    You don't have to figure out your career alone.
+                  </p>
                 </div>
               </div>
             </div>
@@ -202,7 +248,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-8 lg:py-24">
+      {/* Services Section with corrected laptop spacing */}
+      <section className="mx-auto max-w-7xl px-4 pt-12 pb-16 sm:px-8 sm:pt-14 sm:pb-20 lg:pt-16 lg:pb-24">
         <div className="mb-12 max-w-2xl">
           <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Everything in one place</p>
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Build confidence at every step.</h2>
