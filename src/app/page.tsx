@@ -95,7 +95,7 @@ const boxItems = [
   },
   {
     num: "5",
-    title: "LinkedIn Optimization.",
+    title: "LinkedIn Optimization",
     href: "/services/linkedin-optimization",
     icon: UserCheck,
     color: "text-sky-600 dark:text-sky-400",
@@ -226,7 +226,7 @@ export default function Home() {
                           {item.num}
                         </div>
                         <p className="text-sm font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                          {item.num}. {item.title}
+                          {item.title}
                         </p>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600 dark:text-gray-500" />
