@@ -65,14 +65,15 @@ export default async function TestPage({
   }
 
   let attemptId = 'demo-attempt-session'
-  if (user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  let attemptCreationError: string | null = null
+  if (user) {
     try {
       const expiresAtDate = new Date()
       expiresAtDate.setMinutes(expiresAtDate.getMinutes() + (type === 'free' ? 20 : 45))
       const expiresAt = expiresAtDate.toISOString()
 
       const admin = createAdminClient()
-      const { data: attempt } = await admin.from('test_attempts').insert({
+      const { data: attempt, error } = await admin.from('test_attempts').insert({
         user_id: user.id,
         category,
         test_type: type,
@@ -81,12 +82,30 @@ export default async function TestPage({
         expires_at: expiresAt,
       }).select('id').single()
 
-      if (attempt?.id) {
-        attemptId = attempt.id
-      }
+      if (error || !attempt?.id) throw error ?? new Error('Attempt ID was not returned')
+      attemptId = attempt.id
     } catch (attemptError) {
-      console.warn('Could not record attempt in DB, using session attempt:', attemptError)
+      console.error(
+        'Could not create test attempt:',
+        attemptError instanceof Error ? attemptError.message : JSON.stringify(attemptError),
+      )
+      attemptCreationError = 'We could not start this test securely. Please try again or contact support if the problem continues.'
     }
+  }
+
+  if (attemptCreationError) {
+    return (
+      <div className="min-h-screen bg-gray-50 px-4 py-20 text-center dark:bg-gray-950">
+        <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Test unavailable</h2>
+        <p className="mx-auto mb-8 max-w-2xl text-gray-500">{attemptCreationError}</p>
+        <Link
+          href="/tests"
+          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          Return to Skill Tests
+        </Link>
+      </div>
+    )
   }
 
   return (

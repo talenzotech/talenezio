@@ -69,19 +69,24 @@ export default function TestInterface({
     if (!confirm("Are you sure you want to submit the test?")) return
     setIsSubmitting(true)
     setSubmitError(null)
-    const response = await fetch('/api/tests/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attemptId, answers }),
-    })
-    const payload = await response.json().catch(() => null)
-    setIsSubmitting(false)
-    if (!response.ok) {
-      setSubmitError(payload?.error || 'Could not submit the test')
-      return
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId, answers }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch {
+      setSubmitError('Could not connect to the server. Please try submitting again.')
+    } finally {
+      setIsSubmitting(false)
     }
-    setResult(payload)
-    setIsSubmitted(true)
   }
 
   const formatTime = (seconds: number) => {
