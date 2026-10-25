@@ -44,13 +44,21 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/register') &&
     !request.nextUrl.pathname.startsWith('/auth')
-    // dashboard login check removed
   ) {
-    // no user, potentially respond by redirecting the user to the login page
-    // you can put protected routes here, for example:
-    if (request.nextUrl.pathname.startsWith('/tests/') && !request.nextUrl.pathname.endsWith('/tests')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
+    const pathname = request.nextUrl.pathname
+    const isProtected =
+      pathname === '/services' ||
+      pathname.startsWith('/services/') ||
+      pathname === '/tests' ||
+      pathname.startsWith('/tests/') ||
+      pathname === '/resume-builder' ||
+      pathname.startsWith('/resume-builder/') ||
+      pathname === '/dashboard' ||
+      pathname.startsWith('/dashboard/')
+
+    if (isProtected) {
+      const target = encodeURIComponent(pathname + request.nextUrl.search)
+      const url = new URL(`/login?next=${target}`, request.url)
       return NextResponse.redirect(url)
     }
   }
