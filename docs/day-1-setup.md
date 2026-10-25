@@ -12,7 +12,21 @@
 1. Create the spreadsheet described in `docs/question-bank.md`.
 2. Create a Google Cloud service account and enable Google Sheets API.
 3. Share the spreadsheet with that service-account email as a Viewer.
-4. Set `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_WORKSHEET`, `GOOGLE_SHEETS_CLIENT_EMAIL`, and `GOOGLE_SHEETS_PRIVATE_KEY` in `.env.local` and the deployment environment.
+4. Set these server-only variables in `.env.local` and the deployment environment:
+
+   ```text
+   GOOGLE_SHEETS_ID=...
+   GOOGLE_SHEETS_FREE_WORKSHEET=Free
+   GOOGLE_SHEETS_PAID_WORKSHEET=Paid
+   GOOGLE_SHEETS_CLIENT_EMAIL=...
+   GOOGLE_SHEETS_PRIVATE_KEY=...
+   ```
+
+   `GOOGLE_SHEET_ID` is not used; use the plural `GOOGLE_SHEETS_ID` name.
+   `GOOGLE_PROJECT_ID` is optional metadata and is not required by the current
+   Sheets client. Never prefix these variables with `NEXT_PUBLIC_`.
+5. Store the private key only in the local/deployment secret store. If the key
+   is provided as a single line, preserve its escaped `\n` newline sequences.
 
 ## OAuth and deployment
 

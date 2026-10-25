@@ -36,4 +36,7 @@ GOOGLE_SHEETS_CLIENT_EMAIL=...
 GOOGLE_SHEETS_PRIVATE_KEY=...
 ```
 
-Store private-key escaped newlines (`\\n`) when required by the environment provider.
+Use `GOOGLE_SHEETS_ID`, not `GOOGLE_SHEET_ID`. `GOOGLE_PROJECT_ID` is not
+required by the current JWT-based Sheets client. Never expose these values via
+`NEXT_PUBLIC_` variables. Store private-key escaped newlines (`\\n`) when
+required by the environment provider.
