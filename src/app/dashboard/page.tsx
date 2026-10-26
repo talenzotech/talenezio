@@ -2,8 +2,18 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
-import { LogOut, FileText, CheckSquare, Video, Briefcase, Unlock, ArrowRight, Sparkles, CalendarDays, Clock } from 'lucide-react'
-
+import {
+  LogOut,
+  FileText,
+  CheckSquare,
+  Video,
+  Briefcase,
+  Unlock,
+  ArrowRight,
+  Sparkles,
+  CalendarDays,
+  Clock,
+} from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
 
 export default async function DashboardPage() {
@@ -50,7 +60,7 @@ export default async function DashboardPage() {
       icon: CheckSquare,
       href: '/tests',
       color: 'bg-blue-600',
-      tag: 'Popular'
+      tag: 'Popular',
     },
     {
       title: 'Resume Builder',
@@ -58,7 +68,7 @@ export default async function DashboardPage() {
       icon: FileText,
       href: '/resume-builder',
       color: 'bg-emerald-500',
-      tag: 'Free'
+      tag: 'Free',
     },
     {
       title: 'Interview Preparation',
@@ -66,7 +76,7 @@ export default async function DashboardPage() {
       icon: Video,
       href: '/services/interview-prep',
       color: 'bg-purple-600',
-      tag: 'Pro'
+      tag: 'Pro',
     },
     {
       title: 'Career Counseling',
@@ -74,7 +84,7 @@ export default async function DashboardPage() {
       icon: Briefcase,
       href: '/services/counseling',
       color: 'bg-rose-500',
-      tag: 'Pro'
+      tag: 'Pro',
     },
     {
       title: 'Service Catalogue',
@@ -82,7 +92,7 @@ export default async function DashboardPage() {
       icon: Briefcase,
       href: '/services',
       color: 'bg-indigo-500',
-      tag: 'New'
+      tag: 'New',
     },
     {
       title: 'Free Unlock Program',
@@ -90,12 +100,12 @@ export default async function DashboardPage() {
       icon: Unlock,
       href: '/unlock-program',
       color: 'bg-amber-500',
-      tag: 'Special'
-    }
+      tag: 'Special',
+    },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-12">
+    <div className="min-h-screen bg-gray-50 pb-12 dark:bg-gray-950">
       
       {/* Top Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">

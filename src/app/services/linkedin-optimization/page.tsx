@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import ServiceCheckout from '@/components/services/ServiceCheckout';
+import FeatureBottomNav from '@/components/FeatureBottomNav';
 
 export default function LinkedInOptimizationPage() {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12 dark:bg-gray-950 sm:px-8">
+    <main className="min-h-screen bg-gray-50 px-4 py-12 pb-12 dark:bg-gray-950 sm:px-8 sm:pb-16">
       <div className="mx-auto max-w-3xl">
         <Link href="/services" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600"><ArrowLeft className="h-4 w-4" /> All services</Link>
         <div className="rounded-3xl bg-white p-8 shadow-sm dark:bg-gray-900 sm:p-12">
@@ -18,6 +19,8 @@ export default function LinkedInOptimizationPage() {
           <p className="mt-3 text-center text-xs text-gray-500">Free for eligible users with an approved unlock entitlement.</p>
         </div>
       </div>
+
+      <FeatureBottomNav />
     </main>
   );
 }

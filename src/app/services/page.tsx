@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { ArrowLeft, BriefcaseBusiness } from 'lucide-react';
 import ServiceCheckout from '@/components/services/ServiceCheckout';
 import ServiceEnquiryForm from '@/components/services/ServiceEnquiryForm';
+import FeatureBottomNav from '@/components/FeatureBottomNav';
 import { SERVICE_CATALOG } from '@/lib/services/catalog';
 
 export default function ServicesPage() {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12 dark:bg-gray-950 sm:px-8">
+    <main className="min-h-screen bg-gray-50 px-4 py-12 pb-12 dark:bg-gray-950 sm:px-8 sm:pb-16">
       <div className="mx-auto max-w-6xl">
         <Link href="/dashboard" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600">
           <ArrowLeft className="h-4 w-4" /> Back to dashboard
@@ -45,6 +46,8 @@ export default function ServicesPage() {
           ))}
         </div>
       </div>
+
+      <FeatureBottomNav />
     </main>
   );
 }

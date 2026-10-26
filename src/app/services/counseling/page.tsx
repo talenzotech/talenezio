@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ArrowLeft, User, CheckCircle, ChevronRight, Compass } from 'lucide-react';
 import ServiceCheckout from '@/components/services/ServiceCheckout';
+import FeatureBottomNav from '@/components/FeatureBottomNav';
 
 export default function CounselingPage() {
   const plans = [
@@ -32,7 +33,7 @@ export default function CounselingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 pb-12 dark:bg-gray-950 sm:pb-16">
       {/* Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -149,6 +150,9 @@ export default function CounselingPage() {
           </div>
         </div>
       </section>
+
+      {/* Feature Bottom Navigation */}
+      <FeatureBottomNav />
     </div>
   );
 }

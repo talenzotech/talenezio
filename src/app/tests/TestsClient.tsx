@@ -47,7 +47,7 @@ export const TEST_CATEGORIES = [
 
 export default function TestsClient({ error }: { error?: string }) {
   return (
-    <div className="min-h-screen bg-white pb-28 pt-8 dark:bg-gray-950">
+    <div className="min-h-screen bg-white pb-12 pt-8 dark:bg-gray-950">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         
         {/* Header Section (matches reference design) */}
