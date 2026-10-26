@@ -17,6 +17,7 @@ import {
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
+import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -277,6 +278,10 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {/* Motivation Banner below Feature Cards */}
+        <MotivationBanner />
+
       </main>
 
       {/* Fixed Feature Bottom Navigation */}
