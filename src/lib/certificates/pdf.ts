@@ -88,9 +88,16 @@ export async function buildCertificatePdf(input: {
   }
 
   // Score Banner
-  const pct = Math.round((input.score / (input.totalQuestions || 20)) * 100);
-  const rating = pct >= 90 ? 'Outstanding' : pct >= 75 ? 'Distinction' : 'Passed';
-  const scoreText = `Score: ${input.score} / ${input.totalQuestions} (${pct}%)   •   Proficiency Rating: ${rating}`;
+  const totalQuestions = input.totalQuestions > 0 ? input.totalQuestions : 20;
+  const pct = Math.round((input.score / totalQuestions) * 100);
+  const rating = pct >= 90
+    ? 'Outstanding (Grade A+)'
+    : pct >= 75
+    ? 'Distinction (Grade A)'
+    : pct >= 50
+    ? 'Passed (Grade B)'
+    : 'Certificate of Participation';
+  const scoreText = `Marks Secured: ${input.score} / ${totalQuestions} (${pct}%)   •   Evaluation Status: ${rating}`;
   const scoreWidth = boldFont.widthOfTextAtSize(scoreText, 11);
   const bannerWidth = scoreWidth + 40;
   page.drawRectangle({

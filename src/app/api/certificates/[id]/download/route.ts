@@ -7,24 +7,50 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const url = new URL(request.url);
   const candidateName = url.searchParams.get('name') || 'Talenezio Learner';
-  const topic = url.searchParams.get('topic') || 'Skill Assessment';
+  const rawTopic = url.searchParams.get('topic') || 'Skill Assessment';
+
+  const TOPIC_NAMES: Record<string, string> = {
+    technology: 'Technology & Software',
+    finance: 'Finance',
+    'digital-marketing': 'Digital Marketing',
+    ai: 'Artificial Intelligence',
+  };
+  const topic = TOPIC_NAMES[rawTopic] || rawTopic;
+
+  const scoreParam = url.searchParams.get('score');
+  const totalParam = url.searchParams.get('total');
+  const score = scoreParam !== null && !isNaN(Number(scoreParam)) ? Number(scoreParam) : 0;
+  const totalQuestions = totalParam !== null && !isNaN(Number(totalParam)) ? Number(totalParam) : 20;
+  const percentage = Math.round((score / totalQuestions) * 100);
+
+  const certPrefix = topic.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase() || 'TEST';
+  const cleanId = id.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || '001';
+  const certificateNumber = id.startsWith('demo-')
+    ? `TAL-2026-${certPrefix}-${cleanId}`
+    : id.toUpperCase();
 
   // Demo session or local development certificate download
   if (id.startsWith('demo-') || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const performanceStatement = percentage >= 75
+      ? `Demonstrated outstanding subject matter expertise and proficiency in the ${topic} Industry-Standard Skill Assessment.`
+      : percentage >= 50
+      ? `Successfully demonstrated foundational knowledge and core competencies in the ${topic} Industry-Standard Skill Assessment.`
+      : `Participated in the ${topic} Industry-Standard Skill Assessment and evaluated core conceptual competencies.`;
+
     const pdfBytes = await buildCertificatePdf({
       candidateName,
-      certificateNumber: id.toUpperCase(),
+      certificateNumber,
       topic,
-      score: 18,
-      totalQuestions: 20,
+      score,
+      totalQuestions,
       issuedAt: new Date().toISOString(),
-      performanceStatement: 'Demonstrated outstanding subject matter expertise and proficiency in Industry-Standard Skill Assessments.',
+      performanceStatement,
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${id}.pdf"`,
+        'Content-Disposition': `attachment; filename="${certificateNumber}.pdf"`,
         'Cache-Control': 'no-store',
       },
     });
