@@ -2,14 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Briefcase, Compass, FileText, GraduationCap, Home, Video } from 'lucide-react'
+import { Briefcase, Compass, FileText, GraduationCap, Home } from 'lucide-react'
 
 const navigationItems = [
   { label: 'Home', href: '/dashboard', path: '/dashboard', icon: Home },
   { label: 'Skill Tests', href: '/tests', path: '/tests', icon: GraduationCap },
   { label: 'Resume', href: '/resume-builder', path: '/resume-builder', icon: FileText },
   { label: 'Career', href: '/career', path: '/career', icon: Compass },
-  { label: 'Interview', href: '/services/interview-prep', path: '/services/interview-prep', icon: Video },
   { label: 'Internships', href: '/services', path: '/services', icon: Briefcase },
 ]
 
@@ -18,7 +17,7 @@ export default function FeatureBottomNav() {
 
   return (
     <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
-      <div className="mx-auto grid max-w-xl grid-cols-6 py-2 px-1">
+      <div className="mx-auto grid max-w-xl grid-cols-5 py-2 px-1">
         {navigationItems.map(({ label, href, path, icon: Icon }) => {
           const active = path === '/dashboard'
             ? pathname === '/dashboard'
