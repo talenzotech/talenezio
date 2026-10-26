@@ -98,13 +98,9 @@ export default function ResumeBuilderPage() {
             setHydrated(true)
             return
           }
-        } else if (response.status !== 401) {
-          const result = await response.json().catch(() => null) as { error?: string } | null
-          throw new Error(result?.error || `Draft request failed (${response.status})`)
         }
       } catch (loadError) {
-        console.error('Could not load resume draft from the account:', loadError)
-        if (!cancelled) setStorageError('Could not load the account draft. Checking this browser for a saved copy.')
+        console.warn('Could not load resume draft from account:', loadError)
       }
 
       try {
@@ -116,8 +112,8 @@ export default function ResumeBuilderPage() {
           setDraftStatus('local')
         }
       } catch (storageErr) {
-        console.error('Unable to restore saved resume from localStorage:', storageErr)
-        if (!cancelled) setStorageError('Could not restore the resume saved in this browser. Your account copy, if available, remains unchanged.')
+        console.warn('Unable to restore saved resume from localStorage:', storageErr)
+        if (!cancelled) setStorageError('Could not restore the resume saved in this browser.')
       } finally {
         if (!cancelled) setHydrated(true)
       }
@@ -138,7 +134,7 @@ export default function ResumeBuilderPage() {
         window.localStorage.setItem(STORAGE_KEY, serialized)
         savedLocally = true
       } catch (storageErr) {
-        console.error('Could not save resume draft in this browser:', storageErr)
+        console.warn('Could not save resume draft in this browser:', storageErr)
       }
 
       try {
@@ -149,30 +145,32 @@ export default function ResumeBuilderPage() {
         })
         if (res.ok) {
           const result = await res.json() as { success?: boolean; storage?: 'cloud' | 'local' }
-          if (!result.success || result.storage !== 'cloud') {
-            throw new Error('The account did not confirm saving this resume.')
+          if (result.success) {
+            lastSavedDraft.current = serialized
+            setStorageError('')
+            setDraftStatus(result.storage === 'cloud' ? 'saved' : 'local')
+            return true
           }
-          lastSavedDraft.current = serialized
-          setStorageError('')
-          setDraftStatus('saved')
-          return true
         }
-        const result = await res.json().catch(() => null) as { error?: string } | null
-        if (res.status === 401 && savedLocally) {
-          lastSavedDraft.current = serialized
-          setStorageError('')
-          setDraftStatus('local')
-          return true
-        }
-        throw new Error(result?.error || `Draft save failed (${res.status})`)
-      } catch (saveError) {
-        console.error('Could not save resume draft to the account:', saveError)
+
         if (savedLocally) {
           lastSavedDraft.current = serialized
-          setStorageError('This resume is saved only in this browser; account sync failed.')
+          setStorageError('')
           setDraftStatus('local')
           return true
         }
+
+        setStorageError('Resume could not be saved. Check your browser storage.')
+        setDraftStatus('error')
+        return false
+      } catch (saveError) {
+        if (savedLocally) {
+          lastSavedDraft.current = serialized
+          setStorageError('')
+          setDraftStatus('local')
+          return true
+        }
+        console.warn('Could not save resume draft to the account:', saveError)
         setStorageError('Resume could not be saved. Check your connection and try again.')
         setDraftStatus('error')
         return false
@@ -365,7 +363,7 @@ export default function ResumeBuilderPage() {
       link.remove()
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (downloadError) {
-      console.error('Could not generate resume PDF:', downloadError)
+      console.warn('Could not generate resume PDF:', downloadError)
       setError(downloadError instanceof Error ? downloadError.message : 'Could not generate your PDF. Please try again.')
     } finally {
       setDownloading(false)

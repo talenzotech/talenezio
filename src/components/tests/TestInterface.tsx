@@ -9,12 +9,14 @@ export default function TestInterface({
   category, 
   type,
   attemptId,
-  initialQuestions
+  initialQuestions,
+  userName = 'Talenezio Learner',
 }: { 
   category: string, 
   type: 'free' | 'pro',
   attemptId: string,
-  initialQuestions: PublicQuestion[]
+  initialQuestions: PublicQuestion[],
+  userName?: string,
 }) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
@@ -23,7 +25,39 @@ export default function TestInterface({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
-  const [candidateName, setCandidateName] = useState('Talenezio Learner')
+  const [candidateName, setCandidateName] = useState(userName || 'Talenezio Learner')
+
+  // Keep candidateName updated when userName loads
+  useEffect(() => {
+    if (userName && userName !== 'Talenezio Learner') {
+      setCandidateName(userName)
+    }
+  }, [userName])
+
+  // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const completionKey = `test_completed_${attemptId}`
+    if (window.sessionStorage.getItem(completionKey) === 'true') {
+      window.sessionStorage.removeItem(completionKey)
+      window.location.replace('/dashboard')
+    }
+  }, [attemptId])
+
+  // Navigation Fix: If user presses Back button after test completion, redirect to Dashboard Home
+  useEffect(() => {
+    if (!isSubmitted) return
+
+    const onPopState = () => {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+        window.location.replace('/dashboard')
+      }
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [isSubmitted, attemptId])
 
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
@@ -72,7 +106,13 @@ export default function TestInterface({
     const response = await fetch('/api/tests/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attemptId, answers }),
+      body: JSON.stringify({
+        attemptId,
+        answers,
+        category,
+        type,
+        questionIds: questions.map(q => q.id),
+      }),
     })
     const payload = await response.json().catch(() => null)
     setIsSubmitting(false)
@@ -80,6 +120,13 @@ export default function TestInterface({
       setSubmitError(payload?.error || 'Could not submit the test')
       return
     }
+
+    // Mark test as completed in session storage and push history state
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
+      window.history.pushState({ testCompleted: true }, '', window.location.href)
+    }
+
     setResult(payload)
     setIsSubmitted(true)
   }
@@ -92,14 +139,14 @@ export default function TestInterface({
 
   if (isSubmitted) {
     const categoryTitle = ({
-      technology: 'Technology & Software Engineering',
-      finance: 'Finance & Economics',
+      technology: 'Technology & Software',
+      finance: 'Finance',
       'digital-marketing': 'Digital Marketing',
       ai: 'Artificial Intelligence',
     } as Record<string, string>)[category] || category.toUpperCase()
 
     const downloadUrl = result?.certificateId
-      ? `/api/certificates/${result.certificateId}/download?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}`
+      ? `/api/certificates/${result.certificateId}/download?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}&score=${result.score}&total=${result.total}`
       : null
 
     return (
@@ -149,14 +196,35 @@ export default function TestInterface({
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
+            href="/dashboard"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+              }
+            }}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-colors text-sm"
+          >
+            Dashboard Home
+          </Link>
+          <Link
             href="/tests"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+              }
+            }}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
           >
             All Skill Tests
           </Link>
           <Link
             href={`/tests/${category}?type=${type}`}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+              }
+            }}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm"
           >
             Retake Assessment
           </Link>
