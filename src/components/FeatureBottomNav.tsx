@@ -39,7 +39,7 @@ export default function FeatureBottomNav() {
                   <span className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] leading-tight font-medium truncate max-w-full">{label}</span>
+              <span className="text-[10px] sm:text-[11px] leading-tight font-medium whitespace-nowrap">{label}</span>
             </Link>
           )
         })}
