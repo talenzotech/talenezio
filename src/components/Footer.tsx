@@ -7,6 +7,7 @@ export function Footer() {
   const pathname = usePathname()
   // Ensure extra clearance on all screens only for pages with a fixed bottom navigation bar
   const hasBottomNav =
+    pathname === '/dashboard' ||
     pathname?.startsWith('/tests') ||
     pathname === '/career' ||
     pathname?.startsWith('/services') ||

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
@@ -10,11 +11,13 @@ import {
   Briefcase,
   Unlock,
   ArrowRight,
-  Sparkles,
   CalendarDays,
   Clock,
 } from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import FeatureBottomNav from '@/components/FeatureBottomNav'
+import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
+import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -110,20 +113,20 @@ export default async function DashboardPage() {
       {/* Top Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
+            <Image
+              src="/talenezio-logo.png"
+              alt="Talenezio Logo"
+              width={40}
+              height={40}
+              priority
+              className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
+            />
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
+          </Link>
           
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Pro Plan Available</span>
-            </div>
-
-            <div className="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-4 hidden sm:flex">
+            <div className="flex items-center gap-3">
               {avatarUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm" />
@@ -149,31 +152,7 @@ export default async function DashboardPage() {
 
       {/* Hero Banner Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 mt-8 mb-12">
-        <div className="relative rounded-3xl overflow-hidden bg-blue-900 shadow-2xl">
-          {/* Background Image */}
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
-          
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-blue-900/80 to-transparent"></div>
-          
-          {/* Content */}
-          <div className="relative z-10 p-8 sm:p-12 md:p-16 flex flex-col justify-center min-h-[320px] max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-              Ready to elevate your career, {firstName}?
-            </h1>
-            <p className="text-blue-100 text-lg md:text-xl mb-8 leading-relaxed">
-              Build an ATS-friendly resume, take industry-standard mock tests, and practice with experts to land your dream job.
-            </p>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link href="/resume-builder" className="bg-white text-blue-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-lg shadow-white/10 flex items-center gap-2">
-                <FileText className="w-5 h-5" /> Build Resume Now
-              </Link>
-              <Link href="/tests" className="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-600 border border-blue-500 transition-colors flex items-center gap-2">
-                <CheckSquare className="w-5 h-5" /> Take a Free Test
-              </Link>
-            </div>
-          </div>
-        </div>
+        <DashboardHeroBanner />
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -247,6 +226,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* Explore Features Section - Exact content, styling and layout from main */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Explore Features</h2>
           <div className="flex gap-2">
@@ -298,7 +278,14 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {/* Motivation Banner below Feature Cards */}
+        <MotivationBanner />
+
       </main>
+
+      {/* Fixed Feature Bottom Navigation */}
+      <FeatureBottomNav />
     </div>
   )
 }
