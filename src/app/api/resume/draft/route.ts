@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import type { ResumeData } from '@/components/resume/types';
 
 const MAX_DRAFT_BYTES = 100_000;
@@ -41,35 +40,29 @@ function isResumeData(value: unknown): value is ResumeData {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Resume draft account unavailable in development; use browser storage instead:', authError.message);
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json({ draft: null, updatedAt: null, storage: 'local' });
     }
-    console.error('Unable to identify resume draft owner:', authError);
-    return NextResponse.json({ error: 'Could not verify account for resume draft' }, { status: 500 });
-  }
-  if (!user) {
-    if (process.env.NODE_ENV === 'development' || await isLocalDemoSession()) {
+
+    const { data, error } = await supabase
+      .from('resume_drafts')
+      .select('resume_data, updated_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Resume draft cloud storage unavailable, falling back to local storage:', error.message || error);
       return NextResponse.json({ draft: null, updatedAt: null, storage: 'local' });
     }
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+    return NextResponse.json({ draft: data?.resume_data ?? null, updatedAt: data?.updated_at ?? null, storage: 'cloud' });
+  } catch (error) {
+    console.warn('Unexpected error reading resume draft, falling back to local storage:', error);
+    return NextResponse.json({ draft: null, updatedAt: null, storage: 'local' });
   }
-
-  const { data, error } = await supabase
-    .from('resume_drafts')
-    .select('resume_data, updated_at')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Unable to load resume draft:', error);
-    return NextResponse.json({ error: 'Could not load resume draft' }, { status: 500 });
-  }
-
-  return NextResponse.json({ draft: data?.resume_data ?? null, updatedAt: data?.updated_at ?? null, storage: 'cloud' });
 }
 
 export async function POST(request: Request) {
@@ -86,33 +79,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid resume draft' }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Resume draft account unavailable in development; browser storage is the only available save:', authError.message);
-      return NextResponse.json({ error: 'Resume is saved only in this browser without an account' }, { status: 401 });
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: true, storage: 'local' });
     }
-    console.error('Unable to identify resume draft owner:', authError);
-    return NextResponse.json({ error: 'Could not verify account for resume draft' }, { status: 500 });
-  }
-  if (!user) {
-    if (process.env.NODE_ENV === 'development' || await isLocalDemoSession()) {
-      return NextResponse.json({ error: 'Resume is saved only in this browser without an account' }, { status: 401 });
+
+    const { error } = await supabase.from('resume_drafts').upsert({
+      user_id: user.id,
+      resume_data: body.draft,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.warn('Resume draft cloud storage unavailable, falling back to local storage:', error.message || error);
+      return NextResponse.json({ success: true, storage: 'local', warning: error.message });
     }
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+    return NextResponse.json({ success: true, storage: 'cloud' });
+  } catch (error) {
+    console.warn('Unexpected error saving resume draft to cloud, falling back to local storage:', error);
+    return NextResponse.json({ success: true, storage: 'local' });
   }
-
-  const { error } = await supabase.from('resume_drafts').upsert({
-    user_id: user.id,
-    resume_data: body.draft,
-    updated_at: new Date().toISOString(),
-  });
-
-  if (error) {
-    console.error('Unable to save resume draft:', error);
-    return NextResponse.json({ error: 'Could not save resume draft' }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true, storage: 'cloud' });
 }

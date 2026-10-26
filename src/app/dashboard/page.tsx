@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
 import { LogOut, FileText, CheckSquare, Video, Briefcase, Unlock, ArrowRight, Sparkles, CalendarDays, Clock } from 'lucide-react'
 
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
 
 export default async function DashboardPage() {
@@ -109,7 +108,6 @@ export default async function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>Pro Plan Available</span>
