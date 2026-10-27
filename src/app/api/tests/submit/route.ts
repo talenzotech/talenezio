@@ -32,7 +32,11 @@ async function saveCertificatePdf(input: {
     console.error('Unable to upload test certificate PDF:', uploadError);
     return null;
   }
-  await admin.from('certificates').update({ pdf_path: path }).eq('id', input.certificateId);
+  const { error: updateError } = await admin.from('certificates').update({ pdf_path: path }).eq('id', input.certificateId);
+  if (updateError) {
+    console.error('Unable to save test certificate PDF path:', updateError);
+    return null;
+  }
   return path;
 }
 
@@ -148,20 +152,25 @@ export async function POST(request: Request) {
 
   if (certificateError || !certificate) {
     console.error('Unable to create test certificate:', certificateError);
-    return NextResponse.json({ error: 'Test result saved, but certificate creation failed' }, { status: 500 });
+    return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
   }
 
-  await saveCertificatePdf({
-    certificateId: certificate.id,
-    certificateNumber: certificate.certificate_number,
-    userId: user.id,
-    candidateName,
-    topic: attempt.category,
-    score,
-    totalQuestions: attempt.total_questions,
-    issuedAt: certificate.issued_at,
-    performanceStatement,
-  });
+  let pdfPath: string | null = null;
+  try {
+    pdfPath = await saveCertificatePdf({
+      certificateId: certificate.id,
+      certificateNumber: certificate.certificate_number,
+      userId: user.id,
+      candidateName,
+      topic: attempt.category,
+      score,
+      totalQuestions: attempt.total_questions,
+      issuedAt: certificate.issued_at,
+      performanceStatement,
+    });
+  } catch (error) {
+    console.error('Unable to generate test certificate PDF:', error);
+  }
 
-  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: certificate.id });
+  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: pdfPath ? certificate.id : null });
 }

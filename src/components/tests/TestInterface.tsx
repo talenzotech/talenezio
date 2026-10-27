@@ -120,10 +120,10 @@ export default function TestInterface({
         <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800 text-left">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-bold text-gray-900 dark:text-white">Accredited Certificate Ready</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">{downloadUrl ? 'Accredited Certificate Ready' : 'Certificate unavailable'}</h3>
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.
+            {downloadUrl ? <>Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.</> : 'Your test result was saved, but your certificate could not be created. Please contact support.'}
           </p>
 
           <div className="mb-4">
@@ -148,7 +148,7 @@ export default function TestInterface({
               <Download className="w-4 h-4" /> Download Official Certificate (PDF)
             </a>
           ) : (
-            <p className="text-sm text-amber-600 text-center py-2">Preparing your credential… Refresh shortly.</p>
+            <p className="text-sm text-amber-600 text-center py-2">Your score is saved.</p>
           )}
         </div>
 
