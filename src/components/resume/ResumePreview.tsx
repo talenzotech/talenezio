@@ -88,10 +88,10 @@ const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
       className={`${wrapperClass} mx-auto`}
       style={{ boxSizing: 'border-box', fontFamily: modern ? 'Arial, Helvetica, sans-serif' : minimalist ? "'Helvetica Neue', Helvetica, Arial, sans-serif" : "'Times New Roman', Times, serif" }}
     >
-      <header className={`${modern ? 'bg-emerald-700 px-[18mm] py-[12mm] text-white' : 'mb-8 border-b border-gray-300 pb-5'} ${minimalist ? 'border-b-2 border-gray-900' : ''}`}>
+      <header className={`${modern ? 'bg-purple-700 px-[18mm] py-[12mm] text-white' : 'mb-8 border-b border-gray-300 pb-5'} ${minimalist ? 'border-b-2 border-gray-900' : ''}`}>
         {data.personalInfo.fullName.trim() && <h1 className={`${modern ? 'text-4xl' : 'text-3xl'} font-bold tracking-tight`}>{data.personalInfo.fullName}</h1>}
-        {data.personalInfo.jobTitle && <p className={`mt-1 ${modern ? 'text-lg text-emerald-50' : 'text-lg text-gray-600'}`}>{data.personalInfo.jobTitle}</p>}
-        <div className={`mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm ${modern ? 'text-emerald-50' : 'text-gray-600'}`}>
+        {data.personalInfo.jobTitle && <p className={`mt-1 ${modern ? 'text-lg text-purple-100' : 'text-lg text-gray-600'}`}>{data.personalInfo.jobTitle}</p>}
+        <div className={`mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm ${modern ? 'text-purple-100' : 'text-gray-600'}`}>
           {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
           {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
           {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
@@ -107,7 +107,7 @@ const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
             const title = id === 'personal' ? 'Professional Summary' : data.sectionLabels[id];
             return (
               <section key={id} className="mb-6 break-inside-avoid-page">
-                <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-emerald-700 text-emerald-800' : minimalist ? 'border-gray-300 text-gray-500' : 'border-gray-400 text-gray-900'}`}>
+                <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-purple-700 text-purple-800' : minimalist ? 'border-gray-300 text-gray-500' : 'border-gray-400 text-gray-900'}`}>
                   {title}
                 </h2>
                 <div className="text-sm">{sectionContent[id](data)}</div>
@@ -117,7 +117,7 @@ const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
         {data.customSections.map(section => (
           section.content.trim() ? (
             <section key={section.id} className="mb-6 break-inside-avoid-page">
-              <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-emerald-700 text-emerald-800' : 'border-gray-400 text-gray-900'}`}>{section.title}</h2>
+              <h2 className={`mb-3 border-b pb-1 text-sm font-bold uppercase tracking-wider ${modern ? 'border-purple-700 text-purple-800' : 'border-gray-400 text-gray-900'}`}>{section.title}</h2>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{section.content}</p>
             </section>
           ) : null
