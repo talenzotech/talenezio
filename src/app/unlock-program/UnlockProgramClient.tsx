@@ -184,7 +184,7 @@ export default function UnlockProgramClient() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-32 text-slate-900 sm:px-6 sm:py-10 sm:pb-32">
+    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-24 text-slate-900 sm:px-6 sm:py-10 sm:pb-28">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="space-y-5">
           <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

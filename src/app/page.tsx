@@ -11,6 +11,8 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
+import { isLocalDemoSession } from "@/lib/auth/local-demo";
 
 const features = [
   {
@@ -44,7 +46,7 @@ const features = [
     title: "Expert-Led Career Support",
     description:
       "Get practical interview preparation and focused career guidance built around your next opportunity.",
-    href: "/services/counseling",
+    href: "/career",
     icon: BriefcaseBusiness,
     accent: "bg-purple-600",
     tint: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
@@ -53,7 +55,7 @@ const features = [
     title: "LinkedIn Profile Optimization",
     description:
       "Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.",
-    href: "/services",
+    href: "/career",
     icon: UserCheck,
     accent: "bg-sky-600",
     tint: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
@@ -88,15 +90,15 @@ const boxItems = [
   {
     num: "4",
     title: "Expert-Led Career Support",
-    href: "/services/counseling",
+    href: "/career",
     icon: BriefcaseBusiness,
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-50 dark:bg-purple-950/50",
   },
   {
     num: "5",
-    title: "LinkedIn Optimization.",
-    href: "/services/linkedin-optimization",
+    title: "LinkedIn Optimization",
+    href: "/career",
     icon: UserCheck,
     color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-50 dark:bg-sky-950/50",
@@ -109,7 +111,25 @@ const proofPoints = [
   "Expert-led career support",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const isDemo = await isLocalDemoSession();
+  let user = null;
+  if (!isDemo) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    } catch {
+      user = null;
+    }
+  }
+  const isAuthenticated = Boolean(user || isDemo);
+
+  const getDestination = (targetPath: string) => {
+    if (isAuthenticated) return targetPath;
+    return `/login?next=${encodeURIComponent(targetPath)}`;
+  };
+
   return (
     <main className="overflow-hidden bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white">
       <section className="relative isolate border-b border-gray-200 dark:border-gray-800">
@@ -131,23 +151,32 @@ export default function Home() {
 
           <div className="flex items-center gap-3 text-sm font-semibold sm:gap-6">
             <Link
-              href="/tests"
+              href={getDestination('/tests')}
               className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
             >
               Skill tests
             </Link>
             <Link
-              href="/resume-builder"
+              href={getDestination('/resume-builder')}
               className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
             >
               Resume Building
             </Link>
-            <Link
-              href="/login"
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
-            >
-              Sign in
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </nav>
 
@@ -168,14 +197,14 @@ export default function Home() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/register"
+                href={getDestination('/resume-builder')}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-bold text-white shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
               >
                 Start building your future
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
-                href="/tests"
+                href={getDestination('/tests')}
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-bold text-gray-700 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
               >
                 Explore free tests
@@ -212,11 +241,10 @@ export default function Home() {
 
               <div className="space-y-2.5">
                 {boxItems.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.num}
-                      href={item.href}
+                      href={getDestination(item.href)}
                       className="group flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm dark:border-gray-800/80 dark:bg-gray-950/60 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
                     >
                       <div className="flex items-center gap-3">
@@ -226,7 +254,7 @@ export default function Home() {
                           {item.num}
                         </div>
                         <p className="text-sm font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                          {item.num}. {item.title}
+                          {item.title}
                         </p>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600 dark:text-gray-500" />
@@ -262,7 +290,7 @@ export default function Home() {
             return (
               <Link
                 key={feature.title}
-                href={feature.href}
+                href={getDestination(feature.href)}
                 className="group rounded-3xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-900"
               >
                 <div className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${feature.accent}`}>
@@ -286,7 +314,7 @@ export default function Home() {
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">A stronger career starts with one focused step.</h2>
             <p className="mt-4 text-lg leading-8 text-gray-300">Create your free account and start with the tool that will make the biggest difference today.</p>
           </div>
-          <Link href="/register" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-bold text-gray-900 transition-colors hover:bg-blue-50">
+          <Link href={isAuthenticated ? '/dashboard' : '/register'} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-bold text-gray-900 transition-colors hover:bg-blue-50">
             Join Talenezio <ArrowRight className="h-5 w-5" />
           </Link>
         </div>

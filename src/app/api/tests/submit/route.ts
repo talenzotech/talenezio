@@ -5,6 +5,8 @@ import { consumeTestAttempt } from '@/lib/payments/access';
 import { scoreAnswers } from '@/lib/tests/scoring';
 import { buildCertificatePdf } from '@/lib/certificates/pdf';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
+import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
+import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
 
 type SnapshotQuestion = { id: string; text: string; options: string[]; correct: number };
 
@@ -44,18 +46,56 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as {
     attemptId?: string;
     answers?: Record<string, number>;
+    category?: string;
+    type?: 'free' | 'pro';
+    questionIds?: string[];
   } | null;
   if (!body?.attemptId || !body.answers || typeof body.answers !== 'object' || Array.isArray(body.answers)) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
 
-  const isDemo = process.env.NODE_ENV === 'development' || (await isLocalDemoSession());
-  if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
-    const answeredCount = Object.keys(body.answers).length;
+  const isDemo = await isLocalDemoSession();
+  if (body.attemptId.startsWith('demo-attempt-') && isDemo) {
+    let scoringQuestions: { id: string; correct: number }[] = [];
+
+    if (body.category) {
+      try {
+        const questions = await fetchGoogleSheetQuestions(body.category, body.type || 'free');
+        scoringQuestions = questions.map(q => ({ id: q.id, correct: q.correct }));
+      } catch {
+        // Fallback to default questions
+      }
+    }
+
+    if (scoringQuestions.length === 0) {
+      scoringQuestions = DEFAULT_QUESTIONS.map(q => ({ id: q.id, correct: q.correct }));
+    }
+
+    if (Array.isArray(body.questionIds) && body.questionIds.length > 0) {
+      const qMap = new Map(scoringQuestions.map(q => [q.id, q]));
+      scoringQuestions = body.questionIds.map(id => qMap.get(id) || { id, correct: -1 });
+    }
+
+    let score = 0;
+    try {
+      score = scoreAnswers(scoringQuestions, body.answers);
+    } catch {
+      const scoringMap = new Map(scoringQuestions.map(q => [q.id, q.correct]));
+      for (const [qId, ans] of Object.entries(body.answers)) {
+        if (scoringMap.has(qId) && scoringMap.get(qId) === ans) {
+          score += 1;
+        }
+      }
+    }
+
+    const total = Array.isArray(body.questionIds) && body.questionIds.length > 0
+      ? body.questionIds.length
+      : (body.type === 'pro' ? 45 : 20);
+
     return NextResponse.json({
       submitted: true,
-      score: Math.min(answeredCount, 18),
-      total: 20,
+      score,
+      total,
       certificateId: 'demo-cert-' + Date.now().toString(36),
     });
   }

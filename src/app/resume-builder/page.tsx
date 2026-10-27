@@ -98,13 +98,9 @@ export default function ResumeBuilderPage() {
             setHydrated(true)
             return
           }
-        } else if (response.status !== 401) {
-          const result = await response.json().catch(() => null) as { error?: string } | null
-          throw new Error(result?.error || `Draft request failed (${response.status})`)
         }
       } catch (loadError) {
-        console.error('Could not load resume draft from the account:', loadError)
-        if (!cancelled) setStorageError('Could not load the account draft. Checking this browser for a saved copy.')
+        console.warn('Could not load resume draft from account:', loadError)
       }
 
       try {
@@ -116,8 +112,8 @@ export default function ResumeBuilderPage() {
           setDraftStatus('local')
         }
       } catch (storageErr) {
-        console.error('Unable to restore saved resume from localStorage:', storageErr)
-        if (!cancelled) setStorageError('Could not restore the resume saved in this browser. Your account copy, if available, remains unchanged.')
+        console.warn('Unable to restore saved resume from localStorage:', storageErr)
+        if (!cancelled) setStorageError('Could not restore the resume saved in this browser.')
       } finally {
         if (!cancelled) setHydrated(true)
       }
@@ -138,7 +134,7 @@ export default function ResumeBuilderPage() {
         window.localStorage.setItem(STORAGE_KEY, serialized)
         savedLocally = true
       } catch (storageErr) {
-        console.error('Could not save resume draft in this browser:', storageErr)
+        console.warn('Could not save resume draft in this browser:', storageErr)
       }
 
       try {
@@ -149,30 +145,32 @@ export default function ResumeBuilderPage() {
         })
         if (res.ok) {
           const result = await res.json() as { success?: boolean; storage?: 'cloud' | 'local' }
-          if (!result.success || result.storage !== 'cloud') {
-            throw new Error('The account did not confirm saving this resume.')
+          if (result.success) {
+            lastSavedDraft.current = serialized
+            setStorageError('')
+            setDraftStatus(result.storage === 'cloud' ? 'saved' : 'local')
+            return true
           }
-          lastSavedDraft.current = serialized
-          setStorageError('')
-          setDraftStatus('saved')
-          return true
         }
-        const result = await res.json().catch(() => null) as { error?: string } | null
-        if (res.status === 401 && savedLocally) {
-          lastSavedDraft.current = serialized
-          setStorageError('')
-          setDraftStatus('local')
-          return true
-        }
-        throw new Error(result?.error || `Draft save failed (${res.status})`)
-      } catch (saveError) {
-        console.error('Could not save resume draft to the account:', saveError)
+
         if (savedLocally) {
           lastSavedDraft.current = serialized
-          setStorageError('This resume is saved only in this browser; account sync failed.')
+          setStorageError('')
           setDraftStatus('local')
           return true
         }
+
+        setStorageError('Resume could not be saved. Check your browser storage.')
+        setDraftStatus('error')
+        return false
+      } catch (saveError) {
+        if (savedLocally) {
+          lastSavedDraft.current = serialized
+          setStorageError('')
+          setDraftStatus('local')
+          return true
+        }
+        console.warn('Could not save resume draft to the account:', saveError)
         setStorageError('Resume could not be saved. Check your connection and try again.')
         setDraftStatus('error')
         return false
@@ -365,7 +363,7 @@ export default function ResumeBuilderPage() {
       link.remove()
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (downloadError) {
-      console.error('Could not generate resume PDF:', downloadError)
+      console.warn('Could not generate resume PDF:', downloadError)
       setError(downloadError instanceof Error ? downloadError.message : 'Could not generate your PDF. Please try again.')
     } finally {
       setDownloading(false)
@@ -379,10 +377,10 @@ export default function ResumeBuilderPage() {
   }
 
   const sectionHeading = data.sectionLabels[activeSection]
-  const fieldClass = 'h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:focus:border-emerald-500'
+  const fieldClass = 'h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-purple-600 focus:ring-2 focus:ring-purple-100 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:focus:border-purple-400 dark:focus:ring-purple-950/40'
   const labelClass = 'mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300'
-  const actionClass = 'inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-emerald-300 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-emerald-600'
-  const greenButtonClass = 'inline-flex items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60'
+  const actionClass = 'inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-purple-300 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-purple-600 dark:hover:text-purple-300'
+  const primaryButtonClass = 'inline-flex items-center justify-center gap-2 rounded-md bg-purple-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800 disabled:cursor-wait disabled:opacity-60 shadow-sm'
 
   return (
     <main className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -402,8 +400,8 @@ export default function ResumeBuilderPage() {
             </span>
             <span className="text-gray-500 dark:text-gray-400">Progress</span>
             <span className="font-semibold text-gray-800 dark:text-gray-200">{completion.count} / 6</span>
-            <div className="h-2 w-28 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-              <div className="h-full rounded-full bg-emerald-600 transition-all duration-300" style={{ width: `${Math.max(10, (completion.count / 6) * 100)}%` }} />
+            <div className="h-2 w-28 overflow-hidden rounded-full bg-purple-100 dark:bg-gray-800">
+              <div className="h-full rounded-full bg-purple-600 transition-all duration-300" style={{ width: `${Math.max(10, (completion.count / 6) * 100)}%` }} />
             </div>
           </div>
         </div>
@@ -419,11 +417,11 @@ export default function ResumeBuilderPage() {
               type="button"
               aria-current={activeSection === id && screen === 'edit' ? 'step' : undefined}
               onClick={() => { setActiveSection(id); setScreen('edit'); setError('') }}
-              className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeSection === id && screen === 'edit' ? 'border-emerald-600 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${activeSection === id && screen === 'edit' ? 'border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`}
             >
               <span className="text-xs" aria-hidden="true">{SECTION_ICONS[id]}</span>
               {data.sectionLabels[id]}
-              {completion.completed[id] && <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-label="Complete" />}
+              {completion.completed[id] && <Check className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" aria-label="Complete" />}
             </button>
           ))}
         </nav>
@@ -437,7 +435,7 @@ export default function ResumeBuilderPage() {
               <section className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Resume Sections</h2>
-                  <button type="button" onClick={() => setManageOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Edit</button>
+                  <button type="button" onClick={() => setManageOpen(true)} className="text-xs font-semibold text-purple-700 hover:underline dark:text-purple-400">Edit</button>
                 </div>
                 <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{completion.count} of 6 complete</p>
                 <div className="space-y-1.5">
@@ -448,18 +446,18 @@ export default function ResumeBuilderPage() {
                         key={id}
                         type="button"
                         onClick={() => { setActiveSection(id); setScreen('edit') }}
-                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs transition-all ${isActive ? 'bg-emerald-700 font-bold text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs transition-all ${isActive ? 'bg-purple-700 font-bold text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
                       >
                         <span aria-hidden="true">{SECTION_ICONS[id]}</span>
                         <span className="min-w-0 flex-1 truncate">{data.sectionLabels[id]}</span>
-                        {completion.completed[id] && <Check className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />}
+                        {completion.completed[id] && <Check className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />}
                       </button>
                     )
                   })}
                 </div>
                 {data.customSections.map(section => (
-                  <button key={section.id} type="button" onClick={() => setManageOpen(true)} className="mt-2 flex w-full items-center gap-2 border-t border-gray-100 pt-2 text-left text-xs text-gray-600 hover:text-emerald-700 dark:border-gray-800 dark:text-gray-400 dark:hover:text-emerald-400">
-                    <FileText className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+                  <button key={section.id} type="button" onClick={() => setManageOpen(true)} className="mt-2 flex w-full items-center gap-2 border-t border-gray-100 pt-2 text-left text-xs text-gray-600 hover:text-purple-700 dark:border-gray-800 dark:text-gray-400 dark:hover:text-purple-300">
+                    <FileText className="h-3.5 w-3.5 text-purple-700 dark:text-purple-400" />
                     <span className="truncate">{section.title}</span>
                   </button>
                 ))}
@@ -468,10 +466,10 @@ export default function ResumeBuilderPage() {
               <section className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Resume Actions</h2>
                 <div className="space-y-1.5">
-                  <button type="button" onClick={() => void finalizeResume()} disabled={isFinalizing} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:text-gray-200 dark:hover:bg-gray-800"><Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> {isFinalizing ? 'Saving Resume…' : 'Finalize Resume'}</button>
-                  <button type="button" onClick={() => { setError(''); setScreen('preview') }} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><Eye className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> Preview Resume</button>
-                  <button type="button" onClick={() => setTemplatesOpen(true)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><LayoutTemplate className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> Change Template <span className="ml-auto capitalize text-gray-400">{data.layout}</span></button>
-                  <button type="button" onClick={() => setManageOpen(true)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><Settings2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" /> Manage Sections</button>
+                  <button type="button" onClick={() => void finalizeResume()} disabled={isFinalizing} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:text-gray-200 dark:hover:bg-gray-800"><Check className="h-4 w-4 text-purple-700 dark:text-purple-400" /> {isFinalizing ? 'Saving Resume…' : 'Finalize Resume'}</button>
+                  <button type="button" onClick={() => { setError(''); setScreen('preview') }} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><Eye className="h-4 w-4 text-purple-700 dark:text-purple-400" /> Preview Resume</button>
+                  <button type="button" onClick={() => setTemplatesOpen(true)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><LayoutTemplate className="h-4 w-4 text-purple-700 dark:text-purple-400" /> Change Template <span className="ml-auto capitalize text-gray-400">{data.layout}</span></button>
+                  <button type="button" onClick={() => setManageOpen(true)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"><Settings2 className="h-4 w-4 text-purple-700 dark:text-purple-400" /> Manage Sections</button>
                 </div>
               </section>
             </aside>
@@ -481,7 +479,7 @@ export default function ResumeBuilderPage() {
           <section className={`min-w-0 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6 ${screen === 'preview' ? 'lg:col-span-2' : ''}`}>
             {screen === 'final' ? (
               <div className="mx-auto max-w-md py-10">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white"><Check className="h-7 w-7" /></div>
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-700 text-white"><Check className="h-7 w-7" /></div>
                 <h2 className="text-center text-xl font-bold">Your Resume Is Ready</h2>
                 <p className="mt-1 text-center text-sm text-gray-500">Your resume is ready to preview or download.</p>
                 <label className={`${labelClass} mt-7`} htmlFor="resume-file-name">Resume file name</label>
@@ -491,7 +489,7 @@ export default function ResumeBuilderPage() {
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <button type="button" onClick={() => setScreen('preview')} className={actionClass}><Eye className="h-4 w-4" /> Preview</button>
-                  <button type="button" onClick={() => void downloadResume()} disabled={downloading} className={greenButtonClass}><Download className="h-4 w-4" /> {downloading ? 'Generating PDF…' : 'Download Resume'}</button>
+                  <button type="button" onClick={() => void downloadResume()} disabled={downloading} className={primaryButtonClass}><Download className="h-4 w-4" /> {downloading ? 'Generating PDF…' : 'Download Resume'}</button>
                 </div>
                 <p className="mt-3 text-center text-xs text-gray-500">A formatted A4 PDF will be downloaded directly.</p>
                 {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
@@ -503,7 +501,7 @@ export default function ResumeBuilderPage() {
                   <div><h2 className="font-semibold text-lg">Resume Preview</h2><p className="text-xs text-gray-500">Live preview of your complete resume.</p></div>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setTemplatesOpen(true)} className={actionClass}><LayoutTemplate className="h-4 w-4" /> Template</button>
-                    <button type="button" onClick={finalizeResume} className={greenButtonClass}><Check className="h-4 w-4" /> Finalize</button>
+                    <button type="button" onClick={finalizeResume} className={primaryButtonClass}><Check className="h-4 w-4" /> Finalize</button>
                     <button type="button" onClick={() => setScreen('edit')} className={actionClass}><ArrowLeft className="h-4 w-4" /> Edit</button>
                   </div>
                 </div>
@@ -525,10 +523,10 @@ export default function ResumeBuilderPage() {
                       {activeSection === 'awards' && 'Add awards, certifications, and achievements.'}
                     </p>
                   </div>
-                  {activeSection === 'education' && <button type="button" onClick={addEducation} className={`${actionClass} border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400`}><Plus className="h-4 w-4" /> Add Education</button>}
-                  {activeSection === 'experience' && <button type="button" onClick={addExperience} className={`${actionClass} border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400`}><Plus className="h-4 w-4" /> Add Role</button>}
-                  {activeSection === 'projects' && <button type="button" onClick={addProject} className={`${actionClass} border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400`}><Plus className="h-4 w-4" /> Add Project</button>}
-                  {activeSection === 'awards' && <button type="button" onClick={addAward} className={`${actionClass} border-emerald-200 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400`}><Plus className="h-4 w-4" /> Add Award</button>}
+                  {activeSection === 'education' && <button type="button" onClick={addEducation} className={`${actionClass} border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300`}><Plus className="h-4 w-4" /> Add Education</button>}
+                  {activeSection === 'experience' && <button type="button" onClick={addExperience} className={`${actionClass} border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300`}><Plus className="h-4 w-4" /> Add Role</button>}
+                  {activeSection === 'projects' && <button type="button" onClick={addProject} className={`${actionClass} border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300`}><Plus className="h-4 w-4" /> Add Project</button>}
+                  {activeSection === 'awards' && <button type="button" onClick={addAward} className={`${actionClass} border-purple-200 text-purple-700 dark:border-purple-700 dark:text-purple-300`}><Plus className="h-4 w-4" /> Add Award</button>}
                 </div>
 
                 {/* Personal Information */}
@@ -693,7 +691,7 @@ export default function ResumeBuilderPage() {
                   <h2 className="text-sm font-bold">Live Preview</h2>
                   <p className="text-xs text-gray-500 capitalize">A4 page · {data.layout} template</p>
                 </div>
-                <button type="button" aria-label="Open full preview" onClick={() => setScreen('preview')} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-emerald-700 dark:hover:bg-gray-800"><Eye className="h-4 w-4" /></button>
+                <button type="button" aria-label="Open full preview" onClick={() => setScreen('preview')} className="rounded-lg p-2 text-gray-500 hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-gray-800 dark:hover:text-purple-300"><Eye className="h-4 w-4" /></button>
               </div>
               <div className="max-h-[75vh] overflow-auto bg-gray-100 p-4 dark:bg-gray-950">
                 <div className="origin-top-left scale-[0.50] min-[1200px]:scale-[0.58] min-[1400px]:scale-[0.65]" style={{ width: '210mm' }}>
@@ -744,7 +742,7 @@ export default function ResumeBuilderPage() {
           <button
             type="button"
             onClick={() => { setError(''); setScreen(screen === 'preview' ? 'edit' : 'preview') }}
-            className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-xs font-medium ${screen === 'preview' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
+            className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-xs font-medium ${screen === 'preview' ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}
           >
             <Eye className="h-4 w-4" /> Preview
           </button>
@@ -752,7 +750,7 @@ export default function ResumeBuilderPage() {
             type="button"
             onClick={() => void finalizeResume()}
             disabled={isFinalizing}
-            className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+            className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-xs font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50 dark:text-purple-300 dark:hover:bg-purple-950/50"
           >
             <Check className="h-4 w-4" /> {isFinalizing ? 'Saving…' : 'Finalize'}
           </button>
@@ -867,7 +865,7 @@ export default function ResumeBuilderPage() {
               )}
             </div>
             <div className="mt-5 flex justify-end">
-              <button type="button" onClick={() => setManageOpen(false)} className={greenButtonClass}>Done</button>
+              <button type="button" onClick={() => setManageOpen(false)} className={primaryButtonClass}>Done</button>
             </div>
           </section>
         </div>
@@ -890,7 +888,7 @@ export default function ResumeBuilderPage() {
                   key={layout}
                   type="button"
                   onClick={() => { setData(current => ({ ...current, layout })); setTemplatesOpen(false) }}
-                  className={`rounded-xl border p-4 text-left capitalize transition-all ${data.layout === layout ? 'border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold' : 'border-gray-200 hover:border-emerald-300 dark:border-gray-700'}`}
+                  className={`rounded-xl border p-4 text-left capitalize transition-all ${data.layout === layout ? 'border-purple-600 bg-purple-50 text-purple-900 dark:bg-purple-950/40 dark:text-purple-200 font-bold' : 'border-gray-200 hover:border-purple-300 dark:border-gray-700'}`}
                 >
                   <LayoutTemplate className="mb-2 h-6 w-6" />
                   <span className="text-sm font-semibold">{layout}</span>

@@ -6,6 +6,7 @@ import { hasLocalDemoCookie } from '../src/lib/auth/local-demo-config.ts'
 test('accepts internal destinations', () => {
   assert.equal(safeNextPath('/resume-builder'), '/resume-builder')
   assert.equal(safeNextPath('/tests/ai?type=pro'), '/tests/ai?type=pro')
+  assert.equal(safeNextPath('/career'), '/career')
 })
 
 test('rejects unsafe destinations', () => {

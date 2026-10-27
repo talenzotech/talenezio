@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, GraduationCap, Unlock } from 'lucide-react'
+import FeatureBottomNav from '@/components/FeatureBottomNav'
 
 export default function UnlockProgramPage() {
   const [feature, setFeature] = useState<'skill_test_pro' | 'linkedin_optimization'>('linkedin_optimization')
@@ -11,7 +12,7 @@ export default function UnlockProgramPage() {
     : '/unlock-program/linkedin-optimization'
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 sm:py-12">
+    <main className="min-h-screen bg-slate-50 px-4 py-8 pb-24 text-slate-900 sm:px-6 sm:py-12 sm:pb-28">
       <div className="mx-auto max-w-3xl space-y-5">
         <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">
@@ -52,6 +53,8 @@ export default function UnlockProgramPage() {
           </Link>
         </section>
       </div>
+
+      <FeatureBottomNav />
     </main>
   )
 }

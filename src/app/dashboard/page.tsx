@@ -1,11 +1,23 @@
 import { createClient } from '@/utils/supabase/server'
+import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
-import { LogOut, FileText, CheckSquare, Video, Briefcase, Unlock, ArrowRight, Sparkles, CalendarDays, Clock } from 'lucide-react'
-
-import { ThemeToggle } from '@/components/ThemeToggle'
+import {
+  LogOut,
+  FileText,
+  Target,
+  GraduationCap,
+  BriefcaseBusiness,
+  UserCheck,
+  ArrowRight,
+  CalendarDays,
+  Clock,
+} from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import FeatureBottomNav from '@/components/FeatureBottomNav'
+import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
+import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -46,76 +58,67 @@ export default async function DashboardPage() {
 
   const features = [
     {
-      title: 'Skill Assessment Tests',
-      description: 'Take free or premium mock tests in AI, Tech, Finance, and Marketing to earn verified certificates.',
-      icon: CheckSquare,
+      title: 'Skill Assessments',
+      description: 'Assess your knowledge in Technology, Finance, Digital Marketing and AI to identify your strengths and areas for improvement.',
+      icon: Target,
       href: '/tests',
       color: 'bg-blue-600',
-      tag: 'Popular'
+      tag: 'Popular',
     },
     {
-      title: 'Resume Builder',
-      description: 'Create a professional, ATS-friendly one-page resume. Export instantly to PDF for free.',
+      title: 'Resume Building',
+      description: 'Create professional, recruiter-friendly resumes that showcase your skills, experience and potential.',
       icon: FileText,
       href: '/resume-builder',
       color: 'bg-emerald-500',
-      tag: 'Free'
+      tag: 'Free',
     },
     {
-      title: 'Interview Preparation',
-      description: 'Join an 8-day intensive program with 3 Google Meet sessions and 5 rigorous mock tests.',
-      icon: Video,
-      href: '/services/interview-prep',
-      color: 'bg-purple-600',
-      tag: 'Pro'
-    },
-    {
-      title: 'Career Counseling',
-      description: 'Book 1-on-1 sessions, get LinkedIn optimization, or grab the Career Starter Pack.',
-      icon: Briefcase,
-      href: '/services/counseling',
-      color: 'bg-rose-500',
-      tag: 'Pro'
-    },
-    {
-      title: 'Service Catalogue',
-      description: 'Compare verified prices, buy career services, or enquire about courses and internships.',
-      icon: Briefcase,
+      title: 'Internship Opportunities',
+      description: 'Explore opportunities to gain practical experience, develop valuable skills and take your first steps into the professional world.',
+      icon: GraduationCap,
       href: '/services',
-      color: 'bg-indigo-500',
-      tag: 'New'
+      color: 'bg-amber-500',
+      tag: 'New',
     },
     {
-      title: 'Free Unlock Program',
-      description: 'Choose a Paid Test or LinkedIn Optimization and follow the steps to request free access.',
-      icon: Unlock,
-      href: '/unlock-program',
-      color: 'bg-amber-500',
-      tag: 'Special'
-    }
+      title: 'Expert-Led Career Support',
+      description: 'Get practical interview preparation and focused career guidance built around your next opportunity.',
+      icon: BriefcaseBusiness,
+      href: '/career',
+      color: 'bg-purple-600',
+      tag: 'Pro',
+    },
+    {
+      title: 'LinkedIn Optimization',
+      description: 'Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.',
+      icon: UserCheck,
+      href: '/services/linkedin-optimization',
+      color: 'bg-sky-600',
+      tag: 'Pro',
+    },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-12">
+    <div className="min-h-screen bg-gray-50 pb-24 sm:pb-28 dark:bg-gray-950">
       
       {/* Top Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
+            <Image
+              src="/talenezio-logo.png"
+              alt="Talenezio Logo"
+              width={40}
+              height={40}
+              priority
+              className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
+            />
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
+          </Link>
           
           <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Pro Plan Available</span>
-            </div>
-
-            <div className="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-4 hidden sm:flex">
+            <div className="flex items-center gap-3">
               {avatarUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm" />
@@ -141,31 +144,7 @@ export default async function DashboardPage() {
 
       {/* Hero Banner Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 mt-8 mb-12">
-        <div className="relative rounded-3xl overflow-hidden bg-blue-900 shadow-2xl">
-          {/* Background Image */}
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
-          
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-blue-900/80 to-transparent"></div>
-          
-          {/* Content */}
-          <div className="relative z-10 p-8 sm:p-12 md:p-16 flex flex-col justify-center min-h-[320px] max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-              Ready to elevate your career, {firstName}?
-            </h1>
-            <p className="text-blue-100 text-lg md:text-xl mb-8 leading-relaxed">
-              Build an ATS-friendly resume, take industry-standard mock tests, and practice with experts to land your dream job.
-            </p>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link href="/resume-builder" className="bg-white text-blue-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-lg shadow-white/10 flex items-center gap-2">
-                <FileText className="w-5 h-5" /> Build Resume Now
-              </Link>
-              <Link href="/tests" className="bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-600 border border-blue-500 transition-colors flex items-center gap-2">
-                <CheckSquare className="w-5 h-5" /> Take a Free Test
-              </Link>
-            </div>
-          </div>
-        </div>
+        <DashboardHeroBanner />
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -239,6 +218,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* Explore Features Section - Exact content, styling and layout from main */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Explore Features</h2>
           <div className="flex gap-2">
@@ -262,10 +242,10 @@ export default async function DashboardPage() {
                     <feature.icon className="w-7 h-7" />
                   </div>
                   <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border ${
-                    feature.tag === 'Free' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                    feature.tag === 'Popular' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                    feature.tag === 'Special' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                    'bg-purple-50 text-purple-600 border-purple-100'
+                    feature.tag === 'Free' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 
+                    feature.tag === 'Popular' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' :
+                    feature.tag === 'New' || feature.tag === 'Special' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' :
+                    'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
                   }`}>
                     {feature.tag}
                   </span>
@@ -290,7 +270,14 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {/* Motivation Banner below Feature Cards */}
+        <MotivationBanner />
+
       </main>
+
+      {/* Fixed Feature Bottom Navigation */}
+      <FeatureBottomNav />
     </div>
   )
 }
