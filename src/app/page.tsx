@@ -46,7 +46,7 @@ const features = [
     title: "Expert-Led Career Support",
     description:
       "Get practical interview preparation and focused career guidance built around your next opportunity.",
-    href: "/services/counseling",
+    href: "/career",
     icon: BriefcaseBusiness,
     accent: "bg-purple-600",
     tint: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
@@ -55,7 +55,7 @@ const features = [
     title: "LinkedIn Profile Optimization",
     description:
       "Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.",
-    href: "/services",
+    href: "/career",
     icon: UserCheck,
     accent: "bg-sky-600",
     tint: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
@@ -90,7 +90,7 @@ const boxItems = [
   {
     num: "4",
     title: "Expert-Led Career Support",
-    href: "/services/counseling",
+    href: "/career",
     icon: BriefcaseBusiness,
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-50 dark:bg-purple-950/50",
@@ -98,7 +98,7 @@ const boxItems = [
   {
     num: "5",
     title: "LinkedIn Optimization",
-    href: "/services/linkedin-optimization",
+    href: "/career",
     icon: UserCheck,
     color: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-50 dark:bg-sky-950/50",
