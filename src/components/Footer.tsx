@@ -5,20 +5,14 @@ import { usePathname } from 'next/navigation'
 
 export function Footer() {
   const pathname = usePathname()
-  // Ensure extra clearance on all screens only for pages with a fixed bottom navigation bar
-  const hasBottomNav =
-    pathname === '/dashboard' ||
-    pathname?.startsWith('/tests') ||
-    pathname === '/career' ||
-    pathname?.startsWith('/services') ||
-    pathname?.startsWith('/unlock-program')
+
+  // Display the footer strictly on the landing page ('/')
+  if (pathname !== '/') {
+    return null
+  }
 
   return (
-    <footer
-      className={`w-full border-t border-zinc-200 bg-white pt-8 dark:border-zinc-800 dark:bg-black ${
-        hasBottomNav ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : 'pb-8'
-      } mt-auto`}
-    >
+    <footer className="w-full border-t border-zinc-200 bg-white py-8 dark:border-zinc-800 dark:bg-black mt-auto">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:px-6 md:flex-row lg:px-8">
         <div className="flex flex-col items-center md:items-start">
           <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">

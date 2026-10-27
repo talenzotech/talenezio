@@ -155,7 +155,7 @@ export default function CareerPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12 pt-8 dark:bg-gray-950 sm:pb-16 sm:pt-12">
+    <div className="min-h-screen bg-gray-50 pb-24 pt-8 dark:bg-gray-950 sm:pb-28 sm:pt-12">
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header Section */}

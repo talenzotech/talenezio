@@ -6,10 +6,10 @@ import { signout } from '../(auth)/actions'
 import {
   LogOut,
   FileText,
-  CheckSquare,
-  Video,
-  Briefcase,
-  Unlock,
+  Target,
+  GraduationCap,
+  BriefcaseBusiness,
+  UserCheck,
   ArrowRight,
   CalendarDays,
   Clock,
@@ -58,57 +58,49 @@ export default async function DashboardPage() {
 
   const features = [
     {
-      title: 'Skill Assessment Tests',
-      description: 'Take free or premium mock tests in AI, Tech, Finance, and Marketing to earn verified certificates.',
-      icon: CheckSquare,
+      title: 'Skill Assessments',
+      description: 'Assess your knowledge in Technology, Finance, Digital Marketing and AI to identify your strengths and areas for improvement.',
+      icon: Target,
       href: '/tests',
       color: 'bg-blue-600',
       tag: 'Popular',
     },
     {
-      title: 'Resume Builder',
-      description: 'Create a professional, ATS-friendly one-page resume. Export instantly to PDF for free.',
+      title: 'Resume Building',
+      description: 'Create professional, recruiter-friendly resumes that showcase your skills, experience and potential.',
       icon: FileText,
       href: '/resume-builder',
       color: 'bg-emerald-500',
       tag: 'Free',
     },
     {
-      title: 'Interview Preparation',
-      description: 'Join an 8-day intensive program with 3 Google Meet sessions and 5 rigorous mock tests.',
-      icon: Video,
-      href: '/services/interview-prep',
+      title: 'Internship Opportunities',
+      description: 'Explore opportunities to gain practical experience, develop valuable skills and take your first steps into the professional world.',
+      icon: GraduationCap,
+      href: '/services',
+      color: 'bg-amber-500',
+      tag: 'New',
+    },
+    {
+      title: 'Expert-Led Career Support',
+      description: 'Get practical interview preparation and focused career guidance built around your next opportunity.',
+      icon: BriefcaseBusiness,
+      href: '/career',
       color: 'bg-purple-600',
       tag: 'Pro',
     },
     {
-      title: 'Career Counseling',
-      description: 'Book 1-on-1 sessions, get LinkedIn optimization, or grab the Career Starter Pack.',
-      icon: Briefcase,
-      href: '/services/counseling',
-      color: 'bg-rose-500',
+      title: 'LinkedIn Optimization',
+      description: 'Strengthen your professional presence with an optimized LinkedIn profile, compelling content ideas and a personal brand that stands out.',
+      icon: UserCheck,
+      href: '/services/linkedin-optimization',
+      color: 'bg-sky-600',
       tag: 'Pro',
-    },
-    {
-      title: 'Service Catalogue',
-      description: 'Compare verified prices, buy career services, or enquire about courses and internships.',
-      icon: Briefcase,
-      href: '/services',
-      color: 'bg-indigo-500',
-      tag: 'New',
-    },
-    {
-      title: 'Free Unlock Program',
-      description: 'Choose a Paid Test or LinkedIn Optimization and follow the steps to request free access.',
-      icon: Unlock,
-      href: '/unlock-program',
-      color: 'bg-amber-500',
-      tag: 'Special',
     },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 pb-24 sm:pb-28 dark:bg-gray-950">
       
       {/* Top Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
@@ -250,10 +242,10 @@ export default async function DashboardPage() {
                     <feature.icon className="w-7 h-7" />
                   </div>
                   <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border ${
-                    feature.tag === 'Free' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                    feature.tag === 'Popular' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                    feature.tag === 'Special' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                    'bg-purple-50 text-purple-600 border-purple-100'
+                    feature.tag === 'Free' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 
+                    feature.tag === 'Popular' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' :
+                    feature.tag === 'New' || feature.tag === 'Special' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' :
+                    'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800'
                   }`}>
                     {feature.tag}
                   </span>
