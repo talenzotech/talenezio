@@ -5,7 +5,7 @@ import FeatureBottomNav from '@/components/FeatureBottomNav';
 
 export default function LinkedInOptimizationPage() {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12 pb-12 dark:bg-gray-950 sm:px-8 sm:pb-16">
+    <main className="min-h-screen bg-gray-50 px-4 py-12 pb-24 dark:bg-gray-950 sm:px-8 sm:pb-28">
       <div className="mx-auto max-w-3xl">
         <Link href="/services" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600"><ArrowLeft className="h-4 w-4" /> All services</Link>
         <div className="rounded-3xl bg-white p-8 shadow-sm dark:bg-gray-900 sm:p-12">
