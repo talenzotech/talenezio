@@ -54,7 +54,7 @@ export async function buildResumePdf(data: ResumeData): Promise<Uint8Array> {
   const regular = await document.embedFont(classic ? StandardFonts.TimesRoman : StandardFonts.Helvetica)
   const bold = await document.embedFont(classic ? StandardFonts.TimesRomanBold : StandardFonts.HelveticaBold)
   const muted = rgb(0.32, 0.36, 0.4)
-  const accent = rgb(0.04, 0.42, 0.31)
+  const accent = rgb(0.45, 0.22, 0.75)
   const dark = rgb(0.1, 0.13, 0.16)
   let page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT])
   let y = PAGE_HEIGHT - MARGIN
@@ -122,7 +122,7 @@ export async function buildResumePdf(data: ResumeData): Promise<Uint8Array> {
     drawWrapped(data.personalInfo.fullName.trim(), bold, 24, data.layout === 'modern' ? rgb(1, 1, 1) : dark, 29)
   }
   if (data.personalInfo.jobTitle.trim()) {
-    drawWrapped(data.personalInfo.jobTitle.trim(), regular, 12, data.layout === 'modern' ? rgb(0.9, 0.97, 0.94) : muted, 17)
+    drawWrapped(data.personalInfo.jobTitle.trim(), regular, 12, data.layout === 'modern' ? rgb(0.95, 0.92, 0.98) : muted, 17)
   }
   const contact = [
     data.personalInfo.email,
@@ -133,7 +133,7 @@ export async function buildResumePdf(data: ResumeData): Promise<Uint8Array> {
     ...(!data.links.some(link => link.label.trim().toLowerCase() === 'portfolio') && data.personalInfo.portfolio.trim() ? `Portfolio: ${data.personalInfo.portfolio.trim()}` : []),
   ].map(item => item.trim()).filter(Boolean)
   if (contact.length) {
-    drawWrapped(contact.join('  |  '), regular, 8.5, data.layout === 'modern' ? rgb(0.9, 0.97, 0.94) : muted, 12)
+    drawWrapped(contact.join('  |  '), regular, 8.5, data.layout === 'modern' ? rgb(0.95, 0.92, 0.98) : muted, 12)
   }
   y -= 7
 
