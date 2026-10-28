@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import Image from 'next/image'
+import { ThemeWordmark } from '@/components/ThemeWordmark'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { signout } from '../(auth)/actions'
@@ -111,15 +111,7 @@ export default async function DashboardPage() {
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
-            <Image
-              src="/talenezio-wordmark-transparent.png?v=3"
-              alt="Talenezio Logo"
-              width={180}
-              height={40}
-              priority
-              className="h-9 w-auto sm:h-10 object-contain"
-              style={{ width: 'auto' }}
-            />
+            <ThemeWordmark />
             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
           </Link>
           

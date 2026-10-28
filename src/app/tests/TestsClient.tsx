@@ -1,14 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import {
   Code,
   TrendingUp,
   Megaphone,
   Brain,
   GraduationCap,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
+import ProTestCheckout from '@/components/tests/ProTestCheckout'
 
 export const TEST_CATEGORIES = [
   {
@@ -46,6 +50,9 @@ export const TEST_CATEGORIES = [
 ]
 
 export default function TestsClient({ error }: { error?: string }) {
+  const [selectedCategory, setSelectedCategory] = useState('technology')
+  const activeCategory = TEST_CATEGORIES.find((category) => category.id === selectedCategory) ?? TEST_CATEGORIES[0]
+
   return (
     <div className="min-h-screen bg-white pb-24 pt-8 dark:bg-gray-950 sm:pb-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
@@ -83,10 +90,12 @@ export default function TestsClient({ error }: { error?: string }) {
             const Icon = category.icon
 
             return (
-              <Link
+              <button
+                type="button"
                 key={category.id}
-                href={`/tests/${category.id}`}
-                className="group relative flex flex-col justify-between cursor-pointer rounded-3xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm transition-all duration-200 hover:border-blue-400 hover:bg-[#f0f7ff]/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-500 dark:hover:bg-blue-950/20"
+                onClick={() => setSelectedCategory(category.id)}
+                aria-pressed={selectedCategory === category.id}
+                className={`group relative flex flex-col justify-between cursor-pointer rounded-3xl border bg-white p-5 text-left sm:p-6 shadow-sm transition-all duration-200 dark:bg-gray-900 ${selectedCategory === category.id ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200 hover:border-blue-400 dark:border-gray-800 dark:hover:border-blue-500'}`}
               >
                 <div>
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${category.iconBg} ${category.iconColor}`}>
@@ -100,10 +109,48 @@ export default function TestsClient({ error }: { error?: string }) {
                     {category.subtitle}
                   </p>
                 </div>
-              </Link>
+              </button>
             )
           })}
         </div>
+
+        <section className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900" aria-labelledby="selected-track-title">
+          <div className="flex flex-col gap-4 border-b border-gray-100 pb-5 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Selected Track</span>
+              <h3 id="selected-track-title" className="text-2xl font-bold text-gray-900 dark:text-white">{activeCategory.title}</h3>
+              <p className="text-sm text-gray-500">{activeCategory.subtitle}</p>
+            </div>
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-800 dark:bg-gray-950/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="font-bold text-gray-900 dark:text-white">Free Assessment</h4>
+                <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold uppercase text-green-800 dark:bg-green-950 dark:text-green-300">Free</span>
+              </div>
+              <ul className="mb-5 space-y-2 text-xs text-gray-600 dark:text-gray-400">
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> 20 Random Questions</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> PDF Certificate</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Instant Results &amp; Scoring</li>
+              </ul>
+              <Link href={`/tests/${activeCategory.id}?type=free`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+                Start Free Assessment <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 dark:border-blue-900/50 dark:bg-blue-950/20">
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="font-bold text-blue-900 dark:text-blue-100">Pro Industry Assessment</h4>
+                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold uppercase text-blue-800 dark:bg-blue-950 dark:text-blue-300">₹32 / Unlock</span>
+              </div>
+              <ul className="mb-5 space-y-2 text-xs text-blue-900/80 dark:text-blue-200/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-blue-600" /> 45 Questions (3 Comprehensive Sections)</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-blue-600" /> PDF Certificate</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-blue-600" /> Instant Results &amp; Scoring</li>
+              </ul>
+              <ProTestCheckout category={activeCategory.id} />
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Bottom Navigation */}
