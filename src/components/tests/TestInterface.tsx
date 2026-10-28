@@ -26,6 +26,9 @@ export default function TestInterface({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
   const [editedCandidateName, setCandidateName] = useState<string | null>(null)
+  const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
+  const [certificateError, setCertificateError] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
 
   // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
@@ -125,6 +128,32 @@ export default function TestInterface({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
+  const generateCertificate = async () => {
+    if (!candidateName.trim()) {
+      setCertificateError('Enter the name to appear on your certificate.')
+      return
+    }
+    setCertificateError(null)
+    if (result?.certificateId?.startsWith('demo-')) {
+      setGeneratedCertificateId(result.certificateId)
+      return
+    }
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/certificates/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId, candidateName }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Certificate generation failed')
+      setGeneratedCertificateId(payload.certificateId)
+    } catch (error) {
+      setCertificateError(error instanceof Error ? error.message : 'Certificate generation failed')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   if (isSubmitted) {
     const categoryTitle = ({
       technology: 'Technology & Software',
@@ -133,8 +162,8 @@ export default function TestInterface({
       ai: 'Artificial Intelligence',
     } as Record<string, string>)[category] || category.toUpperCase()
 
-    const downloadUrl = result?.certificateId
-      ? `/api/certificates/${result.certificateId}/download?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}&score=${result.score}&total=${result.total}`
+    const downloadUrl = generatedCertificateId
+      ? `/api/certificates/${generatedCertificateId}/download${generatedCertificateId.startsWith('demo-') ? `?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}&score=${result?.score}&total=${result?.total}` : ''}`
       : null
 
     return (
@@ -150,11 +179,11 @@ export default function TestInterface({
         <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800 text-left">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-bold text-gray-900 dark:text-white">{downloadUrl ? 'Accredited Certificate Ready' : 'Certificate unavailable'}</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">{downloadUrl ? 'Accredited Certificate Ready' : 'Certificate of Completion'}</h3>
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            {downloadUrl ? <>Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.</> : 'Your test result was saved, but your certificate could not be created. Please contact support.'}
-          </p>
+            {downloadUrl ? <>Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.</> : <>Confirm your name to generate your certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong>.</>}
+           </p>
 
           <div className="mb-4">
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -163,6 +192,7 @@ export default function TestInterface({
             <input
               type="text"
               value={candidateName}
+              disabled={!!generatedCertificateId || isGenerating}
               onChange={(e) => setCandidateName(e.target.value)}
               placeholder="Enter your full name"
               className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -178,8 +208,11 @@ export default function TestInterface({
               <Download className="w-4 h-4" /> Download Official Certificate (PDF)
             </a>
           ) : (
-            <p className="text-sm text-amber-600 text-center py-2">Your score is saved.</p>
+            <button type="button" onClick={generateCertificate} disabled={isGenerating} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md disabled:opacity-50">
+              {isGenerating ? 'Generating…' : 'Generate Certificate'}
+            </button>
           )}
+          {certificateError && <p role="alert" className="mt-3 text-sm text-red-600">{certificateError}</p>}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

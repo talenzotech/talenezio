@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     : id.toUpperCase();
 
   // Demo session or local development certificate download
-  if (id.startsWith('demo-') || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (process.env.NODE_ENV === 'development' && id.startsWith('demo-')) {
     const performanceStatement = percentage >= 75
       ? `Demonstrated outstanding subject matter expertise and proficiency in the ${topic} Industry-Standard Skill Assessment.`
       : percentage >= 50
