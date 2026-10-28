@@ -9,6 +9,7 @@ import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
 
 type SnapshotQuestion = { id: string; text: string; options: string[]; correct: number };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as {
     attemptId?: string;
@@ -21,8 +22,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
 
-  const isDemo = process.env.NODE_ENV === 'development' && ((await isLocalDemoSession()) || !process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
+  const isDemo = await isLocalDemoSession();
+  if (body.attemptId.startsWith('demo-attempt-') && isDemo) {
     let scoringQuestions: { id: string; correct: number }[] = [];
 
     if (body.category) {
@@ -67,16 +68,30 @@ export async function POST(request: Request) {
     });
   }
 
+  if (!UUID_PATTERN.test(body.attemptId)) {
+    return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data: attempt } = await admin
+  const { data: attempt, error: attemptLookupError } = await admin
     .from('test_attempts')
     .select('id, user_id, category, test_type, question_snapshot, total_questions, status, expires_at, score, submitted_at')
     .eq('id', body.attemptId)
     .maybeSingle();
+
+  if (attemptLookupError) {
+    console.error('Could not load test attempt:', {
+      code: attemptLookupError.code,
+      message: attemptLookupError.message,
+      details: attemptLookupError.details,
+      hint: attemptLookupError.hint,
+    });
+    return NextResponse.json({ error: 'Could not load the test attempt' }, { status: 500 });
+  }
 
   if (!attempt || attempt.user_id !== user.id) {
     return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
