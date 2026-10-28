@@ -97,32 +97,26 @@ export default function TestInterface({
     if (!confirm("Are you sure you want to submit the test?")) return
     setIsSubmitting(true)
     setSubmitError(null)
-    const response = await fetch('/api/tests/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        attemptId,
-        answers,
-        category,
-        type,
-        questionIds: questions.map(q => q.id),
-      }),
-    })
-    const payload = await response.json().catch(() => null)
-    setIsSubmitting(false)
-    if (!response.ok) {
-      setSubmitError(payload?.error || 'Could not submit the test')
-      return
-    }
-
-    // Mark test as completed in session storage and push history state
-    if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId, answers, category, type, questionIds: questions.map(q => q.id) }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
       window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
       window.history.pushState({ testCompleted: true }, '', window.location.href)
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch {
+      setSubmitError('Could not connect to the server. Please try submitting again.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setResult(payload)
-    setIsSubmitted(true)
   }
 
   const formatTime = (seconds: number) => {
@@ -156,10 +150,10 @@ export default function TestInterface({
         <div className="bg-gray-50 dark:bg-gray-950 p-6 rounded-2xl mb-8 border border-gray-100 dark:border-gray-800 text-left">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-bold text-gray-900 dark:text-white">Accredited Certificate Ready</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">{downloadUrl ? 'Accredited Certificate Ready' : 'Certificate unavailable'}</h3>
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.
+            {downloadUrl ? <>Your official verified certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong> is ready to download.</> : 'Your test result was saved, but your certificate could not be created. Please contact support.'}
           </p>
 
           <div className="mb-4">
@@ -184,7 +178,7 @@ export default function TestInterface({
               <Download className="w-4 h-4" /> Download Official Certificate (PDF)
             </a>
           ) : (
-            <p className="text-sm text-amber-600 text-center py-2">Preparing your credential… Refresh shortly.</p>
+            <p className="text-sm text-amber-600 text-center py-2">Your score is saved.</p>
           )}
         </div>
 
