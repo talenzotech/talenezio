@@ -45,6 +45,10 @@ export default function ProTestCheckout({ category }: Props) {
         return
       }
       if (!orderResponse.ok) throw new Error(order.error || 'Unable to start payment')
+      if (order.freeAccess) {
+        router.push(`/tests/${category}?type=pro`)
+        return
+      }
 
       await loadRazorpay()
 
