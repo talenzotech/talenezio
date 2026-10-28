@@ -10,6 +10,8 @@ import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
 
 type SnapshotQuestion = { id: string; text: string; options: string[]; correct: number };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 async function saveCertificatePdf(input: {
   certificateId: string;
   certificateNumber: string;
@@ -32,7 +34,11 @@ async function saveCertificatePdf(input: {
     console.error('Unable to upload test certificate PDF:', uploadError);
     return null;
   }
-  await admin.from('certificates').update({ pdf_path: path }).eq('id', input.certificateId);
+  const { error: updateError } = await admin.from('certificates').update({ pdf_path: path }).eq('id', input.certificateId);
+  if (updateError) {
+    console.error('Unable to save test certificate PDF path:', updateError);
+    return null;
+  }
   return path;
 }
 
@@ -48,8 +54,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
 
-  const isDemo = process.env.NODE_ENV === 'development' || (await isLocalDemoSession()) || !process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (body.attemptId.startsWith('demo-attempt-') || isDemo) {
+  const isDemo = await isLocalDemoSession();
+  if (body.attemptId.startsWith('demo-attempt-') && isDemo) {
     let scoringQuestions: { id: string; correct: number }[] = [];
 
     if (body.category) {
@@ -94,16 +100,30 @@ export async function POST(request: Request) {
     });
   }
 
+  if (!UUID_PATTERN.test(body.attemptId)) {
+    return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data: attempt } = await admin
+  const { data: attempt, error: attemptLookupError } = await admin
     .from('test_attempts')
     .select('id, user_id, category, test_type, question_snapshot, total_questions, status, expires_at, score, submitted_at')
     .eq('id', body.attemptId)
     .maybeSingle();
+
+  if (attemptLookupError) {
+    console.error('Could not load test attempt:', {
+      code: attemptLookupError.code,
+      message: attemptLookupError.message,
+      details: attemptLookupError.details,
+      hint: attemptLookupError.hint,
+    });
+    return NextResponse.json({ error: 'Could not load the test attempt' }, { status: 500 });
+  }
 
   if (!attempt || attempt.user_id !== user.id) {
     return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
@@ -172,20 +192,25 @@ export async function POST(request: Request) {
 
   if (certificateError || !certificate) {
     console.error('Unable to create test certificate:', certificateError);
-    return NextResponse.json({ error: 'Test result saved, but certificate creation failed' }, { status: 500 });
+    return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
   }
 
-  await saveCertificatePdf({
-    certificateId: certificate.id,
-    certificateNumber: certificate.certificate_number,
-    userId: user.id,
-    candidateName,
-    topic: attempt.category,
-    score,
-    totalQuestions: attempt.total_questions,
-    issuedAt: certificate.issued_at,
-    performanceStatement,
-  });
+  let pdfPath: string | null = null;
+  try {
+    pdfPath = await saveCertificatePdf({
+      certificateId: certificate.id,
+      certificateNumber: certificate.certificate_number,
+      userId: user.id,
+      candidateName,
+      topic: attempt.category,
+      score,
+      totalQuestions: attempt.total_questions,
+      issuedAt: certificate.issued_at,
+      performanceStatement,
+    });
+  } catch (error) {
+    console.error('Unable to generate test certificate PDF:', error);
+  }
 
-  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: certificate.id });
+  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: pdfPath ? certificate.id : null });
 }
