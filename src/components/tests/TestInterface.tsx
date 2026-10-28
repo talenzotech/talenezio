@@ -25,7 +25,8 @@ export default function TestInterface({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
-  const [candidateName, setCandidateName] = useState(userName || 'Talenezio Learner')
+  const [editedCandidateName, setCandidateName] = useState<string | null>(null)
+  const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
 
   // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
   useEffect(() => {

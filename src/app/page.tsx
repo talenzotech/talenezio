@@ -139,12 +139,13 @@ export default async function Home() {
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 sm:py-5">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
             <Image
-              src="/talenezio-logo.png"
+              src="/talenezio-wordmark-transparent.png?v=3"
               alt="Talenezio Logo"
-              width={40}
+              width={180}
               height={40}
               priority
-              className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
+              className="h-9 w-auto sm:h-10 object-contain"
+              style={{ width: 'auto' }}
             />
             <span className="text-xl font-bold tracking-tight">Talenezio</span>
           </Link>
@@ -267,7 +268,7 @@ export default async function Home() {
                     <Users className="h-4 w-4" />
                   </div>
                   <p className="text-xs sm:text-sm font-semibold leading-tight">
-                    You don't have to figure out your career alone.
+                    You don&apos;t have to figure out your career alone.
                   </p>
                 </div>
               </div>
