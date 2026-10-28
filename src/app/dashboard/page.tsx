@@ -15,6 +15,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
@@ -54,6 +55,10 @@ export default async function DashboardPage() {
     .limit(5)
   const { data: serviceOrders } = serviceOrdersQuery
     ? await serviceOrdersQuery
+    : { data: [] }
+
+  const { data: certificates } = supabase && user
+    ? await supabase.from('certificates').select('id, topic, certificate_number, pdf_path').eq('user_id', user.id).not('pdf_path', 'is', null).order('issued_at', { ascending: false })
     : { data: [] }
 
   const features = [
@@ -119,6 +124,7 @@ export default async function DashboardPage() {
           </Link>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <div className="flex items-center gap-3">
               {avatarUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -149,6 +155,20 @@ export default async function DashboardPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-8">
+        {certificates && certificates.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Your Certificates</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {certificates.map((certificate) => (
+                <div key={certificate.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <p className="font-bold capitalize text-gray-900 dark:text-white">{certificate.topic.replaceAll('-', ' ')}</p>
+                  <p className="mt-2 break-all text-xs text-gray-500">{certificate.certificate_number}</p>
+                  <a href={`/api/certificates/${certificate.id}/download`} className="mt-4 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-bold text-white">Download Certificate</a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         
         {/* Upcoming Sessions Section */}
         {upcomingSessions && upcomingSessions.length > 0 && (
