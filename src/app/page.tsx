@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ThemeWordmark } from "@/components/ThemeWordmark";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -138,15 +138,7 @@ export default async function Home() {
         {/* Navbar */}
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 sm:py-5">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Talenezio home">
-            <Image
-              src="/talenezio-wordmark-transparent.png?v=3"
-              alt="Talenezio Logo"
-              width={180}
-              height={40}
-              priority
-              className="h-9 w-auto sm:h-10 object-contain"
-              style={{ width: 'auto' }}
-            />
+            <ThemeWordmark />
             <span className="text-xl font-bold tracking-tight">Talenezio</span>
           </Link>
 
