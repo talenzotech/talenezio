@@ -7,7 +7,6 @@ import {
   QuestionBankError,
   type Question,
 } from '@/lib/tests/questionBank';
-import { getBuiltinQuestions } from '@/lib/tests/defaultQuestions';
 
 export type { PublicQuestion, Question } from '@/lib/tests/questionBank';
 export { normalizeCategory, parseQuestionRows, QuestionBankError, toPublicQuestion } from '@/lib/tests/questionBank';
@@ -28,9 +27,18 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
     });
 
     try {
-      const response = await google.sheets({ version: 'v4', auth }).spreadsheets.values.get({
+      const sheets = google.sheets({ version: 'v4', auth });
+      const metadata = await sheets.spreadsheets.get({
         spreadsheetId,
-        range: `${worksheet}!A:K`,
+        fields: 'sheets.properties.title',
+      });
+      const titles = (metadata.data.sheets ?? []).map((sheet) => sheet.properties?.title).filter((title): title is string => Boolean(title));
+      const matches = titles.filter((title) => title.trim() === worksheet.trim());
+      const title = titles.includes(worksheet) ? worksheet : matches.length === 1 ? matches[0] : null;
+      if (!title) throw new Error(`Worksheet ${JSON.stringify(worksheet)} was not found or is ambiguous.`);
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${title.replace(/'/g, "''")}'!A:K`,
       });
       const rows = response.data.values as string[][] | undefined;
       const questions = parseQuestionRows(rows ?? []);
@@ -39,14 +47,11 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
       if (filtered.length > 0) return filtered;
       throw new QuestionBankError(`No active questions available for ${category} in the ${worksheet} worksheet.`);
     } catch (error) {
-      console.warn('Unable to read Google question bank, using default verified question bank:', error);
+      console.error('Unable to read Google question bank:', error);
+      throw new QuestionBankError('The question bank is currently unavailable. Please try again later.');
     }
   }
 
-  const normalizedCategory = normalizeCategory(category);
-  const questions = getBuiltinQuestions(normalizedCategory);
-  if (questions.length === 0) {
-    throw new QuestionBankError(`No questions available for category: ${category}`);
-  }
-  return questions;
+  console.error('Google Sheets question bank is not configured.');
+  throw new QuestionBankError('The question bank is currently unavailable. Please try again later.');
 }
