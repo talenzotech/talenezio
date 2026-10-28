@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { reviewSubmission } from './actions';
 import { Loader2, CheckCircle, XCircle, ExternalLink, User } from 'lucide-react';
 
@@ -60,7 +61,7 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
                       {sub.profiles?.avatar_url ? (
-                        <img className="h-10 w-10 rounded-full object-cover" src={sub.profiles.avatar_url} alt="" />
+                        <Image className="h-10 w-10 rounded-full object-cover" src={sub.profiles.avatar_url} alt="" width={40} height={40} unoptimized />
                       ) : (
                         <User className="h-5 w-5 text-gray-400" />
                       )}
@@ -149,7 +150,7 @@ export default function SubmissionsClient({ initialSubmissions }: { initialSubmi
                             className="block relative aspect-video bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden group border border-gray-200 dark:border-zinc-700"
                           >
                             {ev.url ? (
-                              <img src={ev.url} alt={`Evidence ${i+1}`} className="w-full h-full object-cover" />
+                              <Image src={ev.url} alt={`Evidence ${i+1}`} fill unoptimized className="object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">No URL</div>
                             )}
