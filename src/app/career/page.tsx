@@ -64,6 +64,28 @@ interface CareerService {
 export default function CareerPage() {
   const services: CareerService[] = [
     {
+      id: 'career-guidance',
+      title: 'Career Guidance (1-on-1)',
+      tagline: 'Resume Review & 1-on-1 Strategy Session',
+      price: '₹199',
+      priceSubtitle: 'per 2-hour session',
+      popular: false,
+      badge: 'Resume Review Included',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+      icon: FileText,
+      iconColor: 'bg-emerald-600 text-white',
+      accentBorder: 'border-emerald-200 dark:border-emerald-800/60',
+      description: 'Gain absolute clarity on your career trajectory, receive live resume critique from an expert, and walk away with a proven roadmap.',
+      points: [
+        { primary: 'Resume review.' },
+        { primary: 'A 2-hour session.' },
+        { primary: 'Personalized career guidance.' },
+      ],
+      href: '/services/counseling',
+      ctaText: 'Book Now',
+      deliveryTime: 'Schedule at your preferred time',
+    },
+    {
       id: 'linkedin-optimization',
       title: 'LinkedIn Optimization',
       tagline: 'Personal Branding & Executive Presence',
@@ -111,28 +133,6 @@ export default function CareerPage() {
       href: '/services/interview-prep',
       ctaText: 'Book Now',
       deliveryTime: 'Interactive live cohort sessions',
-    },
-    {
-      id: 'career-guidance',
-      title: 'Career Guidance (1-on-1)',
-      tagline: 'Resume Review & 1-on-1 Strategy Session',
-      price: '₹199',
-      priceSubtitle: 'per 2-hour session',
-      popular: false,
-      badge: 'Resume Review Included',
-      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-      icon: FileText,
-      iconColor: 'bg-emerald-600 text-white',
-      accentBorder: 'border-emerald-200 dark:border-emerald-800/60',
-      description: 'Gain absolute clarity on your career trajectory, receive live resume critique from an expert, and walk away with a proven roadmap.',
-      points: [
-        { primary: 'Resume review.' },
-        { primary: 'A 2-hour session.' },
-        { primary: 'Personalized career guidance.' },
-      ],
-      href: '/services/counseling',
-      ctaText: 'Book Now',
-      deliveryTime: 'Schedule at your preferred time',
     },
   ]
 
