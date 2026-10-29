@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { signout } from '../(auth)/actions'
 import {
   LogOut,
@@ -18,6 +19,8 @@ import { isLocalDemoSession } from '@/lib/auth/local-demo'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
+import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMenu'
+import { type ExperienceLevel } from '@/lib/profile/validation'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -30,10 +33,48 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
+  let demoProfile: {
+    fullName?: string
+    collegeName?: string
+    experience?: ExperienceLevel
+    interests?: string[]
+  } | null = null
+
+  if (localDemoSession) {
+    const cookieStore = await cookies()
+    const rawDemoProfile = cookieStore.get('talenezio-local-demo-profile')?.value
+    if (rawDemoProfile) {
+      try {
+        demoProfile = JSON.parse(decodeURIComponent(rawDemoProfile))
+      } catch {
+        // ignore parse error
+      }
+    }
+  }
+
+  const profileQuery = supabase
+    ? supabase.from('profiles').select('full_name, avatar_url').eq('id', user?.id || '').maybeSingle()
+    : null
+  const { data: dbProfile } = profileQuery ? await profileQuery : { data: null }
+
   const userMetadata = user?.user_metadata || {}
-  const fullName = localDemoSession ? 'Demo User' : userMetadata.full_name || 'Guest'
-  const firstName = fullName.split(' ')[0]
-  const avatarUrl = userMetadata.avatar_url || null
+  const fullName =
+    (localDemoSession
+      ? demoProfile?.fullName
+      : dbProfile?.full_name || userMetadata.full_name) ||
+    (localDemoSession ? 'Demo User' : 'Guest')
+  const collegeName =
+    (localDemoSession ? demoProfile?.collegeName : userMetadata.college_name) || ''
+  const experience: ExperienceLevel =
+    (localDemoSession ? demoProfile?.experience : userMetadata.experience) || 'Fresher'
+  const rawInterests = localDemoSession ? demoProfile?.interests : userMetadata.interests
+  const interests: string[] = Array.isArray(rawInterests)
+    ? rawInterests
+    : typeof rawInterests === 'string' && rawInterests
+    ? [rawInterests]
+    : []
+  const avatarUrl = dbProfile?.avatar_url || userMetadata.avatar_url || null
+  const email = user?.email || (localDemoSession ? 'demo@talenezio.local' : undefined)
 
   // Fetch upcoming sessions for this user
   const upcomingSessionsQuery = supabase
@@ -119,19 +160,16 @@ export default async function DashboardPage() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              {avatarUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm">
-                  {firstName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {firstName}
-              </span>
-            </div>
+            <DashboardProfileMenu
+              initialProfile={{
+                fullName,
+                email,
+                collegeName,
+                experience,
+                interests,
+                avatarUrl,
+              }}
+            />
 
             <form action={signout}>
               <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
