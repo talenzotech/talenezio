@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { sendInternshipApplicationEmail } from '@/utils/email'
 
 export async function POST(request: Request) {
   const localDemo = await isLocalDemoSession()
@@ -51,20 +52,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Resume file size exceeds the 5MB limit.' }, { status: 400 })
     }
 
-    let resumePath: string | null = null
+    // Validate resume file extension
+    const allowedExts = ['pdf', 'doc', 'docx']
+    const fileExt = (resumeFile.name.split('.').pop() || '').toLowerCase()
+    if (!allowedExts.includes(fileExt)) {
+      return NextResponse.json(
+        { error: 'Please upload a valid resume in PDF, DOC, or DOCX format.' },
+        { status: 400 }
+      )
+    }
 
-    // Attempt upload to Supabase storage if not local demo
+    // Convert file to Node Buffer for storage & email attachment
+    const arrayBuffer = await resumeFile.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    let resumePath: string | null = null
+    let resumeStorageUrl: string | null = null
+
+    // Attempt upload to Supabase storage if authenticated
     if (user) {
       try {
         const admin = createAdminClient()
-        const fileExt = resumeFile.name.split('.').pop() || 'pdf'
         const safeName = `${Date.now()}_resume.${fileExt}`
         const storagePath = `internships/${user.id}/${safeName}`
 
-        const arrayBuffer = await resumeFile.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
-
-        // Try upload to unlock_evidence bucket (which exists in migrations)
         const { error: uploadError } = await admin.storage
           .from('unlock_evidence')
           .upload(storagePath, buffer, {
@@ -74,6 +85,11 @@ export async function POST(request: Request) {
 
         if (!uploadError) {
           resumePath = storagePath
+          // Generate a 7-day signed link for convenience
+          const { data: signed } = await admin.storage
+            .from('unlock_evidence')
+            .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
+          resumeStorageUrl = signed?.signedUrl || null
         } else {
           console.warn('Notice: resume upload to unlock_evidence bucket returned:', uploadError.message)
         }
@@ -106,6 +122,23 @@ export async function POST(request: Request) {
       }
     }
 
+    // Dispatch email with complete application details and uploaded resume attachment
+    try {
+      await sendInternshipApplicationEmail({
+        internshipTitle,
+        fullName,
+        email,
+        phone,
+        college,
+        resumeFileName: resumeFile.name,
+        resumeBuffer: buffer,
+        resumeStorageUrl,
+      })
+    } catch (emailErr) {
+      // Non-fatal error so application is still successfully recorded even if email service has limits
+      console.error('Notice: error sending internship application notification email:', emailErr)
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Application submitted successfully! Our team will review your resume and reach out to you.',
@@ -118,4 +151,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
