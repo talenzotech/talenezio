@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { ChevronDown, User, UserPen, Sparkles } from 'lucide-react'
-import { EditProfileModal } from './EditProfileModal'
-import { type ProfileData, type ExperienceLevel } from '@/app/dashboard/actions'
+import Link from 'next/link'
+import { ChevronDown, UserPen } from 'lucide-react'
+import { type ExperienceLevel } from '@/lib/profile/validation'
 
 export interface DashboardProfileMenuProps {
   initialProfile: {
@@ -18,17 +18,10 @@ export interface DashboardProfileMenuProps {
 
 export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [profile, setProfile] = useState<ProfileData>({
-    fullName: initialProfile.fullName || 'Guest',
-    collegeName: initialProfile.collegeName || '',
-    experience: initialProfile.experience || 'Fresher',
-    interests: initialProfile.interests || [],
-  })
-
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const firstName = profile.fullName.trim().split(' ')[0] || 'User'
+  const fullName = initialProfile.fullName || 'Guest'
+  const firstName = fullName.trim().split(' ')[0] || 'User'
   const avatarUrl = initialProfile.avatarUrl || null
 
   // Close dropdown when clicking outside
@@ -58,10 +51,6 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
     }
   }, [isOpen])
 
-  const handleProfileUpdated = (updated: ProfileData) => {
-    setProfile(updated)
-  }
-
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
       {/* Clickable Header User Pill */}
@@ -77,7 +66,7 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={avatarUrl}
-            alt={profile.fullName}
+            alt={fullName}
             className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm object-cover"
           />
         ) : (
@@ -107,7 +96,7 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
           {/* User Info Header */}
           <div className="px-3 py-2.5">
             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-              {profile.fullName}
+              {fullName}
             </p>
             {initialProfile.email && (
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
@@ -116,11 +105,11 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
             )}
             <div className="mt-2 flex items-center gap-1.5">
               <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-100 dark:border-blue-900/40">
-                {profile.experience}
+                {initialProfile.experience || 'Fresher'}
               </span>
-              {profile.collegeName && (
+              {initialProfile.collegeName && (
                 <span className="truncate text-[11px] text-gray-500 dark:text-gray-400">
-                  • {profile.collegeName}
+                  • {initialProfile.collegeName}
                 </span>
               )}
             </div>
@@ -130,33 +119,18 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
 
           {/* Menu Items */}
           <div className="space-y-0.5">
-            <button
-              type="button"
+            <Link
+              href="/profile/edit"
               role="menuitem"
-              onClick={() => {
-                setIsOpen(false)
-                setIsModalOpen(true)
-              }}
+              onClick={() => setIsOpen(false)}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 text-left"
             >
               <UserPen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span>Edit Profile</span>
-            </button>
+            </Link>
           </div>
         </div>
       )}
-
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialData={{
-          ...profile,
-          email: initialProfile.email,
-          avatarUrl,
-        }}
-        onProfileUpdated={handleProfileUpdated}
-      />
     </div>
   )
 }

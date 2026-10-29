@@ -57,3 +57,4 @@ export function validateProfileData(data: ProfileData): { isValid: boolean; erro
 
   return { isValid: true }
 }
+

@@ -7,14 +7,8 @@ import { cookies } from 'next/headers'
 import {
   type ProfileData,
   type ProfileActionResult,
-  type ExperienceLevel,
-  VALID_EXPERIENCES,
-  AVAILABLE_INTERESTS,
   validateProfileData,
 } from '@/lib/profile/validation'
-
-export type { ProfileData, ProfileActionResult, ExperienceLevel }
-export { VALID_EXPERIENCES, AVAILABLE_INTERESTS, validateProfileData }
 
 export async function updateUserProfile(data: ProfileData): Promise<ProfileActionResult> {
   const fullName = (data.fullName || '').trim()
@@ -57,6 +51,7 @@ export async function updateUserProfile(data: ProfileData): Promise<ProfileActio
     })
 
     revalidatePath('/dashboard')
+    revalidatePath('/profile/edit')
     revalidatePath('/', 'layout')
 
     return {
@@ -97,17 +92,22 @@ export async function updateUserProfile(data: ProfileData): Promise<ProfileActio
       }
     }
 
-    // 2. Keep public.profiles table full_name synchronized
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName })
-      .eq('id', user.id)
+    // 2. Keep public.profiles table full_name synchronized (safely)
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('id', user.id)
 
-    if (profileError) {
-      console.warn('Notice: full_name update on public.profiles returned:', profileError.message)
+      if (profileError) {
+        console.warn('Notice: full_name update on public.profiles returned:', profileError.message)
+      }
+    } catch (profileCatchErr) {
+      console.warn('Notice: error attempting public.profiles update:', profileCatchErr)
     }
 
     revalidatePath('/dashboard')
+    revalidatePath('/profile/edit')
     revalidatePath('/', 'layout')
 
     return {
@@ -121,9 +121,10 @@ export async function updateUserProfile(data: ProfileData): Promise<ProfileActio
     }
   } catch (err: unknown) {
     console.error('Unexpected error updating profile:', err)
+    const message = err instanceof Error ? err.message : String(err)
     return {
       success: false,
-      error: 'An unexpected error occurred while saving your profile.',
+      error: message || 'An unexpected error occurred while saving your profile.',
     }
   }
 }

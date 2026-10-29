@@ -20,7 +20,7 @@ import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMenu'
-import { type ExperienceLevel } from '@/app/dashboard/actions'
+import { type ExperienceLevel } from '@/lib/profile/validation'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
