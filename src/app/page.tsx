@@ -151,18 +151,6 @@ export default async function Home() {
           </Link>
 
           <div className="flex items-center gap-3 text-sm font-semibold sm:gap-6">
-            <Link
-              href={getDestination('/tests')}
-              className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
-            >
-              Skill tests
-            </Link>
-            <Link
-              href={getDestination('/resume-builder')}
-              className="hidden text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 sm:inline"
-            >
-              Resume Building
-            </Link>
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
