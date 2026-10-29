@@ -1,4 +1,5 @@
 import { getService, isServiceCode, serviceProductCode, type ServiceCode } from '@/lib/services/catalog';
+import { getTrainingByProductCode } from '@/lib/internships-training/data';
 
 export const PRO_TEST_PRICE_PAISE = 3200;
 export const PRO_TEST_CURRENCY = 'INR';
@@ -16,11 +17,24 @@ export function proTestProductCode(category: TestCategory): string {
 
 export const FREE_UNLOCK_PRODUCT_CODE = 'pro-test:all';
 
-export function paidProductDetails(productCode: string): { amountPaise: number; currency: 'INR'; serviceCode?: ServiceCode; category?: TestCategory } | null {
+export function paidProductDetails(productCode: string): {
+  amountPaise: number;
+  currency: 'INR';
+  serviceCode?: ServiceCode;
+  category?: TestCategory;
+  trainingCode?: string;
+} | null {
   if (productCode.startsWith('pro-test:')) {
     const category = productCode.replace('pro-test:', '');
     return isTestCategory(category)
       ? { amountPaise: PRO_TEST_PRICE_PAISE, currency: PRO_TEST_CURRENCY, category }
+      : null;
+  }
+
+  if (productCode.startsWith('training:')) {
+    const training = getTrainingByProductCode(productCode);
+    return training
+      ? { amountPaise: training.pricePaise, currency: 'INR', trainingCode: training.id }
       : null;
   }
 
