@@ -61,3 +61,82 @@ export async function sendUnlockStatusEmail({ to, name, status, note }: SendUnlo
     return { success: false, error };
   }
 }
+
+export interface SendInternshipApplicationEmailProps {
+  internshipTitle: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  college?: string;
+  resumeFileName: string;
+  resumeBuffer: Buffer;
+  resumeStorageUrl?: string | null;
+}
+
+export async function sendInternshipApplicationEmail({
+  internshipTitle,
+  fullName,
+  email,
+  phone,
+  college,
+  resumeFileName,
+  resumeBuffer,
+  resumeStorageUrl,
+}: SendInternshipApplicationEmailProps) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Notice: RESEND_API_KEY is not configured. Email to taleneziocontact@gmail.com could not be sent.');
+    return { success: false, error: new Error('RESEND_API_KEY is not configured') };
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = `New Internship Application: ${internshipTitle} - ${fullName}`;
+
+  const textLines = [
+    '========================================',
+    ' TALENEZIO - NEW INTERNSHIP APPLICATION ',
+    '========================================',
+    '',
+    `Position: ${internshipTitle}`,
+    `Candidate Name: ${fullName}`,
+    `Email: ${email}`,
+    `Phone: ${phone}`,
+    `College / Institute: ${college && college.trim() ? college : 'Not provided'}`,
+    `Resume Attached: ${resumeFileName}`,
+    `Submitted At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+    '',
+  ];
+
+  if (resumeStorageUrl) {
+    textLines.push(`Cloud Storage Backup: ${resumeStorageUrl}`, '');
+  }
+
+  textLines.push(
+    '----------------------------------------',
+    "The candidate's resume is attached to this email.",
+    '-- Talenezio Automated Notification'
+  );
+
+  const text = textLines.join('\n');
+
+  try {
+    const data = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Talenezio <onboarding@resend.dev>',
+      to: 'taleneziocontact@gmail.com',
+      subject,
+      text,
+      attachments: [
+        {
+          filename: resumeFileName,
+          content: resumeBuffer,
+        },
+      ],
+    });
+
+    console.log('Internship application email sent successfully to taleneziocontact@gmail.com:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error sending internship application email to taleneziocontact@gmail.com:', error);
+    return { success: false, error };
+  }
+}

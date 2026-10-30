@@ -10,7 +10,10 @@
     "test:auth": "node --experimental-strip-types --test tests/auth-redirect.test.mjs",
     "test:scoring": "node --experimental-strip-types --test tests/test-scoring.test.mjs",
     "test:question-bank": "node --experimental-strip-types --test tests/question-bank.test.mjs",
-    "test:unlock-entitlements": "node --experimental-strip-types --test tests/unlock-entitlements.test.mjs"
+    "test:unlock-entitlements": "node --experimental-strip-types --test tests/unlock-entitlements.test.mjs",
+    "test:profile": "node --experimental-strip-types --test tests/profile-validation.test.mjs",
+    "test:internships-training": "node --experimental-strip-types --test tests/internships-training.test.mjs",
+    "test": "npm run test:auth && npm run test:scoring && npm run test:question-bank && npm run test:unlock-entitlements && npm run test:profile && npm run test:internships-training"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
