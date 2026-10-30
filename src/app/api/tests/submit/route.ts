@@ -3,44 +3,11 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeTestAttempt } from '@/lib/payments/access';
 import { scoreAnswers } from '@/lib/tests/scoring';
-import { buildCertificatePdf } from '@/lib/certificates/pdf';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
 import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
 
 type SnapshotQuestion = { id: string; text: string; options: string[]; correct: number };
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-async function saveCertificatePdf(input: {
-  certificateId: string;
-  certificateNumber: string;
-  userId: string;
-  candidateName: string;
-  topic: string;
-  score: number;
-  totalQuestions: number;
-  issuedAt: string;
-  performanceStatement: string;
-}) {
-  const pdf = await buildCertificatePdf(input);
-  const path = `${input.userId}/${input.certificateNumber}.pdf`;
-  const admin = createAdminClient();
-  const { error: uploadError } = await admin.storage.from('certificates').upload(path, Buffer.from(pdf), {
-    contentType: 'application/pdf',
-    upsert: true,
-  });
-  if (uploadError) {
-    console.error('Unable to upload test certificate PDF:', uploadError);
-    return null;
-  }
-  const { error: updateError } = await admin.from('certificates').update({ pdf_path: path }).eq('id', input.certificateId);
-  if (updateError) {
-    console.error('Unable to save test certificate PDF path:', updateError);
-    return null;
-  }
-  return path;
-}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as {
@@ -54,8 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid test submission' }, { status: 400 });
   }
 
-  const isDemo = await isLocalDemoSession();
-  if (body.attemptId.startsWith('demo-attempt-') && isDemo) {
+  const isDemo = process.env.NODE_ENV === 'development' && ((await isLocalDemoSession()) || !process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
     let scoringQuestions: { id: string; correct: number }[] = [];
 
     if (body.category) {
@@ -100,30 +67,16 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!UUID_PATTERN.test(body.attemptId)) {
-    return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
-  }
-
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data: attempt, error: attemptLookupError } = await admin
+  const { data: attempt } = await admin
     .from('test_attempts')
     .select('id, user_id, category, test_type, question_snapshot, total_questions, status, expires_at, score, submitted_at')
     .eq('id', body.attemptId)
     .maybeSingle();
-
-  if (attemptLookupError) {
-    console.error('Could not load test attempt:', {
-      code: attemptLookupError.code,
-      message: attemptLookupError.message,
-      details: attemptLookupError.details,
-      hint: attemptLookupError.hint,
-    });
-    return NextResponse.json({ error: 'Could not load the test attempt' }, { status: 500 });
-  }
 
   if (!attempt || attempt.user_id !== user.id) {
     return NextResponse.json({ error: 'Test attempt not found' }, { status: 404 });
@@ -175,42 +128,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not save test result' }, { status: 500 });
   }
 
-  const candidateName = (await admin.from('profiles').select('full_name').eq('id', user.id).maybeSingle()).data?.full_name || user.user_metadata?.full_name || 'Talenezio learner';
-  const percentage = Math.round((score / attempt.total_questions) * 10000) / 100;
-  const certificateNumber = `TAL-TEST-${attempt.id.slice(0, 8).toUpperCase()}`;
-  const performanceStatement = `Scored ${score} out of ${attempt.total_questions} (${percentage}%).`;
-  const { data: certificate, error: certificateError } = await admin.from('certificates').insert({
-    user_id: user.id,
-    attempt_id: attempt.id,
-    certificate_number: certificateNumber,
-    certificate_type: 'test_completion',
-    candidate_name: candidateName,
-    topic: attempt.category,
-    performance_statement: performanceStatement,
-    score: percentage,
-  }).select('id, certificate_number, issued_at').single();
-
-  if (certificateError || !certificate) {
-    console.error('Unable to create test certificate:', certificateError);
-    return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
-  }
-
-  let pdfPath: string | null = null;
-  try {
-    pdfPath = await saveCertificatePdf({
-      certificateId: certificate.id,
-      certificateNumber: certificate.certificate_number,
-      userId: user.id,
-      candidateName,
-      topic: attempt.category,
-      score,
-      totalQuestions: attempt.total_questions,
-      issuedAt: certificate.issued_at,
-      performanceStatement,
-    });
-  } catch (error) {
-    console.error('Unable to generate test certificate PDF:', error);
-  }
-
-  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: pdfPath ? certificate.id : null });
+  return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
 }

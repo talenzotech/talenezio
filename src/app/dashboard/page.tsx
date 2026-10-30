@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import Image from 'next/image'
+import { ThemeWordmark } from '@/components/ThemeWordmark'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
@@ -16,6 +16,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
@@ -97,6 +98,10 @@ export default async function DashboardPage() {
     ? await serviceOrdersQuery
     : { data: [] }
 
+  const { data: certificates } = supabase && user
+    ? await supabase.from('certificates').select('id, topic, certificate_number, pdf_path').eq('user_id', user.id).not('pdf_path', 'is', null).order('issued_at', { ascending: false })
+    : { data: [] }
+
   const features = [
     {
       title: 'Skill Assessments',
@@ -147,19 +152,12 @@ export default async function DashboardPage() {
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
-            <Image
-              src="/talenezio-wordmark-transparent.png?v=3"
-              alt="Talenezio Logo"
-              width={180}
-              height={40}
-              priority
-              className="h-9 w-auto sm:h-10 object-contain"
-              style={{ width: 'auto' }}
-            />
+            <ThemeWordmark />
             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
           </Link>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <DashboardProfileMenu
               initialProfile={{
                 fullName,
@@ -187,6 +185,20 @@ export default async function DashboardPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-8">
+        {certificates && certificates.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Your Certificates</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {certificates.map((certificate) => (
+                <div key={certificate.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <p className="font-bold capitalize text-gray-900 dark:text-white">{certificate.topic.replaceAll('-', ' ')}</p>
+                  <p className="mt-2 break-all text-xs text-gray-500">{certificate.certificate_number}</p>
+                  <a href={`/api/certificates/${certificate.id}/download`} className="mt-4 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-bold text-white">Download Certificate</a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         
         {/* Upcoming Sessions Section */}
         {upcomingSessions && upcomingSessions.length > 0 && (

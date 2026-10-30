@@ -8,7 +8,7 @@ import {
 } from '@/lib/payments/products';
 import { createRazorpayOrder } from '@/lib/payments/razorpay';
 import { env } from '@/lib/env';
-import { hasServiceAccess } from '@/lib/payments/access';
+import { hasProTestAccess, hasServiceAccess } from '@/lib/payments/access';
 import { getService } from '@/lib/services/catalog';
 
 export async function POST(request: Request) {
@@ -35,6 +35,11 @@ export async function POST(request: Request) {
     if (!productCode || !product) {
       return NextResponse.json({ error: 'Invalid service or test product' }, { status: 400 });
     }
+
+    if (product.category && await hasProTestAccess(user.id, product.category)) {
+      return NextResponse.json({ freeAccess: true, productCode });
+    }
+
     const admin = createAdminClient();
 
     const service = product.serviceCode ? getService(product.serviceCode) : null;
