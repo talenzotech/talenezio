@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: attempt } = await admin
     .from('test_attempts')
-    .select('id, user_id, category, test_type, question_snapshot, total_questions, status, expires_at, score, submitted_at')
+    .select('id, user_id, category, test_type, question_snapshot, total_questions, status, expires_at, score, submitted_at, certificate_id')
     .eq('id', body.attemptId)
     .maybeSingle();
 
@@ -83,8 +83,7 @@ export async function POST(request: Request) {
   }
 
   if (attempt.status === 'submitted') {
-    const { data: certificate } = await admin.from('certificates').select('id').eq('attempt_id', attempt.id).maybeSingle();
-    return NextResponse.json({ submitted: true, score: attempt.score, total: attempt.total_questions, certificateId: certificate?.id ?? null });
+    return NextResponse.json({ submitted: true, score: attempt.score, total: attempt.total_questions, certificateId: attempt.certificate_id });
   }
 
   if (attempt.status !== 'in_progress' || new Date(attempt.expires_at).getTime() <= Date.now()) {
@@ -120,10 +119,9 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (submitError || !submittedAttempt) {
-    const { data: existingAttempt } = await admin.from('test_attempts').select('score, total_questions, status').eq('id', attempt.id).single();
+    const { data: existingAttempt } = await admin.from('test_attempts').select('score, total_questions, status, certificate_id').eq('id', attempt.id).single();
     if (existingAttempt?.status === 'submitted') {
-      const { data: certificate } = await admin.from('certificates').select('id').eq('attempt_id', attempt.id).maybeSingle();
-      return NextResponse.json({ submitted: true, score: existingAttempt.score, total: existingAttempt.total_questions, certificateId: certificate?.id ?? null });
+      return NextResponse.json({ submitted: true, score: existingAttempt.score, total: existingAttempt.total_questions, certificateId: existingAttempt.certificate_id });
     }
     return NextResponse.json({ error: 'Could not save test result' }, { status: 500 });
   }

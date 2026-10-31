@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCertificatePdf } from '@/lib/certificates/pdf';
+import { buildCertificateNumberBase } from '@/lib/certificates/numbering';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,14 +24,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const totalQuestions = totalParam !== null && !isNaN(Number(totalParam)) ? Number(totalParam) : 20;
   const percentage = Math.round((score / totalQuestions) * 100);
 
-  const certPrefix = topic.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase() || 'TEST';
-  const cleanId = id.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || '001';
-  const certificateNumber = id.startsWith('demo-')
-    ? `TAL-2026-${certPrefix}-${cleanId}`
-    : id.toUpperCase();
-
   // Demo session or local development certificate download
   if (process.env.NODE_ENV === 'development' && id.startsWith('demo-')) {
+    const issuedAt = new Date().toISOString();
+    let certificateNumber: string;
+    try {
+      certificateNumber = buildCertificateNumberBase({
+        category: rawTopic, testType: url.searchParams.get('type') || 'free',
+        score, candidateName, issuedAt,
+      });
+      if (!Number.isSafeInteger(totalQuestions) || totalQuestions <= 0 || score > totalQuestions) throw new Error('Invalid score');
+    } catch {
+      return NextResponse.json({ error: 'Invalid demo certificate details.' }, { status: 400 });
+    }
     const performanceStatement = percentage >= 75
       ? `Demonstrated outstanding subject matter expertise and proficiency in the ${topic} Industry-Standard Skill Assessment.`
       : percentage >= 50
@@ -43,7 +49,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       topic,
       score,
       totalQuestions,
-      issuedAt: new Date().toISOString(),
+      issuedAt,
       performanceStatement,
     });
 

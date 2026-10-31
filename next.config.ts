@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [
       {
+        pathname: "/talenezio-certificate-blank-template-hd.png",
+        search: "",
+      },
+      {
         pathname: "/talenezio-wordmark-light-mode.png",
         search: "",
       },

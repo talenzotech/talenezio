@@ -108,7 +108,7 @@ export function InternshipApplyModal({
         return
       }
 
-      let data: Record<string, any> = {}
+      let data: Record<string, unknown> = {}
       try {
         const text = await response.text()
         data = text ? JSON.parse(text) : {}
@@ -117,7 +117,7 @@ export function InternshipApplyModal({
       }
 
       if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to submit application. Please try again.')
+        setErrorMessage(typeof data.error === 'string' ? data.error : 'Failed to submit application. Please try again.')
         setIsSubmitting(false)
         return
       }

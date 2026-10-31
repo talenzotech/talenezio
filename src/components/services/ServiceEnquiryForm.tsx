@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function ServiceEnquiryForm({ serviceCode }: { serviceCode: 'courses' | 'internships' }) {
+  const router = useRouter()
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,7 +23,7 @@ export default function ServiceEnquiryForm({ serviceCode }: { serviceCode: 'cour
     })
     const result = await response.json()
     if (response.status === 401) {
-      window.location.href = '/login?next=/services'
+      router.push('/login?next=/services')
       return
     }
     if (!response.ok) {
