@@ -140,3 +140,71 @@ export async function sendInternshipApplicationEmail({
     return { success: false, error };
   }
 }
+
+export interface SendCareerServiceRegistrationEmailProps {
+  serviceName: string;
+  fullName: string;
+  careerDetails: string;
+  areaOfInterest: string;
+  email?: string;
+  phone?: string;
+}
+
+export async function sendCareerServiceRegistrationEmail({
+  serviceName,
+  fullName,
+  careerDetails,
+  areaOfInterest,
+  email,
+  phone,
+}: SendCareerServiceRegistrationEmailProps) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Notice: RESEND_API_KEY is not configured. Email to taleneziocontact@gmail.com could not be sent.');
+    return { success: false, error: new Error('RESEND_API_KEY is not configured') };
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = `New Career Service Registration: ${serviceName} - ${fullName}`;
+
+  const textLines = [
+    '========================================',
+    ' TALENEZIO - NEW CAREER REGISTRATION ',
+    '========================================',
+    '',
+    `Service Selected: ${serviceName}`,
+    `Full Name: ${fullName}`,
+    `Career Details: ${careerDetails}`,
+    `Area of Interest: ${areaOfInterest}`,
+    `Email: ${email && email.trim() ? email : 'Not provided'}`,
+  ];
+
+  if (phone && phone.trim()) {
+    textLines.push(`Phone: ${phone}`);
+  }
+
+  textLines.push(
+    `Submitted At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+    '',
+    '----------------------------------------',
+    'Registration submitted via Talenezio Career Services.',
+    '-- Talenezio Automated Notification'
+  );
+
+  const text = textLines.join('\n');
+
+  try {
+    const data = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Talenezio <onboarding@resend.dev>',
+      to: 'taleneziocontact@gmail.com',
+      subject,
+      text,
+    });
+
+    console.log(`Career service registration email sent successfully to taleneziocontact@gmail.com for ${serviceName}:`, data);
+    return { success: true, data };
+  } catch (error) {
+    console.error(`Error sending career service registration email to taleneziocontact@gmail.com for ${serviceName}:`, error);
+    return { success: false, error };
+  }
+}
