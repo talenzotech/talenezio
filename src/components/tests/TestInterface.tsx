@@ -169,7 +169,7 @@ export default function TestInterface({
     } as Record<string, string>)[category] || category.toUpperCase()
 
     const downloadUrl = generatedCertificateId
-      ? `/api/certificates/${generatedCertificateId}/download${generatedCertificateId.startsWith('demo-') ? `?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(categoryTitle)}&score=${result?.score}&total=${result?.total}` : ''}`
+      ? `/api/certificates/${generatedCertificateId}/download${generatedCertificateId.startsWith('demo-') ? `?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(category)}&type=${type}&score=${result?.score}&total=${result?.total}` : ''}`
       : null
 
     return (
