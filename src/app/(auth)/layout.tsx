@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
-import { GraduationCap } from 'lucide-react'
+import Link from 'next/link'
+import { ThemeWordmark } from '@/components/ThemeWordmark'
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -9,12 +10,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-blue-900 via-blue-900/80 to-transparent"></div>
         
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="p-2 bg-blue-500 rounded-xl">
-            <GraduationCap className="w-8 h-8 text-white" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">Talenezio</span>
-        </div>
+        <Link href="/" className="relative z-10 flex items-center gap-2.5" aria-label="Talenezio home">
+          <ThemeWordmark
+            className="relative block h-[20px] w-[35px] shrink-0 overflow-hidden sm:h-[22px] sm:w-[38px]"
+            variant="dark"
+          />
+          <span className="text-2xl font-bold tracking-tight text-white">Talenezio</span>
+        </Link>
 
         <div className="relative z-10 max-w-md">
           <h1 className="text-4xl font-bold mb-6 leading-tight">
@@ -29,12 +31,12 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Right side - Form */}
       <div className="flex items-center justify-center p-8 sm:p-12 lg:p-16">
         <div className="w-full max-w-md space-y-8">
-          <div className="flex items-center gap-3 md:hidden mb-12">
-            <div className="p-2 bg-blue-600 rounded-xl">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 md:hidden mb-12" aria-label="Talenezio home">
+            <ThemeWordmark
+              className="relative block h-[20px] w-[35px] shrink-0 overflow-hidden"
+            />
             <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
-          </div>
+          </Link>
           {children}
         </div>
       </div>
