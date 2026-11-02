@@ -14,10 +14,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dark-theme variables are retained for future use but disabled for the light-only experience.
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
 }
+*/
 
 body {
   background: var(--background);

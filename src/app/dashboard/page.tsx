@@ -16,7 +16,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
-import { ThemeToggle } from '@/components/ThemeToggle'
+// import { ThemeToggle } from '@/components/ThemeToggle'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
@@ -157,7 +157,8 @@ export default async function DashboardPage() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <ThemeToggle />
+            {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
+            {/* <ThemeToggle /> */}
             <DashboardProfileMenu
               initialProfile={{
                 fullName,
