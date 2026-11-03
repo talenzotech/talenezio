@@ -17,6 +17,27 @@ export function proTestProductCode(category: TestCategory): string {
 
 export const FREE_UNLOCK_PRODUCT_CODE = 'pro-test:all';
 
+export const CAREER_PRODUCTS: Record<
+  string,
+  { serviceName: string; amountPaise: number; serviceCode: ServiceCode }
+> = {
+  'career:career-guidance': {
+    serviceName: 'Career Guidance',
+    amountPaise: 19900,
+    serviceCode: 'career-counseling',
+  },
+  'career:linkedin-optimization': {
+    serviceName: 'LinkedIn Optimization',
+    amountPaise: 49900,
+    serviceCode: 'linkedin-optimization',
+  },
+  'career:interview-prep': {
+    serviceName: 'Interview Preparation',
+    amountPaise: 49900,
+    serviceCode: 'interview-prep',
+  },
+};
+
 export function paidProductDetails(productCode: string): {
   amountPaise: number;
   currency: 'INR';
@@ -35,6 +56,13 @@ export function paidProductDetails(productCode: string): {
     const training = getTrainingByProductCode(productCode);
     return training
       ? { amountPaise: training.pricePaise, currency: 'INR', trainingCode: training.id }
+      : null;
+  }
+
+  if (productCode.startsWith('career:')) {
+    const career = CAREER_PRODUCTS[productCode];
+    return career
+      ? { amountPaise: career.amountPaise, currency: 'INR', serviceCode: career.serviceCode }
       : null;
   }
 
