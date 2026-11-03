@@ -3,7 +3,6 @@ import test from 'node:test'
 import {
   INTERNSHIP_OPPORTUNITIES,
   TRAINING_PROGRAMS,
-  getInternship,
   getTraining,
   getTrainingByProductCode,
 } from '../src/lib/internships-training/data.ts'
