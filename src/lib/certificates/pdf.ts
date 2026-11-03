@@ -3,6 +3,7 @@ import 'server-only';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib';
+import { CERTIFICATE_TIME_ZONE, certificateDateParts } from './numbering';
 
 export async function buildCertificatePdf(input: {
   candidateName: string;
@@ -31,9 +32,10 @@ export async function buildCertificatePdf(input: {
   }
 
   const date = new Date(input.issuedAt);
-  const day = date.getUTCDate();
+  const { day: dayPart, year } = certificateDateParts(input.issuedAt);
+  const day = Number(dayPart);
   const suffix = day % 100 >= 11 && day % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[day % 10] || 'th';
-  const formattedDate = `${day}${suffix} ${date.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })} ${date.getUTCFullYear()}`;
+  const formattedDate = `${day}${suffix} ${date.toLocaleString('en-GB', { month: 'long', timeZone: CERTIFICATE_TIME_ZONE })} ${year}`;
 
   centered(input.candidateName, 450, 310, 52, 460, nameFont);
   centered(input.topic, 450, 229, 25, 650, boldFont);

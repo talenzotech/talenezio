@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X,
-  GraduationCap,
   Sparkles,
   Loader2,
   AlertCircle,
@@ -116,7 +115,7 @@ export function TrainingApplyModal({
         return
       }
 
-      let order: Record<string, any> = {}
+      let order: Record<string, unknown> = {}
       try {
         const text = await response.text()
         order = text ? JSON.parse(text) : {}
@@ -126,7 +125,7 @@ export function TrainingApplyModal({
 
       if (!response.ok) {
         throw new Error(
-          order.error ||
+          (typeof order.error === 'string' && order.error) ||
             (response.status >= 500
               ? 'Payment service is temporarily unavailable. Please try again later.'
               : 'Failed to initiate application payment.')
@@ -154,7 +153,7 @@ export function TrainingApplyModal({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(paymentResult),
             })
-            let verifyData: Record<string, any> = {}
+            let verifyData: Record<string, unknown> = {}
             try {
               const text = await verifyRes.text()
               verifyData = text ? JSON.parse(text) : {}
@@ -163,7 +162,7 @@ export function TrainingApplyModal({
             }
 
             if (!verifyRes.ok) {
-              setErrorMessage(verifyData.error || 'Payment verification could not be completed.')
+              setErrorMessage(typeof verifyData.error === 'string' ? verifyData.error : 'Payment verification could not be completed.')
               setIsLoading(false)
               return
             }
