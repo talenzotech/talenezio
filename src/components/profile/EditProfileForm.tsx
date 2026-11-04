@@ -6,8 +6,6 @@ import Link from 'next/link'
 import {
   User,
   GraduationCap,
-  Briefcase,
-  Sparkles,
   Check,
   Loader2,
   AlertCircle,

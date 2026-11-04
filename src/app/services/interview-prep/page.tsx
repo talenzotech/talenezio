@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ThemeToggle } from '@/components/ThemeToggle';
+// import { ThemeToggle } from '@/components/ThemeToggle';
 import { ArrowLeft, Video, Target, Award, CheckCircle, Shield, Briefcase } from 'lucide-react';
 import ServiceCheckout from '@/components/services/ServiceCheckout';
 import FeatureBottomNav from '@/components/FeatureBottomNav';
@@ -47,7 +47,8 @@ export default function InterviewPrepPage() {
               <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Talenezio</span>
             </div>
           </div>
-          <ThemeToggle />
+          {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
+          {/* <ThemeToggle /> */}
         </div>
       </nav>
 

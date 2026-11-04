@@ -16,7 +16,6 @@ import {
   Laptop,
   Coins,
   Lightbulb,
-  Globe,
   Tag,
   Users,
 } from 'lucide-react'

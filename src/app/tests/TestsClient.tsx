@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import {
   Code,
@@ -150,6 +151,24 @@ export default function TestsClient({ error }: { error?: string }) {
               <ProTestCheckout category={activeCategory.id} />
             </div>
           </div>
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6" aria-labelledby="certificate-preview-title">
+          <div className="mb-5">
+            <h2 id="certificate-preview-title" className="text-lg font-bold text-gray-900 dark:text-white">Your certificate, at a glance</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">A preview of the certificate you can earn after completing your assessment.</p>
+          </div>
+          <figure className="mx-auto max-w-3xl">
+            <Image
+              src="/talenezio-certificate-blank-template-hd.png"
+              alt="Blank Talenezio Certificate of Completion showing the certificate design, with name, topic, score, date, and certificate number left empty."
+              width={1536}
+              height={1024}
+              sizes="(max-width: 639px) calc(100vw - 66px), (max-width: 895px) calc(100vw - 98px), 768px"
+              className="h-auto w-full rounded-lg border border-gray-100 bg-white shadow-sm"
+            />
+            <figcaption className="mt-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">Your name and assessment details will appear on your issued certificate</figcaption>
+          </figure>
         </section>
       </div>
 
