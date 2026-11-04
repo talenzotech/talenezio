@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open: () => void }
+    Razorpay: new (options: Record<string, unknown>) => {
+      open: () => void
+      on?: (event: string, callback: (response: any) => void) => void
+    }
   }
 }
 
@@ -74,8 +77,33 @@ export default function ProTestCheckout({ category }: Props) {
           router.push(`/tests/${category}?type=pro`)
         },
         modal: {
-          ondismiss: () => setIsLoading(false),
+          ondismiss: () => {
+            setIsLoading(false)
+            setError('Payment was cancelled. You can retry anytime to unlock your Pro test.')
+            void fetch('/api/payments/failed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: order.orderId, status: 'cancelled' }),
+            }).catch(() => null)
+          },
         },
+      })
+
+      checkout.on?.('payment.failed', (failedRes: any) => {
+        setIsLoading(false)
+        const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
+        setError(desc)
+        void fetch('/api/payments/failed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: failedRes?.error?.metadata?.order_id || order.orderId,
+            status: 'failed',
+            code: failedRes?.error?.code,
+            description: failedRes?.error?.description,
+            reason: failedRes?.error?.reason,
+          }),
+        }).catch(() => null)
       })
 
       checkout.open()

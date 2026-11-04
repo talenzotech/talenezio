@@ -16,7 +16,10 @@ import { type TrainingProgram } from '@/lib/internships-training/data'
 
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open: () => void }
+    Razorpay: new (options: Record<string, unknown>) => {
+      open: () => void
+      on?: (event: string, callback: (response: any) => void) => void
+    }
   }
 }
 
@@ -178,11 +181,34 @@ export function TrainingApplyModal({
         modal: {
           ondismiss: () => {
             setIsLoading(false)
+            setErrorMessage('Payment was cancelled. Your application details are saved and you can retry whenever you are ready.')
+            void fetch('/api/payments/failed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: order.orderId, status: 'cancelled' }),
+            }).catch(() => null)
           },
         },
         theme: {
           color: '#2563EB',
         },
+      })
+
+      checkout.on?.('payment.failed', (failedRes: any) => {
+        setIsLoading(false)
+        const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
+        setErrorMessage(desc)
+        void fetch('/api/payments/failed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: failedRes?.error?.metadata?.order_id || order.orderId,
+            status: 'failed',
+            code: failedRes?.error?.code,
+            description: failedRes?.error?.description,
+            reason: failedRes?.error?.reason,
+          }),
+        }).catch(() => null)
       })
 
       checkout.open()
