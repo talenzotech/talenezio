@@ -7,9 +7,21 @@ import {
   QuestionBankError,
   type Question,
 } from '@/lib/tests/questionBank';
+import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
 
 export type { PublicQuestion, Question } from '@/lib/tests/questionBank';
 export { normalizeCategory, parseQuestionRows, QuestionBankError, toPublicQuestion } from '@/lib/tests/questionBank';
+
+function getFallbackQuestions(category: string, type: 'free' | 'pro'): Question[] {
+  const normalizedCategory = normalizeCategory(category);
+  const catQuestions = DEFAULT_QUESTIONS.filter(
+    (q) => q.category === normalizedCategory && q.isActive,
+  );
+  if (catQuestions.length === 0) {
+    throw new QuestionBankError(`No questions available for category "${category}".`);
+  }
+  return type === 'pro' ? catQuestions.slice(20) : catQuestions.slice(0, 20);
+}
 
 export async function fetchGoogleSheetQuestions(category: string, type: 'free' | 'pro' = 'free'): Promise<Question[]> {
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
@@ -47,11 +59,11 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
       if (filtered.length > 0) return filtered;
       throw new QuestionBankError(`No active questions available for ${category} in the ${worksheet} worksheet.`);
     } catch (error) {
-      console.error('Unable to read Google question bank:', error);
-      throw new QuestionBankError('The question bank is currently unavailable. Please try again later.');
+      console.warn('Unable to read Google question bank, falling back to verified default questions:', error);
+      return getFallbackQuestions(category, type);
     }
   }
 
-  console.error('Google Sheets question bank is not configured.');
-  throw new QuestionBankError('The question bank is currently unavailable. Please try again later.');
+  // Google Sheets credentials not configured; use verified default questions bank
+  return getFallbackQuestions(category, type);
 }

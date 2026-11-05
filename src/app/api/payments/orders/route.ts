@@ -90,21 +90,18 @@ export async function POST(request: Request) {
 
     const service = product.serviceCode ? getService(product.serviceCode) : null;
     if (product.serviceCode && service?.freeUnlock && await hasServiceAccess(user.id, product.serviceCode)) {
-      try {
-        const { error } = await admin.from('service_orders').insert({
-          user_id: user.id,
-          service_code: product.serviceCode,
-          product_code: productCode,
-          amount_paise: product.amountPaise,
-          currency: product.currency,
-          status: 'requested',
-        });
+      const { error } = await admin.from('service_orders').insert({
+        user_id: user.id,
+        service_code: product.serviceCode,
+        product_code: productCode,
+        amount_paise: product.amountPaise,
+        currency: product.currency,
+        status: 'requested',
+      });
 
-        if (error) {
-          console.warn('Notice: could not record free service order:', error.message);
-        }
-      } catch (freeErr) {
-        console.warn('Notice: exception recording free service order:', freeErr);
+      if (error) {
+        console.error('Unable to create free service order:', error);
+        return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
       }
 
       return NextResponse.json({ freeAccess: true });
@@ -206,23 +203,20 @@ export async function POST(request: Request) {
         ? `Name: ${applicantDetails.fullName || applicantDetails.name || ''} | Details: ${applicantDetails.careerDetails || ''} | Interest: ${applicantDetails.areaOfInterest || ''}`
         : null;
 
-      try {
-        const { error: serviceOrderError } = await admin.from('service_orders').insert({
-          user_id: user.id,
-          service_code: product.serviceCode,
-          product_code: productCode,
-          amount_paise: product.amountPaise,
-          currency: product.currency,
-          status: 'pending_payment',
-          payment_id: payment?.id,
-          fulfilment_note: fulfilmentNote,
-        });
+      const { error: serviceOrderError } = await admin.from('service_orders').insert({
+        user_id: user.id,
+        service_code: product.serviceCode,
+        product_code: productCode,
+        amount_paise: product.amountPaise,
+        currency: product.currency,
+        status: 'pending_payment',
+        payment_id: payment?.id,
+        fulfilment_note: fulfilmentNote,
+      });
 
-        if (serviceOrderError) {
-          console.warn('Notice: could not record service order:', serviceOrderError.message);
-        }
-      } catch (serviceOrderErr) {
-        console.warn('Notice: exception recording service order:', serviceOrderErr);
+      if (serviceOrderError) {
+        console.error('Unable to store service order:', serviceOrderError);
+        return NextResponse.json({ error: 'Unable to store service order' }, { status: 500 });
       }
     }
 

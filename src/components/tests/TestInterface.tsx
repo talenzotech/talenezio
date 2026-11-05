@@ -100,32 +100,38 @@ export default function TestInterface({
     if (!confirm("Are you sure you want to submit the test?")) return
     setIsSubmitting(true)
     setSubmitError(null)
-    const response = await fetch('/api/tests/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        attemptId,
-        answers,
-        category,
-        type,
-        questionIds: questions.map(q => q.id),
-      }),
-    })
-    const payload = await response.json().catch(() => null)
-    setIsSubmitting(false)
-    if (!response.ok) {
-      setSubmitError(payload?.error || 'Could not submit the test')
-      return
-    }
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attemptId,
+          answers,
+          category,
+          type,
+          questionIds: questions.map(q => q.id),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
 
-    // Mark test as completed in session storage and push history state
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-      window.history.pushState({ testCompleted: true }, '', window.location.href)
-    }
+      // Mark test as completed in session storage and push history state
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
+        window.history.pushState({ testCompleted: true }, '', window.location.href)
+      }
 
-    setResult(payload)
-    setIsSubmitted(true)
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch (err) {
+      console.error('Submission error:', err)
+      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const formatTime = (seconds: number) => {

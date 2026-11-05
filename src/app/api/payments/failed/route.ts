@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null) as {
       orderId?: string;
-      status?: 'failed' | 'cancelled';
+      status?: 'failed' | 'cancelled' | 'dismissed';
       code?: string;
       description?: string;
       reason?: string;
@@ -24,11 +24,42 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
-    const failureCode = body.code || (body.status === 'cancelled' ? 'PAYMENT_CANCELLED' : 'PAYMENT_FAILED');
-    const failureReason =
-      body.description ||
-      body.reason ||
-      (body.status === 'cancelled' ? 'Payment was cancelled by the user' : 'Payment failed during checkout');
+
+    // Modal dismissal indicates the modal was closed on the client.
+    // The payment may still complete asynchronously (e.g. UPI app confirmation, delayed bank webhook).
+    // Therefore, do NOT transition status to 'failed', as that would lock out late verification.
+    if (body.status === 'cancelled' || body.status === 'dismissed') {
+      const { data: payment } = await admin
+        .from('payments')
+        .select('id, metadata')
+        .eq('provider_order_id', body.orderId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (payment) {
+        const currentMeta =
+          payment.metadata && typeof payment.metadata === 'object'
+            ? (payment.metadata as Record<string, unknown>)
+            : {};
+
+        await admin
+          .from('payments')
+          .update({
+            metadata: {
+              ...currentMeta,
+              last_dismissed_at: new Date().toISOString(),
+            },
+          })
+          .eq('id', payment.id)
+          .in('status', ['created', 'pending']);
+      }
+
+      return NextResponse.json({ recorded: true, state: 'dismissed' });
+    }
+
+    // Explicit payment failure reported by payment gateway (e.g. card declined)
+    const failureCode = body.code || 'PAYMENT_FAILED';
+    const failureReason = body.description || body.reason || 'Payment failed during checkout';
 
     await admin
       .from('payments')
@@ -41,10 +72,9 @@ export async function POST(request: Request) {
       .eq('user_id', user.id)
       .in('status', ['created', 'pending']);
 
-    return NextResponse.json({ recorded: true });
+    return NextResponse.json({ recorded: true, state: 'failed' });
   } catch (error) {
     console.error('Error recording payment failure/cancellation:', error);
     return NextResponse.json({ error: 'Could not record status' }, { status: 500 });
   }
 }
-

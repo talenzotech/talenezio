@@ -61,8 +61,24 @@ export function verifyPaymentSignature(input: {
 }
 
 export function verifyWebhookSignature(body: string, signature: string): boolean {
+  if (!signature || !body) {
+    return false;
+  }
+
+  let secret: string;
+  try {
+    secret = env.razorpayWebhookSecret();
+  } catch {
+    // Fail closed: Webhooks must never be verified without a configured secret
+    return false;
+  }
+
+  if (!secret || typeof secret !== 'string' || secret.trim() === '') {
+    return false;
+  }
+
   const expected = crypto
-    .createHmac('sha256', env.razorpayWebhookSecret())
+    .createHmac('sha256', secret)
     .update(body)
     .digest('hex');
 
