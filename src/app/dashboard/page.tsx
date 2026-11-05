@@ -12,6 +12,7 @@ import {
   BriefcaseBusiness,
   UserCheck,
   ArrowRight,
+  LayoutDashboard,
   CalendarDays,
   Clock,
 } from 'lucide-react'
@@ -54,7 +55,7 @@ export default async function DashboardPage() {
   }
 
   const profileQuery = supabase
-    ? supabase.from('profiles').select('full_name, avatar_url').eq('id', user?.id || '').maybeSingle()
+    ? supabase.from('profiles').select('full_name, avatar_url, is_admin').eq('id', user?.id || '').maybeSingle()
     : null
   const { data: dbProfile } = profileQuery ? await profileQuery : { data: null }
 
@@ -156,10 +157,20 @@ export default async function DashboardPage() {
             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
           </Link>
           
-          <div className="flex items-center gap-4">
-            {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
-            {/* <ThemeToggle /> */}
-            <DashboardProfileMenu
+           <div className="flex items-center gap-4">
+             {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
+             {/* <ThemeToggle /> */}
+             {dbProfile?.is_admin === true && (
+               <Link
+                 href="/admin"
+                 aria-label="Open Admin Portal"
+                 className="inline-flex items-center gap-2 rounded-xl border border-blue-700 bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-600/25 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:px-4 active:translate-y-0"
+               >
+                 <LayoutDashboard className="h-4 w-4" />
+                 <span className="hidden sm:inline">Admin Portal</span>
+               </Link>
+             )}
+             <DashboardProfileMenu
               initialProfile={{
                 fullName,
                 email,
@@ -167,6 +178,7 @@ export default async function DashboardPage() {
                 experience,
                 interests,
                 avatarUrl,
+                isAdmin: dbProfile?.is_admin === true,
               }}
             />
 
