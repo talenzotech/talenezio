@@ -135,10 +135,18 @@ export function CareerCardsView({ userProfile }: CareerCardsViewProps) {
       points: [
         { primary: 'Available for Software Engineering, Marketing, and Finance.' },
         {
-          primary: 'An 8-day preparation program:',
+          primary: 'Available Cohort Batches:',
           subpoints: [
-            'First 3 days: Interview preparation.',
-            'Next 5 days: Mock interviews.',
+            '23 November to 30 November',
+            '1 October to 8 October',
+            '9 October to 16 October',
+          ],
+        },
+        {
+          primary: '8-day intensive preparation program:',
+          subpoints: [
+            'First 3 days: Interview preparation & curriculum.',
+            'Next 5 days: Live mock interviews.',
           ],
         },
       ],
