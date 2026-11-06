@@ -12,7 +12,10 @@ import {
   Briefcase,
   Target,
   Sparkles,
+  Phone,
+  Globe,
 } from 'lucide-react'
+import { isValidPhoneNumber, isValidLinkedInUrl } from '@/lib/career/validation'
 
 declare global {
   interface Window {
@@ -35,6 +38,8 @@ export function LinkedInOptimizationRegistration({
 }: LinkedInOptimizationRegistrationProps) {
   const router = useRouter()
   const [fullName, setFullName] = useState(userProfile?.fullName || '')
+  const [phone, setPhone] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
   const [careerDetails, setCareerDetails] = useState('')
   const [areaOfInterest, setAreaOfInterest] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -64,11 +69,35 @@ export function LinkedInOptimizationRegistration({
     setErrorMessage(null)
 
     const trimmedName = fullName.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedLinkedin = linkedinUrl.trim()
     const trimmedCareerDetails = careerDetails.trim()
     const trimmedAreaOfInterest = areaOfInterest.trim()
 
     if (!trimmedName || trimmedName.length < 2) {
       setErrorMessage('Please enter your full name (at least 2 characters).')
+      return
+    }
+
+    if (!trimmedPhone) {
+      setErrorMessage('Contact number is required.')
+      return
+    }
+
+    const phoneValidation = isValidPhoneNumber(trimmedPhone)
+    if (!phoneValidation.valid) {
+      setErrorMessage(phoneValidation.error || 'Please enter a valid contact number.')
+      return
+    }
+
+    if (!trimmedLinkedin) {
+      setErrorMessage('LinkedIn profile URL is required.')
+      return
+    }
+
+    const linkedInValidation = isValidLinkedInUrl(trimmedLinkedin)
+    if (!linkedInValidation.valid) {
+      setErrorMessage(linkedInValidation.error || 'Please enter a valid LinkedIn profile URL.')
       return
     }
 
@@ -94,6 +123,9 @@ export function LinkedInOptimizationRegistration({
           applicantDetails: {
             fullName: trimmedName,
             name: trimmedName,
+            phone: phoneValidation.normalized || trimmedPhone,
+            contactNumber: phoneValidation.normalized || trimmedPhone,
+            linkedinUrl: linkedInValidation.normalized || trimmedLinkedin,
             careerDetails: trimmedCareerDetails,
             areaOfInterest: trimmedAreaOfInterest,
             serviceName: 'LinkedIn Optimization',
@@ -147,6 +179,7 @@ export function LinkedInOptimizationRegistration({
         prefill: {
           name: trimmedName,
           email: userProfile?.email || undefined,
+          contact: phoneValidation.normalized || trimmedPhone,
         },
         handler: async (paymentResult: Record<string, string>) => {
           try {
@@ -245,11 +278,18 @@ export function LinkedInOptimizationRegistration({
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Registration Successful!
+              Application Submitted Successfully!
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 max-w-md mx-auto">
-              Your registration for <strong>LinkedIn Optimization</strong> has been confirmed. Redirecting to your dashboard...
+            <p className="text-sm text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
+              Your application for <strong>LinkedIn Optimization</strong> has been submitted successfully. Our team will review your profile and reach out to you shortly.
             </p>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="mt-6 px-8 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors shadow-md"
+            >
+              Return to Dashboard
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -260,20 +300,56 @@ export function LinkedInOptimizationRegistration({
               </div>
             )}
 
-            {/* Full Name */}
+            {/* Full Name & Contact Number */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-blue-600" />
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  Contact Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            {/* LinkedIn Profile URL */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
-                <User className="w-4 h-4 text-blue-600" />
-                Full Name <span className="text-red-500">*</span>
+                <Globe className="w-4 h-4 text-blue-600" />
+                LinkedIn Profile URL <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
+                type="url"
                 required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Rahul Sharma"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/in/yourprofile"
                 className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
               />
+              <p className="mt-1.5 text-xs text-gray-400">
+                Enter your current public LinkedIn profile URL (e.g., https://www.linkedin.com/in/username).
+              </p>
             </div>
 
             {/* Career Details */}
@@ -299,7 +375,7 @@ export function LinkedInOptimizationRegistration({
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
                 <Target className="w-4 h-4 text-blue-600" />
-                Area of Interest <span className="text-red-500">*</span>
+                Target Domain / Area of Interest <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -314,11 +390,11 @@ export function LinkedInOptimizationRegistration({
               </p>
             </div>
 
-            {/* Security Note - no email address mentioned */}
+            {/* Security Note */}
             <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2.5">
               <Lock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <span>
-                Your registration details are recorded securely and shared directly with our career advisory team. You will be redirected to the secure payment gateway to complete checkout.
+                Your application details and contact number are securely encrypted and reviewed by our admissions team.
               </span>
             </div>
 
@@ -331,7 +407,7 @@ export function LinkedInOptimizationRegistration({
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Opening Payment Gateway...</span>
+                  <span>Confirming &amp; Opening Payment Gateway...</span>
                 </>
               ) : (
                 <>
@@ -340,10 +416,6 @@ export function LinkedInOptimizationRegistration({
                 </>
               )}
             </button>
-
-            <p className="text-center text-xs text-gray-400">
-              By clicking Proceed to Payment, you will be redirected to the secure Razorpay payment gateway.
-            </p>
           </form>
         )}
       </div>

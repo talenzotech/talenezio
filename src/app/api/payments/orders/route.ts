@@ -11,6 +11,11 @@ import { env } from '@/lib/env';
 import { hasProTestAccess, hasServiceAccess } from '@/lib/payments/access';
 import { getService } from '@/lib/services/catalog';
 import { sendCareerServiceRegistrationEmail } from '@/utils/email';
+import {
+  isValidPhoneNumber,
+  isValidLinkedInUrl,
+  isValidBookingDate,
+} from '@/lib/career/validation';
 
 export async function POST(request: Request) {
   try {
@@ -33,6 +38,11 @@ export async function POST(request: Request) {
         serviceName?: string;
         email?: string;
         phone?: string;
+        contactNumber?: string;
+        bookingDate?: string;
+        selectedBookingDate?: string;
+        scheduledFor?: string;
+        linkedinUrl?: string;
       };
     } | null;
 
@@ -44,41 +54,72 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid service or test product' }, { status: 400 });
     }
 
-    // Handle Career Service email dispatch if career registration details are provided
+    // Handle Career Service validations and email dispatch
     const isCareerRegistration = Boolean(
       body?.applicantDetails &&
       (body.applicantDetails.careerDetails || body.applicantDetails.serviceName || productCode.startsWith('career:'))
     );
 
-    if (isCareerRegistration && body?.applicantDetails) {
-      try {
-        const serviceName =
-          body.applicantDetails.serviceName ||
-          (productCode === 'career:career-guidance'
-            ? 'Career Guidance'
-            : productCode === 'career:linkedin-optimization'
-            ? 'LinkedIn Optimization'
-            : productCode === 'career:interview-prep'
-            ? 'Interview Preparation'
-            : 'Career Service');
-        const fullName = (body.applicantDetails.fullName || body.applicantDetails.name || '').trim();
-        const careerDetails = (body.applicantDetails.careerDetails || '').trim();
-        const areaOfInterest = (body.applicantDetails.areaOfInterest || '').trim();
-        const email = user.email || body.applicantDetails.email;
-        const phone = body.applicantDetails.phone;
+    let validatedPhone: string | undefined;
+    let validatedLinkedInUrl: string | undefined;
+    let validatedBookingDateIso: string | undefined;
+    let rawBookingDate: string | undefined;
 
-        if (fullName && careerDetails && areaOfInterest) {
-          await sendCareerServiceRegistrationEmail({
-            serviceName,
-            fullName,
-            careerDetails,
-            areaOfInterest,
-            email,
-            phone,
-          });
+    if (isCareerRegistration && body?.applicantDetails) {
+      const details = body.applicantDetails;
+      const fullName = (details.fullName || details.name || '').trim();
+      const careerDetails = (details.careerDetails || '').trim();
+      const areaOfInterest = (details.areaOfInterest || '').trim();
+      const phoneInput = (details.phone || details.contactNumber || '').trim();
+
+      if (!fullName || fullName.length < 2) {
+        return NextResponse.json({ error: 'Please enter your full name (at least 2 characters).' }, { status: 400 });
+      }
+
+      if (!phoneInput) {
+        return NextResponse.json({ error: 'Contact number is required.' }, { status: 400 });
+      }
+
+      const phoneValidation = isValidPhoneNumber(phoneInput);
+      if (!phoneValidation.valid) {
+        return NextResponse.json({ error: phoneValidation.error }, { status: 400 });
+      }
+      validatedPhone = phoneValidation.normalized;
+
+      if (!careerDetails || careerDetails.length < 2) {
+        return NextResponse.json({ error: 'Please provide your career details (current education, role, or background).' }, { status: 400 });
+      }
+
+      if (!areaOfInterest || areaOfInterest.length < 2) {
+        return NextResponse.json({ error: 'Please provide your area of interest or target domain.' }, { status: 400 });
+      }
+
+      // 1. Career Guidance (1:1) specific validation: mandatory booking date
+      const isGuidance = productCode === 'career:career-guidance' || (details.serviceName || '').toLowerCase().includes('guidance');
+      if (isGuidance) {
+        rawBookingDate = (details.bookingDate || details.selectedBookingDate || details.scheduledFor || '').trim();
+        if (!rawBookingDate) {
+          return NextResponse.json({ error: 'Please select a convenient date for your 1-on-1 session.' }, { status: 400 });
         }
-      } catch (emailErr) {
-        console.error('Notice: could not dispatch career service registration email:', emailErr);
+        const dateValidation = isValidBookingDate(rawBookingDate);
+        if (!dateValidation.valid) {
+          return NextResponse.json({ error: dateValidation.error }, { status: 400 });
+        }
+        validatedBookingDateIso = dateValidation.normalized;
+      }
+
+      // 2. LinkedIn Optimization specific validation: mandatory LinkedIn Profile URL
+      const isLinkedIn = productCode === 'career:linkedin-optimization' || (details.serviceName || '').toLowerCase().includes('linkedin');
+      if (isLinkedIn) {
+        const rawLinkedIn = (details.linkedinUrl || '').trim();
+        if (!rawLinkedIn) {
+          return NextResponse.json({ error: 'LinkedIn profile URL is required.' }, { status: 400 });
+        }
+        const linkedInValidation = isValidLinkedInUrl(rawLinkedIn);
+        if (!linkedInValidation.valid) {
+          return NextResponse.json({ error: linkedInValidation.error }, { status: 400 });
+        }
+        validatedLinkedInUrl = linkedInValidation.normalized;
       }
     }
 
@@ -98,6 +139,7 @@ export async function POST(request: Request) {
           amount_paise: product.amountPaise,
           currency: product.currency,
           status: 'requested',
+          scheduled_for: validatedBookingDateIso || null,
         });
 
         if (error) {
@@ -110,9 +152,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ freeAccess: true });
     }
 
+    // Check for duplicate pending submission created recently (within last 2 minutes)
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { data: existing } = await admin
       .from('payments')
-      .select('provider_order_id, amount_paise, currency')
+      .select('provider_order_id, amount_paise, currency, created_at, metadata')
       .eq('user_id', user.id)
       .eq('product_code', productCode)
       .in('status', ['created', 'pending'])
@@ -121,29 +165,56 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle();
 
-    if (existing?.provider_order_id) {
-      if (body?.applicantDetails) {
-        await admin
-          .from('payments')
-          .update({
-            metadata: {
-              category: product.category ?? null,
-              service_code: product.serviceCode ?? null,
-              training_code: product.trainingCode ?? null,
-              applicant_details: body.applicantDetails,
-              receipt: `talenezio_${user.id.slice(0, 8)}_${Date.now()}`,
-            },
-          })
-          .eq('provider_order_id', existing.provider_order_id);
-      }
-
+    if (existing?.provider_order_id && existing.created_at && existing.created_at > twoMinutesAgo) {
+      // Re-use active pending order to prevent duplicate submissions & spamming
       return NextResponse.json({
         keyId: env.razorpayKeyId(),
         orderId: existing.provider_order_id,
         amount: existing.amount_paise,
         currency: existing.currency,
         productCode,
+        isExisting: true,
       });
+    }
+
+    // If this is a Career Service registration, dispatch and verify email notification to taleneziocontact@gmail.com
+    if (isCareerRegistration && body?.applicantDetails) {
+      const details = body.applicantDetails;
+      const serviceName =
+        details.serviceName ||
+        (productCode === 'career:career-guidance'
+          ? 'Career Guidance (1:1)'
+          : productCode === 'career:linkedin-optimization'
+          ? 'LinkedIn Optimization'
+          : 'Career Service');
+      const fullName = (details.fullName || details.name || '').trim();
+      const careerDetails = (details.careerDetails || '').trim();
+      const areaOfInterest = (details.areaOfInterest || '').trim();
+      const email = details.email || user.email || 'Not provided';
+      const phone = validatedPhone || details.phone || details.contactNumber || '';
+
+      const emailResult = await sendCareerServiceRegistrationEmail({
+        serviceName,
+        fullName,
+        careerDetails,
+        areaOfInterest,
+        email,
+        phone,
+        selectedBookingDate: rawBookingDate,
+        linkedinUrl: validatedLinkedInUrl,
+        price: productCode === 'career:career-guidance' ? '₹199' : '₹499',
+      });
+
+      if (!emailResult.success) {
+        console.error('Notice: error sending career service registration email:', emailResult.error);
+        const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
+        const isConfigError = errText.includes('RESEND_API_KEY');
+        const errorMessage = isConfigError
+          ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
+          : 'Failed to send your application notification email. Please try again or reach out to taleneziocontact@gmail.com.';
+
+        return NextResponse.json({ error: errorMessage }, { status: 502 });
+      }
     }
 
     const receipt = `talenezio_${user.id.slice(0, 8)}_${Date.now()}`;
@@ -160,6 +231,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unable to start payment gateway' }, { status: 502 });
     }
 
+    // Prepare complete applicant details with validated contact number, LinkedIn URL, and booking date
+    const consolidatedDetails = body?.applicantDetails
+      ? {
+          ...body.applicantDetails,
+          phone: validatedPhone || body.applicantDetails.phone,
+          contactNumber: validatedPhone || body.applicantDetails.contactNumber,
+          linkedinUrl: validatedLinkedInUrl || body.applicantDetails.linkedinUrl,
+          bookingDate: rawBookingDate || body.applicantDetails.bookingDate,
+          scheduledFor: validatedBookingDateIso || body.applicantDetails.scheduledFor,
+        }
+      : null;
+
     const { data: payment, error } = await admin.from('payments').insert({
       user_id: user.id,
       product_code: productCode,
@@ -172,7 +255,7 @@ export async function POST(request: Request) {
         category: product.category ?? null,
         service_code: product.serviceCode ?? null,
         training_code: product.trainingCode ?? null,
-        applicant_details: body?.applicantDetails ?? null,
+        applicant_details: consolidatedDetails,
         receipt,
       },
     }).select('id').single();
@@ -191,7 +274,7 @@ export async function POST(request: Request) {
           message: JSON.stringify({
             type: 'training_application',
             productCode,
-            ...body.applicantDetails,
+            ...consolidatedDetails,
             appliedAt: new Date().toISOString(),
           }),
         });
@@ -201,10 +284,17 @@ export async function POST(request: Request) {
     }
 
     if (product.serviceCode) {
-      const applicantDetails = body?.applicantDetails;
-      const fulfilmentNote = applicantDetails
-        ? `Name: ${applicantDetails.fullName || applicantDetails.name || ''} | Details: ${applicantDetails.careerDetails || ''} | Interest: ${applicantDetails.areaOfInterest || ''}`
-        : null;
+      const applicantDetails = consolidatedDetails;
+      const fulfilmentNoteParts = [
+        `Candidate: ${applicantDetails?.fullName || applicantDetails?.name || user.email || 'N/A'}`,
+        validatedPhone ? `Phone: ${validatedPhone}` : null,
+        validatedLinkedInUrl ? `LinkedIn: ${validatedLinkedInUrl}` : null,
+        rawBookingDate ? `Booking Date: ${rawBookingDate}` : null,
+        applicantDetails?.areaOfInterest ? `Area: ${applicantDetails.areaOfInterest}` : null,
+        applicantDetails?.careerDetails ? `Career: ${applicantDetails.careerDetails}` : null,
+      ].filter(Boolean);
+
+      const fulfilmentNote = fulfilmentNoteParts.join(' | ');
 
       try {
         const { error: serviceOrderError } = await admin.from('service_orders').insert({
@@ -215,6 +305,7 @@ export async function POST(request: Request) {
           currency: product.currency,
           status: 'pending_payment',
           payment_id: payment?.id,
+          scheduled_for: validatedBookingDateIso || null,
           fulfilment_note: fulfilmentNote,
         });
 
@@ -223,6 +314,26 @@ export async function POST(request: Request) {
         }
       } catch (serviceOrderErr) {
         console.warn('Notice: exception recording service order:', serviceOrderErr);
+      }
+
+      // If this is a 1-on-1 counseling / guidance session with a booking date, record in bookings table
+      if (product.serviceCode === 'career-counseling' && validatedBookingDateIso) {
+        try {
+          const { error: bookingError } = await admin.from('bookings').insert({
+            user_id: user.id,
+            service_code: 'career-counseling',
+            domain: applicantDetails?.areaOfInterest || null,
+            scheduled_for: validatedBookingDateIso,
+            status: 'pending',
+            payment_id: payment?.id,
+          });
+
+          if (bookingError) {
+            console.warn('Notice: could not record booking row:', bookingError.message);
+          }
+        } catch (bookingErr) {
+          console.warn('Notice: exception inserting into bookings table:', bookingErr);
+        }
       }
     }
 
