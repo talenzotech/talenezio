@@ -123,20 +123,26 @@ export async function POST(request: Request) {
     }
 
     // Dispatch email with complete application details and uploaded resume attachment
-    try {
-      await sendInternshipApplicationEmail({
-        internshipTitle,
-        fullName,
-        email,
-        phone,
-        college,
-        resumeFileName: resumeFile.name,
-        resumeBuffer: buffer,
-        resumeStorageUrl,
-      })
-    } catch (emailErr) {
-      // Non-fatal error so application is still successfully recorded even if email service has limits
-      console.error('Notice: error sending internship application notification email:', emailErr)
+    const emailResult = await sendInternshipApplicationEmail({
+      internshipTitle,
+      fullName,
+      email,
+      phone,
+      college,
+      resumeFileName: resumeFile.name,
+      resumeBuffer: buffer,
+      resumeStorageUrl,
+    });
+
+    if (!emailResult.success) {
+      console.error('Notice: error sending internship application notification email:', emailResult.error);
+      const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
+      const isConfigError = errText.includes('RESEND_API_KEY');
+      const errorMessage = isConfigError
+        ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
+        : 'Failed to send your application email. Please try again or reach out to taleneziocontact@gmail.com.';
+
+      return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
 
     return NextResponse.json({

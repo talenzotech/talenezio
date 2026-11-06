@@ -14,6 +14,7 @@ import {
   Briefcase,
   Target,
 } from 'lucide-react'
+import { InterviewPrepApplyModal } from '@/components/services/InterviewPrepApplyModal'
 
 declare global {
   interface Window {
@@ -78,6 +79,21 @@ export function CareerServiceApplyModal({
   }, [isOpen])
 
   if (!isOpen || !service) return null
+
+  if (
+    service.id === 'interview-prep' ||
+    service.serviceName === 'Interview Preparation' ||
+    service.productCode === 'career:interview-prep' ||
+    service.title?.toLowerCase().includes('interview')
+  ) {
+    return (
+      <InterviewPrepApplyModal
+        isOpen={isOpen}
+        onClose={onClose}
+        userProfile={userProfile}
+      />
+    )
+  }
 
   const loadRazorpay = async () => {
     if (window.Razorpay) return
