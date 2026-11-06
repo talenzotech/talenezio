@@ -1,10 +1,16 @@
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 // import { ThemeToggle } from '@/components/ThemeToggle';
-import { ArrowLeft, Video, Target, Award, CheckCircle, Shield, Briefcase } from 'lucide-react';
+import { ArrowLeft, Video, Target, Award, CheckCircle, Shield, Briefcase, ArrowRight, Calendar } from 'lucide-react';
 import ServiceCheckout from '@/components/services/ServiceCheckout';
 import FeatureBottomNav from '@/components/FeatureBottomNav';
+import { InterviewPrepApplyModal } from '@/components/services/InterviewPrepApplyModal';
+import { InterviewPrepForm } from '@/components/services/InterviewPrepForm';
 
 export default function InterviewPrepPage() {
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const features = [
     {
       title: "3 Live Google Meet Sessions",
@@ -75,9 +81,16 @@ export default function InterviewPrepPage() {
           </p>
 
           <div id="enroll" className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="#apply-form"
+              className="w-full sm:w-auto px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all text-center shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Apply Now (Select Batch)</span>
+              <ArrowRight className="w-5 h-5" />
+            </a>
             <div className="w-full sm:w-auto sm:min-w-64">
               <ServiceCheckout productCode="service:interview-prep" title="Interview Preparation" />
-              <p className="mt-2 text-center text-xs text-gray-500">₹399 or free with an approved unlock entitlement.</p>
+              <p className="mt-2 text-center text-xs text-gray-500">₹499 or free with an approved unlock entitlement.</p>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">or</p>
             <a href="#syllabus" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-center">
@@ -100,6 +113,28 @@ export default function InterviewPrepPage() {
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Embedded Application Form: Batch Selection & Resume Upload */}
+      <section id="apply-form" className="py-20 bg-purple-50/30 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800 scroll-mt-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-8">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider mb-4 border border-purple-200 dark:border-purple-800/50">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Cohort Registration</span>
+            </div>
+            <h2 className="text-3xl font-extrabold text-gray-950 dark:text-white tracking-tight sm:text-4xl">
+              Choose Your Batch & Apply
+            </h2>
+            <p className="mt-3 text-base text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+              Select one of the upcoming 8-day batches, enter your contact number, and upload your resume to apply.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:p-10">
+            <InterviewPrepForm />
           </div>
         </div>
       </section>
@@ -150,8 +185,11 @@ export default function InterviewPrepPage() {
                 </li>
               </ul>
               
-              <a href="#enroll" className="block text-center w-full py-4 bg-white text-purple-900 font-bold rounded-xl hover:bg-gray-50 transition-colors">
-                Start Your Journey Today
+              <a
+                href="#apply-form"
+                className="block text-center w-full py-4 bg-white text-purple-900 font-bold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Apply Now & Choose Batch
               </a>
             </div>
           </div>
@@ -160,6 +198,12 @@ export default function InterviewPrepPage() {
 
       {/* Feature Bottom Navigation */}
       <FeatureBottomNav />
+
+      {/* Interview Preparation Application Modal */}
+      <InterviewPrepApplyModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+      />
     </div>
   );
 }
