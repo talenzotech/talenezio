@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { grantEntitlement } from '@/lib/payments/access';
 import { verifyPaymentSignature } from '@/lib/payments/razorpay';
 import { paidProductDetails } from '@/lib/payments/products';
+import { canVerifyPayment, fulfillServiceOrder } from '@/lib/payments/lifecycle';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -41,8 +42,9 @@ export async function POST(request: Request) {
 
   // Allow verification for pending, created, already-paid (idempotent), or previously failed states.
   // A verified cryptographic signature proves genuine charge, preventing entitlement loss from late verification.
-  if (!['pending', 'created', 'paid', 'failed'].includes(payment.status)) {
-    return NextResponse.json({ error: 'Payment is not eligible for verification' }, { status: 409 });
+  const verificationEligibility = canVerifyPayment(payment.status, true);
+  if (!verificationEligibility.ok) {
+    return NextResponse.json({ error: verificationEligibility.error }, { status: 409 });
   }
 
   const product = paidProductDetails(payment.product_code);
@@ -75,43 +77,19 @@ export async function POST(request: Request) {
   });
 
   if (product.serviceCode) {
-    const { data: updatedOrders, error: updateError } = await admin
-      .from('service_orders')
-      .update({ status: 'paid' })
-      .eq('payment_id', payment.id)
-      .in('status', ['pending_payment', 'requested', 'paid'])
-      .select('id');
-
-    if (updateError) {
-      console.error('Unable to mark service order as paid:', updateError);
-      return NextResponse.json({ error: 'Failed to update service order status' }, { status: 500 });
-    }
-
-    // Guarantee that every paid service purchase has a service_orders record
-    if (!updatedOrders || updatedOrders.length === 0) {
-      const metadata = payment.metadata && typeof payment.metadata === 'object'
-        ? (payment.metadata as Record<string, any>)
-        : null;
-      const applicantDetails = metadata?.applicant_details;
-      const fulfilmentNote = applicantDetails
-        ? `Name: ${applicantDetails.fullName || applicantDetails.name || ''} | Details: ${applicantDetails.careerDetails || ''} | Interest: ${applicantDetails.areaOfInterest || ''}`
-        : null;
-
-      const { error: insertError } = await admin.from('service_orders').insert({
-        user_id: user.id,
-        service_code: product.serviceCode,
-        product_code: payment.product_code,
-        amount_paise: payment.amount_paise,
-        currency: payment.currency,
-        status: 'paid',
-        payment_id: payment.id,
-        fulfilment_note: fulfilmentNote,
+    try {
+      await fulfillServiceOrder({
+        admin,
+        payment,
+        serviceDetails: {
+          serviceCode: product.serviceCode,
+          amountPaise: product.amountPaise,
+          currency: product.currency,
+        },
       });
-
-      if (insertError) {
-        console.error('Unable to create service order fulfilment record on verification:', insertError);
-        return NextResponse.json({ error: 'Failed to create service order fulfilment record' }, { status: 500 });
-      }
+    } catch (fulfillError: any) {
+      console.error('Service order fulfilment failed during verification:', fulfillError);
+      return NextResponse.json({ error: 'Failed to record service order fulfilment' }, { status: 500 });
     }
 
     if (product.serviceCode === 'career-starter-pack') {

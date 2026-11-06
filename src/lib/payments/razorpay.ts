@@ -1,7 +1,6 @@
-import 'server-only';
-
 import crypto from 'node:crypto';
 import { env } from '@/lib/env';
+import { verifyWebhookSignatureLogic } from './lifecycle';
 
 type RazorpayOrder = {
   id: string;
@@ -61,10 +60,6 @@ export function verifyPaymentSignature(input: {
 }
 
 export function verifyWebhookSignature(body: string, signature: string): boolean {
-  if (!signature || !body) {
-    return false;
-  }
-
   let secret: string;
   try {
     secret = env.razorpayWebhookSecret();
@@ -73,17 +68,5 @@ export function verifyWebhookSignature(body: string, signature: string): boolean
     return false;
   }
 
-  if (!secret || typeof secret !== 'string' || secret.trim() === '') {
-    return false;
-  }
-
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(body)
-    .digest('hex');
-
-  return signature.length === expected.length && crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected),
-  );
+  return verifyWebhookSignatureLogic(body, signature, secret);
 }

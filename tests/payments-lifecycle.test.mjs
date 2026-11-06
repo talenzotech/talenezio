@@ -1,30 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import crypto from 'node:crypto'
+import {
+  verifyWebhookSignatureLogic,
+  canVerifyPayment,
+  handleModalDismissal,
+  fulfillServiceOrder,
+  ELIGIBLE_VERIFICATION_STATUSES,
+} from '../src/lib/payments/lifecycle.ts'
 
-// --- 1. Webhook Secret Validation Tests ---
+// --- 1. Production Webhook Secret & Signature Verification Tests ---
 
-function verifyWebhookSignatureLogic(body, signature, secret) {
-  if (!signature || !body) return false
-  if (!secret || typeof secret !== 'string' || secret.trim() === '') {
-    // Fail closed: Webhooks must never be verified without a configured secret
-    return false
-  }
-
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(body)
-    .digest('hex')
-
-  return (
-    signature.length === expected.length &&
-    crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-  )
-}
-
-test('webhook verification fails closed when RAZORPAY_WEBHOOK_SECRET is missing or empty', () => {
+test('verifyWebhookSignatureLogic fails closed when secret is missing, empty, or whitespace', () => {
   const body = JSON.stringify({ event: 'payment.captured' })
-  const fakeSig = crypto.createHmac('sha256', '').update(body).digest('hex')
+  const fakeSig = crypto.createHmac('sha256', 'temp').update(body).digest('hex')
 
   // Undefined secret must fail
   assert.equal(verifyWebhookSignatureLogic(body, fakeSig, undefined), false)
@@ -37,10 +26,14 @@ test('webhook verification fails closed when RAZORPAY_WEBHOOK_SECRET is missing 
 
   // Null secret must fail
   assert.equal(verifyWebhookSignatureLogic(body, fakeSig, null), false)
+
+  // Missing body or signature must fail
+  assert.equal(verifyWebhookSignatureLogic('', fakeSig, 'valid_secret'), false)
+  assert.equal(verifyWebhookSignatureLogic(body, '', 'valid_secret'), false)
 })
 
-test('webhook verification succeeds with valid secret and signature, fails on tampering', () => {
-  const secret = 'whsec_test_secret_12345'
+test('verifyWebhookSignatureLogic succeeds with valid HMAC signature and fails on tampering', () => {
+  const secret = 'whsec_prod_live_test_secret_12345'
   const body = JSON.stringify({ event: 'order.paid', id: 'order_123' })
   const validSig = crypto.createHmac('sha256', secret).update(body).digest('hex')
 
@@ -56,140 +49,222 @@ test('webhook verification succeeds with valid secret and signature, fails on ta
   assert.equal(verifyWebhookSignatureLogic(body, tamperedSig, secret), false)
 })
 
-// --- 2. Payment Dismissal & Late Verification Race Condition Tests ---
+// --- 2. Production Modal Dismissal & Late Verification Race Condition Tests ---
 
-test('payment dismissal preserves pending status and does not lock into terminal failed state', () => {
-  // Simulate payment lifecycle
-  const paymentRecord = {
+test('handleModalDismissal preserves pending/created status and records dismissal metadata', () => {
+  const pendingPayment = {
     id: 'pay_rec_001',
     user_id: 'user_abc',
     product_code: 'career:career-guidance',
     status: 'pending',
-    metadata: { applicant_details: { name: 'Test User' } },
+    metadata: { applicant_details: { name: 'Test Candidate' } },
   }
 
-  // Simulate modal dismissal event (/api/payments/failed with status: 'cancelled')
-  function handleModalDismissal(record, dismissalStatus) {
-    if (dismissalStatus === 'cancelled' || dismissalStatus === 'dismissed') {
-      return {
-        ...record,
-        // Status remains pending/created, metadata captures dismissal timestamp
-        status: record.status,
-        metadata: {
-          ...record.metadata,
-          last_dismissed_at: '2026-11-05T21:00:00.000Z',
-        },
-      }
-    }
-    return record
-  }
+  const result = handleModalDismissal(pendingPayment, 'dismissed')
+  assert.equal(result.shouldUpdate, true)
+  assert.equal(result.newStatus, 'pending') // MUST stay pending, never transition to terminal failed
+  assert.ok(result.newMetadata.last_dismissed_at)
+  assert.deepEqual(result.newMetadata.applicant_details, { name: 'Test Candidate' })
 
-  const dismissedRecord = handleModalDismissal(paymentRecord, 'cancelled')
-  assert.equal(dismissedRecord.status, 'pending')
-  assert.equal(dismissedRecord.metadata.last_dismissed_at, '2026-11-05T21:00:00.000Z')
-  assert.notEqual(dismissedRecord.status, 'failed')
+  // Non-pending payment (e.g. already paid) should not update
+  const paidPayment = { ...pendingPayment, status: 'paid' }
+  const paidResult = handleModalDismissal(paidPayment, 'cancelled')
+  assert.equal(paidResult.shouldUpdate, false)
 })
 
-test('late verification succeeds even if payment had previous failure or dismissal', () => {
-  const secret = 'rzp_secret_key_123'
-  const orderId = 'order_race_001'
-  const paymentId = 'pay_race_001'
+test('canVerifyPayment enforces eligible verification statuses and valid signatures', () => {
+  // Confirm eligible statuses match production specification
+  assert.deepEqual(ELIGIBLE_VERIFICATION_STATUSES, ['pending', 'created', 'paid', 'failed'])
 
-  const signature = crypto
-    .createHmac('sha256', secret)
-    .update(`${orderId}|${paymentId}`)
-    .digest('hex')
-
-  // Allowed verification statuses in updated verify/route.ts
-  const eligibleStatuses = ['pending', 'created', 'paid', 'failed']
-
-  function canVerifyPayment(currentStatus, sigValid) {
-    if (!sigValid) return { ok: false, error: 'Invalid payment signature' }
-    if (!eligibleStatuses.includes(currentStatus)) {
-      return { ok: false, error: 'Payment is not eligible for verification' }
-    }
-    return { ok: true, newStatus: 'paid' }
-  }
+  // Invalid signature fails
+  const sigFail = canVerifyPayment('pending', false)
+  assert.equal(sigFail.ok, false)
+  assert.equal(sigFail.error, 'Invalid payment signature')
 
   // Pending payment verifies
-  assert.equal(canVerifyPayment('pending', true).ok, true)
+  const pendingResult = canVerifyPayment('pending', true)
+  assert.equal(pendingResult.ok, true)
+  assert.equal(pendingResult.newStatus, 'paid')
 
-  // Payment that had intermediate failure (e.g. initial card decline, then UPI success) verifies
-  const retryResult = canVerifyPayment('failed', true)
-  assert.equal(retryResult.ok, true)
-  assert.equal(retryResult.newStatus, 'paid')
+  // Late verification after transient gateway failure succeeds
+  const failedResult = canVerifyPayment('failed', true)
+  assert.equal(failedResult.ok, true)
+  assert.equal(failedResult.newStatus, 'paid')
 
-  // Refunded payment cannot be reverified
-  assert.equal(canVerifyPayment('refunded', true).ok, false)
+  // Already paid payment verifies idempotently
+  const paidResult = canVerifyPayment('paid', true)
+  assert.equal(paidResult.ok, true)
+
+  // Terminal refunded payment cannot be verified
+  const refundedResult = canVerifyPayment('refunded', true)
+  assert.equal(refundedResult.ok, false)
+  assert.equal(refundedResult.error, 'Payment is not eligible for verification')
 })
 
-// --- 3. Service Order Persistence & Fulfilment Guarantee Tests ---
+// --- 3. Production Service Order Fulfillment Tests (Idempotency & Failure Handling) ---
 
-test('service order persistence guarantees fulfilment record on payment verification', () => {
-  const serviceOrdersDb = []
+function createMockAdmin(initialOrders = [], failureTrigger = null) {
+  const db = [...initialOrders]
 
-  function verifyAndEnsureFulfilment(payment, product) {
-    if (!product.serviceCode) return { verified: true }
-
-    // Find existing service order
-    const existing = serviceOrdersDb.find((o) => o.payment_id === payment.id)
-    if (existing) {
-      existing.status = 'paid'
-      return { verified: true, serviceOrderId: existing.id }
-    }
-
-    // Guarantee fulfilment record is created if missing
-    const newOrder = {
-      id: `so_${serviceOrdersDb.length + 1}`,
-      user_id: payment.user_id,
-      service_code: product.serviceCode,
-      product_code: payment.product_code,
-      amount_paise: payment.amount_paise,
-      status: 'paid',
-      payment_id: payment.id,
-      fulfilment_note: payment.metadata?.applicant_details?.name || null,
-    }
-    serviceOrdersDb.push(newOrder)
-    return { verified: true, serviceOrderId: newOrder.id }
+  return {
+    db,
+    from(table) {
+      if (table !== 'service_orders') throw new Error(`Unexpected table ${table}`)
+      return {
+        select(fields) {
+          return {
+            eq(field, val) {
+              return {
+                maybeSingle: async () => {
+                  if (failureTrigger === 'select') throw new Error('Database connection failed')
+                  const match = db.find((r) => r[field] === val)
+                  return { data: match || null, error: null }
+                },
+              }
+            },
+          }
+        },
+        update(updates) {
+          return {
+            eq(idField, idVal) {
+              return {
+                in(statusField, allowedStatuses) {
+                  return {
+                    select: () => ({
+                      maybeSingle: async () => {
+                        if (failureTrigger === 'update') throw new Error('Update failed')
+                        const match = db.find((r) => r[idField] === idVal && allowedStatuses.includes(r[statusField]))
+                        if (match) Object.assign(match, updates)
+                        return { data: match || null, error: null }
+                      },
+                    }),
+                  }
+                },
+              }
+            },
+          }
+        },
+        insert(row) {
+          return {
+            select: () => ({
+              maybeSingle: async () => {
+                if (failureTrigger === 'insert') {
+                  return { data: null, error: new Error('Could not insert service order') }
+                }
+                if (failureTrigger === 'unique_conflict') {
+                  const err = new Error('duplicate key value violates unique constraint')
+                  err.code = '23505'
+                  return { data: null, error: err }
+                }
+                const newRow = { id: `so_${db.length + 1}`, ...row }
+                db.push(newRow)
+                return { data: newRow, error: null }
+              },
+            }),
+          }
+        },
+      }
+    },
   }
+}
+
+test('fulfillServiceOrder creates a new fulfilment record when none exists', async () => {
+  const admin = createMockAdmin([])
 
   const payment = {
-    id: 'pay_123',
-    user_id: 'user_456',
+    id: 'pay_live_001',
+    user_id: 'user_live_001',
     product_code: 'career:career-guidance',
-    amount_paise: 19900,
-    metadata: { applicant_details: { name: 'Alice' } },
+    metadata: { applicant_details: { name: 'Bob Smith', phone: '9876543210' } },
   }
 
-  const product = { serviceCode: 'career-counseling' }
+  const result = await fulfillServiceOrder({
+    admin,
+    payment,
+    serviceDetails: {
+      serviceCode: 'career-counseling',
+      amountPaise: 19900,
+      currency: 'INR',
+    },
+  })
 
-  // Case 1: No previous service_orders row (e.g. edge case during order creation)
-  const result1 = verifyAndEnsureFulfilment(payment, product)
-  assert.equal(result1.verified, true)
-  assert.equal(serviceOrdersDb.length, 1)
-  assert.equal(serviceOrdersDb[0].status, 'paid')
-  assert.equal(serviceOrdersDb[0].fulfilment_note, 'Alice')
-
-  // Case 2: Verification is called again (idempotent update)
-  const result2 = verifyAndEnsureFulfilment(payment, product)
-  assert.equal(result2.verified, true)
-  assert.equal(serviceOrdersDb.length, 1) // Does not duplicate
-  assert.equal(serviceOrdersDb[0].status, 'paid')
+  assert.equal(result.success, true)
+  assert.equal(result.action, 'created')
+  assert.equal(admin.db.length, 1)
+  assert.equal(admin.db[0].status, 'paid')
+  assert.equal(admin.db[0].payment_id, 'pay_live_001')
+  assert.ok(admin.db[0].fulfilment_note.includes('Bob Smith'))
 })
 
-test('service order creation failure must not be silently ignored during checkout initiation', () => {
-  function createServiceOrderSimulation(dbError) {
-    if (dbError) {
-      // Must return 500 error instead of silently swallowing and continuing
-      return { status: 500, error: 'Unable to store service order' }
+test('fulfillServiceOrder idempotently updates existing pending order and preserves completed/refunded orders', async () => {
+  // Case A: Existing pending order transitions to paid
+  const adminWithPending = createMockAdmin([
+    {
+      id: 'so_pending_1',
+      payment_id: 'pay_existing_001',
+      status: 'pending_payment',
+      service_code: 'career-counseling',
+    },
+  ])
+
+  const pendingResult = await fulfillServiceOrder({
+    admin: adminWithPending,
+    payment: { id: 'pay_existing_001', user_id: 'u1', product_code: 'career:career-guidance' },
+    serviceDetails: { serviceCode: 'career-counseling', amountPaise: 19900, currency: 'INR' },
+  })
+
+  assert.equal(pendingResult.success, true)
+  assert.equal(pendingResult.action, 'updated')
+  assert.equal(adminWithPending.db[0].status, 'paid')
+
+  // Case B: Existing completed or refunded order is preserved and NOT overwritten
+  const adminWithCompleted = createMockAdmin([
+    {
+      id: 'so_completed_1',
+      payment_id: 'pay_completed_001',
+      status: 'completed',
+      service_code: 'career-counseling',
+    },
+  ])
+
+  const completedResult = await fulfillServiceOrder({
+    admin: adminWithCompleted,
+    payment: { id: 'pay_completed_001', user_id: 'u1', product_code: 'career:career-guidance' },
+    serviceDetails: { serviceCode: 'career-counseling', amountPaise: 19900, currency: 'INR' },
+  })
+
+  assert.equal(completedResult.success, true)
+  assert.equal(completedResult.action, 'preserved')
+  assert.equal(adminWithCompleted.db[0].status, 'completed') // Did not revert to paid
+})
+
+test('fulfillServiceOrder handles concurrent race conditions (23505 unique conflict) gracefully without duplicates', async () => {
+  const adminWithConflict = createMockAdmin([], 'unique_conflict')
+
+  const result = await fulfillServiceOrder({
+    admin: adminWithConflict,
+    payment: { id: 'pay_race_001', user_id: 'u1', product_code: 'career:career-guidance' },
+    serviceDetails: { serviceCode: 'career-counseling', amountPaise: 19900, currency: 'INR' },
+  })
+
+  // Recovered cleanly from duplicate key conflict
+  assert.equal(result.success, true)
+  assert.equal(result.action, 'updated')
+})
+
+test('fulfillServiceOrder throws on real database failure so webhooks fail closed and retry', async () => {
+  const adminWithDbError = createMockAdmin([], 'insert')
+
+  await assert.rejects(
+    async () => {
+      await fulfillServiceOrder({
+        admin: adminWithDbError,
+        payment: { id: 'pay_err_001', user_id: 'u1', product_code: 'career:career-guidance' },
+        serviceDetails: { serviceCode: 'career-counseling', amountPaise: 19900, currency: 'INR' },
+      })
+    },
+    {
+      message: 'Failed to create service order fulfilment: Could not insert service order',
     }
-    return { status: 200, success: true }
-  }
-
-  const simulatedDbFailure = new Error('Could not find table public.service_orders')
-  const response = createServiceOrderSimulation(simulatedDbFailure)
-
-  assert.equal(response.status, 500)
-  assert.equal(response.error, 'Unable to store service order')
+  )
 })
-

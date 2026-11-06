@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { handleModalDismissal } from '@/lib/payments/lifecycle';
 
 export async function POST(request: Request) {
   try {
@@ -31,27 +32,21 @@ export async function POST(request: Request) {
     if (body.status === 'cancelled' || body.status === 'dismissed') {
       const { data: payment } = await admin
         .from('payments')
-        .select('id, metadata')
+        .select('id, status, metadata')
         .eq('provider_order_id', body.orderId)
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (payment) {
-        const currentMeta =
-          payment.metadata && typeof payment.metadata === 'object'
-            ? (payment.metadata as Record<string, unknown>)
-            : {};
+        const { shouldUpdate, newMetadata } = handleModalDismissal(payment, body.status);
 
-        await admin
-          .from('payments')
-          .update({
-            metadata: {
-              ...currentMeta,
-              last_dismissed_at: new Date().toISOString(),
-            },
-          })
-          .eq('id', payment.id)
-          .in('status', ['created', 'pending']);
+        if (shouldUpdate) {
+          await admin
+            .from('payments')
+            .update({ metadata: newMetadata })
+            .eq('id', payment.id)
+            .in('status', ['created', 'pending']);
+        }
       }
 
       return NextResponse.json({ recorded: true, state: 'dismissed' });

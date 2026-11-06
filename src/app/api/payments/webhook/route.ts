@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { grantEntitlement } from '@/lib/payments/access';
 import { verifyWebhookSignature } from '@/lib/payments/razorpay';
 import { paidProductDetails } from '@/lib/payments/products';
+import { fulfillServiceOrder } from '@/lib/payments/lifecycle';
 
 type RazorpayWebhook = {
   event?: string;
@@ -64,13 +65,30 @@ export async function POST(request: Request) {
 
     if (payment) {
       // Transition to paid even if payment was previously marked failed by an intermediate event
-      await admin.from('payments').update({
-        status: 'paid',
-        provider_payment_id: providerPaymentId,
-        paid_at: new Date().toISOString(),
-        failure_code: null,
-        failure_reason: null,
-      }).eq('id', payment.id).in('status', ['pending', 'created', 'paid', 'failed']);
+      const { data: updatedPayment, error: paymentUpdateError } = await admin
+        .from('payments')
+        .update({
+          status: 'paid',
+          provider_payment_id: providerPaymentId,
+          paid_at: new Date().toISOString(),
+          failure_code: null,
+          failure_reason: null,
+        })
+        .eq('id', payment.id)
+        .in('status', ['pending', 'created', 'paid', 'failed'])
+        .select('id, user_id, product_code, status')
+        .maybeSingle();
+
+      if (paymentUpdateError) {
+        console.error('Failed to update payment status to paid in webhook:', paymentUpdateError);
+        // Do NOT mark event as processed so Razorpay will retry delivery
+        return NextResponse.json({ error: 'Failed to update payment status' }, { status: 500 });
+      }
+
+      if (!updatedPayment) {
+        console.warn(`Payment ${payment.id} could not transition to paid (status conflict).`);
+        return NextResponse.json({ error: 'Payment state conflict' }, { status: 409 });
+      }
 
       await grantEntitlement({
         userId: payment.user_id,
@@ -81,44 +99,31 @@ export async function POST(request: Request) {
 
       const product = paidProductDetails(payment.product_code);
       if (product?.serviceCode) {
-        const { data: updatedOrders } = await admin
-          .from('service_orders')
-          .update({ status: 'paid' })
-          .eq('payment_id', payment.id)
-          .in('status', ['pending_payment', 'requested', 'paid'])
-          .select('id');
+        try {
+          await fulfillServiceOrder({
+            admin,
+            payment,
+            serviceDetails: {
+              serviceCode: product.serviceCode,
+              amountPaise: product.amountPaise,
+              currency: product.currency,
+            },
+          });
+        } catch (fulfillError: any) {
+          console.error('Service order fulfilment failed in webhook:', fulfillError);
+          // Preserve webhook event unprocessed so Razorpay retries
+          return NextResponse.json({ error: 'Service order fulfilment failed' }, { status: 500 });
+        }
 
-        // Guarantee a fulfilment record exists in service_orders
-        if (!updatedOrders || updatedOrders.length === 0) {
-          const metadata = payment.metadata && typeof payment.metadata === 'object'
-            ? (payment.metadata as Record<string, any>)
-            : null;
-          const applicantDetails = metadata?.applicant_details;
-          const fulfilmentNote = applicantDetails
-            ? `Name: ${applicantDetails.fullName || applicantDetails.name || ''} | Details: ${applicantDetails.careerDetails || ''} | Interest: ${applicantDetails.areaOfInterest || ''}`
-            : null;
-
-          await admin.from('service_orders').insert({
-            user_id: payment.user_id,
-            service_code: product.serviceCode,
-            product_code: payment.product_code,
-            amount_paise: product.amountPaise,
-            currency: product.currency,
-            status: 'paid',
-            payment_id: payment.id,
-            fulfilment_note: fulfilmentNote,
+        if (payment.product_code === 'service:career-starter-pack') {
+          await grantEntitlement({
+            userId: payment.user_id,
+            productCode: 'pro-test:attempts',
+            source: 'payment',
+            sourceId: payment.id,
+            remainingUses: 10,
           });
         }
-      }
-
-      if (payment.product_code === 'service:career-starter-pack') {
-        await grantEntitlement({
-          userId: payment.user_id,
-          productCode: 'pro-test:attempts',
-          source: 'payment',
-          sourceId: payment.id,
-          remainingUses: 10,
-        });
       }
     }
   } else if (body.event === 'payment.failed' && providerOrderId) {

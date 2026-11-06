@@ -28,7 +28,18 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
   const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
-  if (clientEmail && privateKey && spreadsheetId) {
+  const hasAnyConfig = Boolean(clientEmail || privateKey || spreadsheetId);
+  const isFullyConfigured = Boolean(clientEmail && privateKey && spreadsheetId);
+
+  if (hasAnyConfig && !isFullyConfigured) {
+    console.error('[GoogleSheetsConfigError] Incomplete Google Sheets configuration. Check environment variables:', {
+      hasClientEmail: Boolean(clientEmail),
+      hasPrivateKey: Boolean(privateKey),
+      hasSpreadsheetId: Boolean(spreadsheetId),
+    });
+  }
+
+  if (isFullyConfigured) {
     const worksheet = type === 'pro'
       ? process.env.GOOGLE_SHEETS_PAID_WORKSHEET || 'Paid'
       : process.env.GOOGLE_SHEETS_FREE_WORKSHEET || 'Free';
@@ -58,8 +69,20 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
       const filtered = questions.filter((question) => question.category === normalizedCategory && question.isActive);
       if (filtered.length > 0) return filtered;
       throw new QuestionBankError(`No active questions available for ${category} in the ${worksheet} worksheet.`);
-    } catch (error) {
-      console.warn('Unable to read Google question bank, falling back to verified default questions:', error);
+    } catch (error: any) {
+      const isConfigOrAuthError =
+        error?.code === 401 ||
+        error?.code === 403 ||
+        error?.message?.includes('invalid_grant') ||
+        error?.message?.includes('PEM') ||
+        error?.message?.includes('Worksheet') ||
+        error instanceof QuestionBankError;
+
+      if (isConfigOrAuthError) {
+        console.error('[GoogleSheetsConfigError] Configuration or credential error reading Google question bank:', error);
+      } else {
+        console.warn('[GoogleSheetsTransientWarning] Transient error reading Google question bank, falling back to verified default questions:', error);
+      }
       return getFallbackQuestions(category, type);
     }
   }
