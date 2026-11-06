@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { grantEntitlement } from '@/lib/payments/access';
 import { verifyWebhookSignature } from '@/lib/payments/razorpay';
+import { paidProductDetails } from '@/lib/payments/products';
+import { fulfillServiceOrder } from '@/lib/payments/lifecycle';
 
 type RazorpayWebhook = {
   event?: string;
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
   const signature = request.headers.get('x-razorpay-signature');
   const eventId = request.headers.get('x-razorpay-event-id');
 
+  // Webhook verification fails closed if signature is missing or RAZORPAY_WEBHOOK_SECRET is unconfigured
   if (!signature || !eventId || !verifyWebhookSignature(rawBody, signature)) {
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
   }
@@ -56,16 +59,36 @@ export async function POST(request: Request) {
 
     const { data: payment } = await admin
       .from('payments')
-      .select('id, user_id, product_code')
+      .select('id, user_id, product_code, metadata')
       .eq('provider_order_id', providerOrderId)
       .maybeSingle();
 
     if (payment) {
-      await admin.from('payments').update({
-        status: 'paid',
-        provider_payment_id: providerPaymentId,
-        paid_at: new Date().toISOString(),
-      }).eq('id', payment.id).in('status', ['pending', 'created', 'paid']);
+      // Transition to paid even if payment was previously marked failed by an intermediate event
+      const { data: updatedPayment, error: paymentUpdateError } = await admin
+        .from('payments')
+        .update({
+          status: 'paid',
+          provider_payment_id: providerPaymentId,
+          paid_at: new Date().toISOString(),
+          failure_code: null,
+          failure_reason: null,
+        })
+        .eq('id', payment.id)
+        .in('status', ['pending', 'created', 'paid', 'failed'])
+        .select('id, user_id, product_code, status')
+        .maybeSingle();
+
+      if (paymentUpdateError) {
+        console.error('Failed to update payment status to paid in webhook:', paymentUpdateError);
+        // Do NOT mark event as processed so Razorpay will retry delivery
+        return NextResponse.json({ error: 'Failed to update payment status' }, { status: 500 });
+      }
+
+      if (!updatedPayment) {
+        console.warn(`Payment ${payment.id} could not transition to paid (status conflict).`);
+        return NextResponse.json({ error: 'Payment state conflict' }, { status: 409 });
+      }
 
       await grantEntitlement({
         userId: payment.user_id,
@@ -74,17 +97,33 @@ export async function POST(request: Request) {
         sourceId: payment.id,
       });
 
-      await admin.from('service_orders').update({ status: 'paid' })
-        .eq('payment_id', payment.id)
-        .in('status', ['pending_payment', 'paid']);
-      if (payment.product_code === 'service:career-starter-pack') {
-        await grantEntitlement({
-          userId: payment.user_id,
-          productCode: 'pro-test:attempts',
-          source: 'payment',
-          sourceId: payment.id,
-          remainingUses: 10,
-        });
+      const product = paidProductDetails(payment.product_code);
+      if (product?.serviceCode) {
+        try {
+          await fulfillServiceOrder({
+            admin,
+            payment,
+            serviceDetails: {
+              serviceCode: product.serviceCode,
+              amountPaise: product.amountPaise,
+              currency: product.currency,
+            },
+          });
+        } catch (fulfillError: any) {
+          console.error('Service order fulfilment failed in webhook:', fulfillError);
+          // Preserve webhook event unprocessed so Razorpay retries
+          return NextResponse.json({ error: 'Service order fulfilment failed' }, { status: 500 });
+        }
+
+        if (payment.product_code === 'service:career-starter-pack') {
+          await grantEntitlement({
+            userId: payment.user_id,
+            productCode: 'pro-test:attempts',
+            source: 'payment',
+            sourceId: payment.id,
+            remainingUses: 10,
+          });
+        }
       }
     }
   } else if (body.event === 'payment.failed' && providerOrderId) {

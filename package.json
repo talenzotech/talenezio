@@ -15,9 +15,10 @@
     "test:internships-training": "node --experimental-strip-types --test tests/internships-training.test.mjs",
     "test:certificates": "node --experimental-strip-types --test tests/certificate-numbering.test.mjs",
     "test:payments": "node --experimental-strip-types --test tests/payments.test.mjs",
+    "test:payments-lifecycle": "node --experimental-strip-types --test tests/payments-lifecycle.test.mjs",
     "test:interview-prep": "node --experimental-strip-types --test tests/interview-prep.test.mjs",
     "test:career-services": "node --experimental-strip-types --test tests/career-services.test.mjs",
-    "test": "npm run test:auth && npm run test:scoring && npm run test:question-bank && npm run test:unlock-entitlements && npm run test:profile && npm run test:internships-training && npm run test:certificates && npm run test:payments && npm run test:interview-prep && npm run test:career-services"
+    "test": "npm run test:auth && npm run test:scoring && npm run test:question-bank && npm run test:unlock-entitlements && npm run test:profile && npm run test:internships-training && npm run test:certificates && npm run test:payments && npm run test:payments-lifecycle && npm run test:interview-prep && npm run test:career-services"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

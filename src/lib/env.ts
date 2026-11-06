@@ -17,8 +17,11 @@ export const env = {
     process.env.RAZORPAY_SECRET ||
     process.env.RAZORPAY_KEY_SECRET ||
     required(undefined, "RAZORPAY_SECRET"),
-  razorpayWebhookSecret: () =>
-    process.env.RAZORPAY_WEBHOOK_SECRET ||
-    process.env.RAZORPAY_SECRET ||
-    "",
+  razorpayWebhookSecret: () => {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret || secret.trim() === '') {
+      throw new Error("Missing required environment variable: RAZORPAY_WEBHOOK_SECRET");
+    }
+    return secret;
+  },
 };
