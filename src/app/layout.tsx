@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Talenezio | Career Acceleration Platform",
   description: "Build an ATS-friendly resume, take industry-standard mock tests, and practice with experts to land your dream job.",
+  icons: {
+    icon: "/talenezio-icon.svg",
+  },
 };
 
 export default function RootLayout({

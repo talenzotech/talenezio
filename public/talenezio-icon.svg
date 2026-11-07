@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">Talenezio</title>
+  <rect width="100" height="100" rx="20" fill="#fff"/>
+  <path fill="#07145f" d="M18 16h64L70 28H58v30L46 72V28H30z"/>
+  <path fill="#6414e8" d="M61 30h20L55 64H43zM55 68h27L72 82H45z"/>
+</svg>
