@@ -160,14 +160,14 @@ export default function TestsClient({ error }: { error?: string }) {
           </div>
           <figure className="mx-auto max-w-3xl">
             <Image
-              src="/talenezio-certificate-blank-template-hd.png"
-              alt="Blank Talenezio Certificate of Completion showing the certificate design, with name, topic, score, date, and certificate number left empty."
+              src="/talenezio-certificate-demo.png?v=1"
+              alt="Sample Talenezio Certificate of Completion showing a completed certificate with candidate and assessment details."
               width={1536}
               height={1024}
               sizes="(max-width: 639px) calc(100vw - 66px), (max-width: 895px) calc(100vw - 98px), 768px"
               className="h-auto w-full rounded-lg border border-gray-100 bg-white shadow-sm"
             />
-            <figcaption className="mt-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">Your name and assessment details will appear on your issued certificate</figcaption>
+            <figcaption className="mt-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">A sample of the certificate you can earn after completing your assessment</figcaption>
           </figure>
         </section>
       </div>
