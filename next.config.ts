@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
         search: "",
       },
       {
+        pathname: "/talenezio-certificate-demo.png",
+        search: "?v=1",
+      },
+      {
         pathname: "/talenezio-wordmark-light-mode.png",
         search: "",
       },
