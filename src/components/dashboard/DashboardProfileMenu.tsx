@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronDown, UserPen } from 'lucide-react'
+import { ChevronDown, LayoutDashboard, UserPen } from 'lucide-react'
 import { type ExperienceLevel } from '@/lib/profile/validation'
 
 export interface DashboardProfileMenuProps {
@@ -13,6 +13,7 @@ export interface DashboardProfileMenuProps {
     experience?: ExperienceLevel
     interests?: string[]
     avatarUrl?: string | null
+    isAdmin?: boolean
   }
 }
 
@@ -128,6 +129,17 @@ export function DashboardProfileMenu({ initialProfile }: DashboardProfileMenuPro
               <UserPen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span>Edit Profile</span>
             </Link>
+            {initialProfile.isAdmin && (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 text-left"
+              >
+                <LayoutDashboard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span>Admin Portal</span>
+              </Link>
+            )}
           </div>
         </div>
       )}
