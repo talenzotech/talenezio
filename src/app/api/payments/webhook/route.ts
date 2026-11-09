@@ -109,7 +109,7 @@ export async function POST(request: Request) {
               currency: product.currency,
             },
           });
-        } catch (fulfillError: any) {
+        } catch (fulfillError: unknown) {
           console.error('Service order fulfilment failed in webhook:', fulfillError);
           // Preserve webhook event unprocessed so Razorpay retries
           return NextResponse.json({ error: 'Service order fulfilment failed' }, { status: 500 });

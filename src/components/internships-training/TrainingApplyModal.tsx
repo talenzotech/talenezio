@@ -8,8 +8,6 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
-  ShieldCheck,
-  CreditCard,
   UploadCloud,
   FileText,
   Trash2,
@@ -23,14 +21,6 @@ import {
 import { type TrainingProgram } from '@/lib/internships-training/data'
 import { isValidPhoneNumber, isValidResumeFile } from '@/lib/interview-prep/batches'
 
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void
-      on?: (event: string, callback: (response: any) => void) => void
-    }
-  }
-}
 
 interface TrainingApplyModalProps {
   program: TrainingProgram | null

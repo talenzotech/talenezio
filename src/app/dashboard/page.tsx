@@ -23,6 +23,7 @@ import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMenu'
 import { type ExperienceLevel } from '@/lib/profile/validation'
+import { getAdminUser } from '@/lib/auth/admin'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -58,6 +59,8 @@ export default async function DashboardPage() {
     ? supabase.from('profiles').select('full_name, avatar_url, is_admin').eq('id', user?.id || '').maybeSingle()
     : null
   const { data: dbProfile } = profileQuery ? await profileQuery : { data: null }
+  const adminUser = !localDemoSession ? await getAdminUser() : null
+  const isAdmin = Boolean(adminUser)
 
   const userMetadata = user?.user_metadata || {}
   const fullName =
@@ -160,7 +163,7 @@ export default async function DashboardPage() {
            <div className="flex items-center gap-4">
              {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
              {/* <ThemeToggle /> */}
-             {dbProfile?.is_admin === true && (
+             {isAdmin && (
                <Link
                  href="/admin"
                  aria-label="Open Admin Portal"
@@ -178,7 +181,7 @@ export default async function DashboardPage() {
                 experience,
                 interests,
                 avatarUrl,
-                isAdmin: dbProfile?.is_admin === true,
+                 isAdmin,
               }}
             />
 

@@ -2,15 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void
-      on?: (event: string, callback: (response: any) => void) => void
-    }
-  }
-}
+import type { PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 type Props = { category: string }
 
@@ -41,7 +33,7 @@ export default function ProTestCheckout({ category }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category }),
       })
-      const order = await orderResponse.json()
+       const order = await orderResponse.json() as PaymentOrderResponse
 
       if (orderResponse.status === 401) {
         router.push(`/login?next=/tests/${category}?type=pro`)
@@ -89,7 +81,7 @@ export default function ProTestCheckout({ category }: Props) {
         },
       })
 
-      checkout.on?.('payment.failed', (failedRes: any) => {
+       checkout.on?.('payment.failed', (failedRes: RazorpayPaymentFailure) => {
         setIsLoading(false)
         const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
         setError(desc)
