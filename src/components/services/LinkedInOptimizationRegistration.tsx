@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
@@ -16,15 +16,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { isValidPhoneNumber, isValidLinkedInUrl } from '@/lib/career/validation'
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void
-      on?: (event: string, callback: (response: any) => void) => void
-    }
-  }
-}
+import type { PaymentApiResponse, PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 interface LinkedInOptimizationRegistrationProps {
   userProfile?: {
@@ -45,12 +37,6 @@ export function LinkedInOptimizationRegistration({
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
-
-  useEffect(() => {
-    if (userProfile?.fullName && !fullName) {
-      setFullName(userProfile.fullName)
-    }
-  }, [userProfile?.fullName, fullName])
 
   const loadRazorpay = async () => {
     if (window.Razorpay) return
@@ -139,10 +125,10 @@ export function LinkedInOptimizationRegistration({
         return
       }
 
-      let order: Record<string, any> = {}
+       let order: PaymentOrderResponse = {}
       try {
         const text = await response.text()
-        order = text ? JSON.parse(text) : {}
+         order = (text ? JSON.parse(text) : {}) as PaymentOrderResponse
       } catch {
         order = {}
       }
@@ -189,10 +175,10 @@ export function LinkedInOptimizationRegistration({
               body: JSON.stringify(paymentResult),
             })
 
-            let verifyData: Record<string, any> = {}
+             let verifyData: PaymentApiResponse = {}
             try {
               const text = await verifyRes.text()
-              verifyData = text ? JSON.parse(text) : {}
+               verifyData = (text ? JSON.parse(text) : {}) as PaymentApiResponse
             } catch {
               verifyData = {}
             }
@@ -207,7 +193,7 @@ export function LinkedInOptimizationRegistration({
             setTimeout(() => {
               router.push('/dashboard')
             }, 1800)
-          } catch (verifyErr) {
+           } catch {
             setErrorMessage('Network error while verifying payment. Please refresh or contact support.')
             setIsLoading(false)
           }
@@ -225,7 +211,7 @@ export function LinkedInOptimizationRegistration({
         },
       })
 
-      checkout.on?.('payment.failed', (failedRes: any) => {
+       checkout.on?.('payment.failed', (failedRes: RazorpayPaymentFailure) => {
         setIsLoading(false)
         const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
         setErrorMessage(desc)
@@ -243,8 +229,8 @@ export function LinkedInOptimizationRegistration({
       })
 
       checkout.open()
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Something went wrong. Please try again.')
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       setIsLoading(false)
     }
   }

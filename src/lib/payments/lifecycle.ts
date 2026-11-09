@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type PaymentRecord = {
   id: string;
@@ -10,6 +11,12 @@ export type PaymentRecord = {
   metadata?: Record<string, unknown> | null;
   provider_order_id?: string;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
 
 export const ELIGIBLE_VERIFICATION_STATUSES = ['pending', 'created', 'paid', 'failed'] as const;
 
@@ -49,7 +56,7 @@ export function canVerifyPayment(
   if (!signatureValid) {
     return { ok: false, error: 'Invalid payment signature' };
   }
-  if (!ELIGIBLE_VERIFICATION_STATUSES.includes(status as any)) {
+  if (!ELIGIBLE_VERIFICATION_STATUSES.includes(status as typeof ELIGIBLE_VERIFICATION_STATUSES[number])) {
     return { ok: false, error: 'Payment is not eligible for verification' };
   }
   return { ok: true, newStatus: 'paid' };
@@ -80,13 +87,14 @@ export function handleModalDismissal(
     newStatus: payment.status, // Preserve status, do not transition to failed
     newMetadata: {
       ...currentMeta,
+      last_dismissed_action: actionStatus,
       last_dismissed_at: new Date().toISOString(),
     },
   };
 }
 
 export interface SupabaseAdminClientLike {
-  from(table: string): any;
+  from: SupabaseClient['from'];
 }
 
 export interface FulfillServiceOrderParams {
@@ -160,17 +168,19 @@ export async function fulfillServiceOrder(
   }
 
   // 2. Build fulfilment note
-  const metadata = payment.metadata && typeof payment.metadata === 'object'
-    ? (payment.metadata as Record<string, any>)
-    : null;
-  const applicant = (metadata?.applicant_details || metadata) as Record<string, any> | undefined;
+  const metadata = asRecord(payment.metadata);
+  const applicant = asRecord(metadata?.applicant_details ?? metadata) || {};
+
+  function getText(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
 
   const noteParts = [
-    applicant?.fullName || applicant?.name ? `Candidate: ${applicant.fullName || applicant.name}` : null,
-    applicant?.phone ? `Phone: ${applicant.phone}` : null,
-    applicant?.linkedinUrl ? `LinkedIn: ${applicant.linkedinUrl}` : null,
-    applicant?.areaOfInterest ? `Area: ${applicant.areaOfInterest}` : null,
-    applicant?.careerDetails ? `Career: ${applicant.careerDetails}` : null,
+    getText(applicant.fullName ?? applicant.name) ? `Candidate: ${getText(applicant.fullName ?? applicant.name)}` : null,
+    getText(applicant.phone) ? `Phone: ${getText(applicant.phone)}` : null,
+    getText(applicant.linkedinUrl) ? `LinkedIn: ${getText(applicant.linkedinUrl)}` : null,
+    getText(applicant.areaOfInterest) ? `Area: ${getText(applicant.areaOfInterest)}` : null,
+    getText(applicant.careerDetails) ? `Career: ${getText(applicant.careerDetails)}` : null,
   ].filter(Boolean);
 
   const fulfilmentNote = noteParts.length > 0 ? noteParts.join(' | ') : null;

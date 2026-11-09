@@ -2,15 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void
-      on?: (event: string, callback: (response: any) => void) => void
-    }
-  }
-}
+import type { PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 export default function ServiceCheckout({ productCode, title }: { productCode: string; title: string }) {
   const router = useRouter()
@@ -27,7 +19,7 @@ export default function ServiceCheckout({ productCode, title }: { productCode: s
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productCode }),
       })
-      const order = await response.json()
+       const order = await response.json() as PaymentOrderResponse
 
       if (response.status === 401) {
         router.push('/login?next=/services')
@@ -83,7 +75,7 @@ export default function ServiceCheckout({ productCode, title }: { productCode: s
         },
       })
 
-      checkout.on?.('payment.failed', (failedRes: any) => {
+       checkout.on?.('payment.failed', (failedRes: RazorpayPaymentFailure) => {
         setIsLoading(false)
         const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
         setError(desc)

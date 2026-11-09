@@ -111,7 +111,7 @@ function createMockAdmin(initialOrders = [], failureTrigger = null) {
     from(table) {
       if (table !== 'service_orders') throw new Error(`Unexpected table ${table}`)
       return {
-        select(fields) {
+        select() {
           return {
             eq(field, val) {
               return {

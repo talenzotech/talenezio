@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   UploadCloud,
   FileText,
@@ -12,9 +12,6 @@ import {
   Phone,
   Mail,
   User,
-  ShieldCheck,
-  Video,
-  ArrowRight,
 } from 'lucide-react'
 import {
   INTERVIEW_PREP_BATCHES,
@@ -35,7 +32,6 @@ interface InterviewPrepFormProps {
 export function InterviewPrepForm({
   onSuccess,
   userProfile,
-  isModal = false,
 }: InterviewPrepFormProps) {
   const [fullName, setFullName] = useState(userProfile?.fullName || '')
   const [email, setEmail] = useState(userProfile?.email || '')
@@ -47,15 +43,6 @@ export function InterviewPrepForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (userProfile?.fullName && !fullName) {
-      setFullName(userProfile.fullName)
-    }
-    if (userProfile?.email && !email) {
-      setEmail(userProfile.email)
-    }
-  }, [userProfile?.fullName, userProfile?.email, fullName, email])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMessage(null)

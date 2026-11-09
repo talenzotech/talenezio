@@ -87,7 +87,7 @@ export async function POST(request: Request) {
           currency: product.currency,
         },
       });
-    } catch (fulfillError: any) {
+    } catch (fulfillError: unknown) {
       console.error('Service order fulfilment failed during verification:', fulfillError);
       return NextResponse.json({ error: 'Failed to record service order fulfilment' }, { status: 500 });
     }

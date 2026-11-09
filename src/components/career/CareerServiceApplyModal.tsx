@@ -25,15 +25,7 @@ import {
   BOOKING_TIME_SLOTS,
 } from '@/lib/career/validation'
 import { InterviewPrepApplyModal } from '@/components/services/InterviewPrepApplyModal'
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void
-      on?: (event: string, callback: (response: any) => void) => void
-    }
-  }
-}
+import type { PaymentApiResponse, PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 export interface CareerServiceInfo {
   id: string
@@ -86,6 +78,12 @@ export function CareerServiceApplyModal({
       service.productCode === 'career:linkedin-optimization')
   )
 
+  const handleClose = () => {
+    setErrorMessage(null)
+    setIsSuccess(false)
+    onClose()
+  }
+
   // Compute minimum booking date (tomorrow) and maximum (30 days from now)
   const tomorrowStr = React.useMemo(() => {
     const d = new Date()
@@ -99,20 +97,12 @@ export function CareerServiceApplyModal({
     return d.toISOString().split('T')[0]
   }, [])
 
-  useEffect(() => {
-    if (userProfile?.fullName && !fullName) {
-      setFullName(userProfile.fullName)
-    }
-  }, [userProfile?.fullName, fullName])
-
   // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
-      setErrorMessage(null)
-      setIsSuccess(false)
     }
     return () => {
       document.body.style.overflow = 'unset'
@@ -130,7 +120,7 @@ export function CareerServiceApplyModal({
     return (
       <InterviewPrepApplyModal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         userProfile={userProfile}
       />
     )
@@ -245,10 +235,10 @@ export function CareerServiceApplyModal({
         return
       }
 
-      let order: Record<string, any> = {}
+      let order: PaymentOrderResponse = {}
       try {
         const text = await response.text()
-        order = text ? JSON.parse(text) : {}
+        order = (text ? JSON.parse(text) : {}) as PaymentOrderResponse
       } catch {
         order = {}
       }
@@ -295,10 +285,10 @@ export function CareerServiceApplyModal({
               body: JSON.stringify(paymentResult),
             })
 
-            let verifyData: Record<string, any> = {}
+             let verifyData: PaymentApiResponse = {}
             try {
               const text = await verifyRes.text()
-              verifyData = text ? JSON.parse(text) : {}
+               verifyData = (text ? JSON.parse(text) : {}) as PaymentApiResponse
             } catch {
               verifyData = {}
             }
@@ -313,7 +303,7 @@ export function CareerServiceApplyModal({
             setTimeout(() => {
               router.push('/dashboard')
             }, 1800)
-          } catch (verifyErr) {
+          } catch {
             setErrorMessage('Network error while verifying payment. Please refresh or contact support.')
             setIsLoading(false)
           }
@@ -331,7 +321,7 @@ export function CareerServiceApplyModal({
         },
       })
 
-      checkout.on?.('payment.failed', (failedRes: any) => {
+      checkout.on?.('payment.failed', (failedRes: RazorpayPaymentFailure) => {
         setIsLoading(false)
         const desc = failedRes?.error?.description || failedRes?.error?.reason || 'Payment failed. Please try another payment method or retry.'
         setErrorMessage(desc)
@@ -349,8 +339,8 @@ export function CareerServiceApplyModal({
       })
 
       checkout.open()
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Something went wrong. Please try again.')
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       setIsLoading(false)
     }
   }
@@ -366,7 +356,7 @@ export function CareerServiceApplyModal({
         {/* Header Banner */}
         <div className="relative bg-gradient-to-r from-blue-600 to-indigo-700 px-6 sm:px-8 py-6 text-white shrink-0">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white cursor-pointer"
             aria-label="Close modal"
           >
@@ -410,7 +400,7 @@ export function CareerServiceApplyModal({
               </p>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="mt-4 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors shadow-md"
               >
                 Done
@@ -572,7 +562,7 @@ export function CareerServiceApplyModal({
               <div className="pt-2 flex flex-col-reverse sm:flex-row items-center gap-3">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   disabled={isLoading}
                   className="w-full sm:w-auto px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >

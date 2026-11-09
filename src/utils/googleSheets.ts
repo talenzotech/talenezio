@@ -69,13 +69,15 @@ export async function fetchGoogleSheetQuestions(category: string, type: 'free' |
       const filtered = questions.filter((question) => question.category === normalizedCategory && question.isActive);
       if (filtered.length > 0) return filtered;
       throw new QuestionBankError(`No active questions available for ${category} in the ${worksheet} worksheet.`);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObject = error && typeof error === 'object' ? error as { code?: number; message?: string } : null;
+      const errorMessage = error instanceof Error ? error.message : errorObject?.message || '';
       const isConfigOrAuthError =
-        error?.code === 401 ||
-        error?.code === 403 ||
-        error?.message?.includes('invalid_grant') ||
-        error?.message?.includes('PEM') ||
-        error?.message?.includes('Worksheet') ||
+        errorObject?.code === 401 ||
+        errorObject?.code === 403 ||
+        errorMessage.includes('invalid_grant') ||
+        errorMessage.includes('PEM') ||
+        errorMessage.includes('Worksheet') ||
         error instanceof QuestionBankError;
 
       if (isConfigOrAuthError) {
