@@ -721,9 +721,10 @@ export default function ResumeBuilderPage() {
       {/* Bottom Fixed Navigation Bar (matches screenshot) */}
       <footer className="sticky bottom-0 z-20 mt-auto border-t border-gray-200 bg-white px-3 py-2 shadow-lg dark:border-gray-800 dark:bg-gray-900">
         <nav aria-label="Resume builder navigation" className="mx-auto flex max-w-4xl items-center justify-between gap-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+          {/* The brand mark is intentionally hidden so the bottom navigation stays focused on resume actions. */}
+          {/* <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
             T
-          </div>
+          </div> */}
           <button
             type="button"
             onClick={() => { goToOffsetSection(-1); setScreen('edit') }}

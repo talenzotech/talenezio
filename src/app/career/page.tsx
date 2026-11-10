@@ -1,5 +1,5 @@
 import React from 'react'
-import { Sparkles } from 'lucide-react'
+// import { Sparkles } from 'lucide-react' // Only used by the disabled eyebrow badge above.
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { CareerCardsView } from '@/components/career/CareerCardsView'
 import { createClient } from '@/utils/supabase/server'
@@ -27,12 +27,13 @@ export default async function CareerPage() {
         
         {/* Header Section */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          {/* The former eyebrow label is retained here for reference but is no longer shown. */}
+          {/* <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
             <Sparkles className="h-3.5 w-3.5" />
             Career Accelerators
-          </div>
+          </div> */}
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">
-            Career Services
+            Career Accelerators
           </h1>
           <p className="mt-4 text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg">
             Propel your career with professional LinkedIn branding, an intensive 8-day interview program, and private 1-on-1 strategic guidance with resume review.
