@@ -91,8 +91,8 @@ export function MotivationBanner() {
           </div>
         </div>
 
-        {/* Right Side: Script "Together We Grow" with Flourish Underline */}
-        <div className="shrink-0 self-end md:self-center text-right">
+        {/* The decorative Together We Grow script is retained but disabled to simplify the dashboard banner. */}
+        {false && <div className="shrink-0 self-end md:self-center text-right">
           <div className="inline-block transform -rotate-6 select-none text-right">
             <span
               className="block italic text-2xl sm:text-3xl font-bold text-white leading-tight tracking-wide drop-shadow-sm"
@@ -121,7 +121,7 @@ export function MotivationBanner() {
               />
             </svg>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )

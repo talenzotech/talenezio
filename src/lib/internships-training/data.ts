@@ -38,7 +38,7 @@ export const INTERNSHIP_OPPORTUNITIES: InternshipOpportunity[] = [
     title: 'Graphic Designing Intern',
     type: 'internship',
     duration: '1 Month',
-    workMode: 'Work From Home',
+    workMode: 'Remote',
     shortDescription:
       'Create social media posts, banners and promotional creatives for various platforms.',
     tags: ['Creativity', 'Design Tools', 'Communication'],
@@ -69,7 +69,7 @@ export const INTERNSHIP_OPPORTUNITIES: InternshipOpportunity[] = [
     title: 'Website Development Intern',
     type: 'internship',
     duration: '1 Month',
-    workMode: 'Work From Home',
+    workMode: 'Remote',
     shortDescription:
       'Build and maintain responsive websites using modern technologies like HTML, CSS and JavaScript.',
     tags: ['HTML', 'CSS', 'JavaScript'],
@@ -100,7 +100,7 @@ export const INTERNSHIP_OPPORTUNITIES: InternshipOpportunity[] = [
     title: 'Business Development Intern',
     type: 'internship',
     duration: '2 Months',
-    workMode: 'Work From Home',
+    workMode: 'Remote',
     shortDescription:
       'Help with client outreach, market research and business growth strategies.',
     tags: ['Communication', 'Marketing', 'Research'],
@@ -133,7 +133,7 @@ export const INTERNSHIP_OPPORTUNITIES: InternshipOpportunity[] = [
     title: 'Social Media Management Intern',
     type: 'internship',
     duration: '1–2 Months',
-    workMode: 'Work From Home',
+    workMode: 'Remote',
     shortDescription:
       'Plan and create content, manage social media channels and track performance.',
     tags: ['Content Creation', 'Social Media', 'Analytics'],
@@ -171,8 +171,8 @@ export const TRAINING_PROGRAMS: TrainingProgram[] = [
     productCode: 'training:graphic-designing',
     duration: '1 Month',
     workMode: 'Online',
-    fee: '₹5000 per month',
-    pricePaise: 500000,
+    fee: '₹4999 per month',
+    pricePaise: 499900,
     shortDescription:
       'Build core technical design skills, master Canva and create real-world visual assets.',
     iconType: 'laptop',
@@ -201,8 +201,8 @@ export const TRAINING_PROGRAMS: TrainingProgram[] = [
     productCode: 'training:marketing',
     duration: '1 Month',
     workMode: 'Online',
-    fee: '₹5000 per month',
-    pricePaise: 500000,
+    fee: '₹4999 per month',
+    pricePaise: 499900,
     shortDescription:
       'Master digital marketing fundamentals, branding, positioning and growth strategies.',
     iconType: 'finance',

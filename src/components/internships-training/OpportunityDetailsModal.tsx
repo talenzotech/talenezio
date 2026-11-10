@@ -249,7 +249,7 @@ export function OpportunityDetailsModal({
                   <div className="flex items-start gap-2.5">
                     <MapPin className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-slate-400 font-medium">Work Mode</p>
+                      {isInternship && <p className="text-slate-400 font-medium">Work Mode</p>}
                       <p className="font-semibold text-slate-800 dark:text-slate-200">{opportunity.workMode}</p>
                     </div>
                   </div>

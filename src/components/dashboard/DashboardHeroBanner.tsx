@@ -21,8 +21,8 @@ export function DashboardHeroBanner() {
           </p>
         </div>
 
-        {/* Right Column: Prominent Larger Illustration with Full Clearance */}
-        <div className="flex w-full items-center justify-center lg:w-auto lg:shrink-0">
+        {/* The decorative career illustration is retained but disabled while the hero text remains visible. */}
+        {false && <div className="flex w-full items-center justify-center lg:w-auto lg:shrink-0">
           <svg
             viewBox="0 0 660 230"
             fill="none"
@@ -148,7 +148,7 @@ export function DashboardHeroBanner() {
               />
             </g>
           </svg>
-        </div>
+        </div>}
       </div>
     </div>
   )
