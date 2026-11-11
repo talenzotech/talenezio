@@ -215,7 +215,7 @@ export function InternshipTrainingView({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white tracking-tight">
-                Internship Opportunities ({INTERNSHIP_OPPORTUNITIES.length})
+                Internship Opportunities
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">
                 Work on real projects, gain hands-on experience and build your professional network.
@@ -247,7 +247,7 @@ export function InternshipTrainingView({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white tracking-tight">
-                Training Programs ({TRAINING_PROGRAMS.length})
+                Training Programs
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal mt-0.5">
                 Develop in-demand industry skills through structured monthly training and hands-on projects.

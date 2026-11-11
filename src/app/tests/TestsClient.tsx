@@ -66,7 +66,7 @@ export default function TestsClient({ error }: { error?: string }) {
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-            Industry–Standard Skill Tests
+            Industry Standard Skill Tests
           </h1>
 
           <p className="max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
