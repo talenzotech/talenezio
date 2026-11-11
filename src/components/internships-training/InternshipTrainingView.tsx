@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import {
   Briefcase,
   GraduationCap,
-  Sparkles,
+  // Sparkles, // Only used by the disabled hero badge above.
 } from 'lucide-react'
 import {
   INTERNSHIP_OPPORTUNITIES,
@@ -54,11 +54,11 @@ export function InternshipTrainingView({
       {/* Upper Hero Section matching reference image */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 pt-2">
         <div className="max-w-2xl">
-          {/* Badge */}
-          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+          {/* The former hero badge is retained for reference but is no longer shown. */}
+          {/* <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Talent &amp; Growth</span>
-          </div>
+          </div> */}
 
           {/* Heading */}
           <h1 className="text-3xl sm:text-5xl font-black text-slate-950 dark:text-white tracking-tight leading-[1.12]">
@@ -71,8 +71,8 @@ export function InternshipTrainingView({
           </p>
         </div>
 
-        {/* Right side Illustration: Books + Graduation Cap + Learn Practice Grow */}
-        <div className="hidden lg:flex items-center gap-4 shrink-0 select-none">
+        {/* The decorative hero illustration and slogan are disabled while retaining the original markup below. */}
+        {false && <div className="hidden lg:flex items-center gap-4 shrink-0 select-none">
           <svg
             className="w-48 h-36 drop-shadow-sm"
             viewBox="0 0 220 160"
@@ -155,7 +155,7 @@ export function InternshipTrainingView({
               />
             </svg>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Tabs Row (Only Internship Opportunities and Training Programs - no All Opportunities) */}
