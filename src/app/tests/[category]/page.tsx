@@ -4,13 +4,13 @@ import { ArrowLeft, ArrowRight, CheckCircle2, GraduationCap } from 'lucide-react
 import TestInterface from '@/components/tests/TestInterface'
 import ProTestCheckout from '@/components/tests/ProTestCheckout'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
-import { createClient } from '@/utils/supabase/server'
 import { fetchGoogleSheetQuestions, QuestionBankError, toPublicQuestion, type Question } from '@/utils/googleSheets'
 import { hasProTestAccess } from '@/lib/payments/access'
 import { isTestCategory } from '@/lib/payments/products'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { QuestionSelectionError, selectQuestions } from '@/lib/tests/questionSelection'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { getCurrentUser } from '@/lib/auth/current-user'
 
 const CATEGORY_MAP: Record<string, { title: string; subtitle: string }> = {
   technology: {
@@ -170,8 +170,7 @@ export default async function TestPage({
 
   // Check auth
   const isDemo = await isLocalDemoSession()
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
   if (!user && !isDemo) {
     redirect(`/login?next=/tests/${category}?type=${type}`)

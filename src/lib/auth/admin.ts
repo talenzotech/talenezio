@@ -1,22 +1,22 @@
 import 'server-only';
 
-import { createClient } from '@/utils/supabase/server';
+import type { User } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUser } from './current-user';
 
-export async function getAdminUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function getAdminUser(user?: User | null) {
+  const currentUser = user ?? await getCurrentUser();
 
-  if (!user) return null;
+  if (!currentUser) return null;
 
   const admin = createAdminClient();
   const { data: profile, error } = await admin
     .from('profiles')
     .select('is_admin')
-    .eq('id', user.id)
+    .eq('id', currentUser.id)
     .maybeSingle();
 
   if (error || !profile?.is_admin) return null;
 
-  return user;
+  return currentUser;
 }

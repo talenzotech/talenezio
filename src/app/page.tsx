@@ -11,8 +11,8 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
 import { isLocalDemoSession } from "@/lib/auth/local-demo";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 const features = [
   {
@@ -116,9 +116,7 @@ export default async function Home() {
   let user = null;
   if (!isDemo) {
     try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
+      user = await getCurrentUser();
     } catch {
       user = null;
     }
