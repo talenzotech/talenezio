@@ -2,12 +2,39 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
 import {
   endLocalDemoSession,
   isLocalDemoSession,
 } from '@/lib/auth/local-demo'
+
+export async function getAppUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim() !== '') {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '') {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+  }
+  try {
+    const headerList = await headers()
+    const host = headerList.get('x-forwarded-host') || headerList.get('host')
+    const proto = headerList.get('x-forwarded-proto') || 'https'
+    if (host) {
+      return `${proto}://${host}`
+    }
+  } catch {
+    // headers() might not be available in all contexts
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return 'http://localhost:3000'
+}
 
 export async function login(formData: FormData): Promise<void> {
   // type-casting here for convenience
@@ -64,7 +91,7 @@ export async function signup(formData: FormData): Promise<void> {
     redirect(`/register?error=${encodeURIComponent('Passwords do not match')}&next=${encodeURIComponent(next)}`)
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const appUrl = await getAppUrl()
 
   const { error, data } = await supabase.auth.signUp({
     email,
@@ -90,38 +117,72 @@ export async function signup(formData: FormData): Promise<void> {
   redirect(`/login?message=${encodeURIComponent('Check your email for the confirmation link.')}&next=${encodeURIComponent(next)}`)
 }
 
-export async function loginWithOAuth(provider: 'google' | 'linkedin_oidc', requestedNext?: string): Promise<void> {
-  const supabase = await createClient()
-  const next = safeNextPath(requestedNext)
-  
-  // NOTE: Assuming your NEXT_PUBLIC_APP_URL is set in .env.local
-  // Or fallback to localhost for development
-  const callbackPath = `/auth/callback?flow=oauth&next=${encodeURIComponent(next)}`
-  const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
-    ? `${process.env.NEXT_PUBLIC_APP_URL}${callbackPath}`
-    : `http://localhost:3000${callbackPath}`
+export type OAuthProvider = 'google' | 'linkedin_oidc' | 'linkedin'
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
+function formatOAuthErrorMessage(provider: OAuthProvider, rawMessage?: string): string {
+  const isNotEnabled = rawMessage && /provider.*not enabled/i.test(rawMessage)
+  if (isNotEnabled) {
+    if (provider === 'google') {
+      return 'Google sign-in is not enabled in your Supabase project. Please enable Google in Supabase Dashboard > Authentication > Providers.'
+    }
+    return 'LinkedIn sign-in is not enabled in your Supabase project. Please enable LinkedIn (OIDC) in Supabase Dashboard > Authentication > Providers.'
+  }
+  return rawMessage || 'Could not initiate social authentication. Please try again.'
+}
+
+export async function loginWithOAuth(
+  provider: OAuthProvider,
+  requestedNext?: string
+): Promise<void> {
+  const next = safeNextPath(requestedNext)
+  const supabase = await createClient()
+  const appUrl = await getAppUrl()
+  const callbackPath = `/auth/callback?flow=oauth&next=${encodeURIComponent(next)}`
+  const redirectUrl = `${appUrl}${callbackPath}`
+
+  let targetProvider: OAuthProvider = provider
+  let { data, error } = await supabase.auth.signInWithOAuth({
+    provider: targetProvider as any,
     options: {
       redirectTo: redirectUrl,
+      queryParams: targetProvider === 'google' ? {
+        access_type: 'offline',
+        prompt: 'select_account',
+      } : undefined,
     },
   })
 
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
+  // If linkedin_oidc failed because it's not enabled, attempt fallback to legacy linkedin provider
+  if (error && targetProvider === 'linkedin_oidc' && /provider.*not enabled/i.test(error.message)) {
+    const fallbackResult = await supabase.auth.signInWithOAuth({
+      provider: 'linkedin',
+      options: {
+        redirectTo: redirectUrl,
+      },
+    })
+    if (!fallbackResult.error && fallbackResult.data?.url) {
+      targetProvider = 'linkedin'
+      data = fallbackResult.data
+      error = null
+    }
   }
 
-  if (data.url) {
-    redirect(data.url) // Navigate to the OAuth provider's authentication URL
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(formatOAuthErrorMessage(targetProvider, error.message))}&next=${encodeURIComponent(next)}`)
   }
+
+  if (data?.url) {
+    redirect(data.url)
+  }
+
+  redirect(`/login?error=${encodeURIComponent('Could not generate authentication redirect URL')}&next=${encodeURIComponent(next)}`)
 }
 
 export async function requestPasswordReset(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const email = String(formData.get('email') || '').trim()
   const next = safeNextPath(formData.get('next') as string | null)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const appUrl = await getAppUrl()
 
   if (!email) {
     redirect(`/forgot-password?error=${encodeURIComponent('Email is required')}&next=${encodeURIComponent(next)}`)

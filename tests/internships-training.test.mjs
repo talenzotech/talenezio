@@ -36,13 +36,13 @@ test('loads all 5 training programs from the PDF with correct fees', () => {
 
   const graphic = getTraining('graphic-designing-training')
   assert.ok(graphic)
-  assert.equal(graphic.fee, '₹5000 per month')
-  assert.equal(graphic.pricePaise, 500000)
+  assert.equal(graphic.fee, '₹4999 per month')
+  assert.equal(graphic.pricePaise, 499900)
 
   const marketing = getTraining('marketing-training')
   assert.ok(marketing)
-  assert.equal(marketing.fee, '₹5000 per month')
-  assert.equal(marketing.pricePaise, 500000)
+  assert.equal(marketing.fee, '₹4999 per month')
+  assert.equal(marketing.pricePaise, 499900)
 
   const smm = getTraining('social-media-marketing-training')
   assert.ok(smm)
@@ -73,7 +73,7 @@ test('loads all 5 training programs from the PDF with correct fees', () => {
 test('finds training program by product code', () => {
   const graphic = getTrainingByProductCode('training:graphic-designing')
   assert.ok(graphic)
-  assert.equal(graphic.pricePaise, 500000)
+  assert.equal(graphic.pricePaise, 499900)
 
   const smm = getTrainingByProductCode('training:social-media-marketing')
   assert.ok(smm)
