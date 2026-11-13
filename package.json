@@ -2,6 +2,9 @@
   "name": "talenezio",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -26,7 +29,7 @@
     "@types/papaparse": "^5.5.2",
     "googleapis": "^186.0.0",
     "lucide-react": "^1.27.0",
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "next-themes": "^0.4.6",
     "papaparse": "^5.5.4",
     "pdf-lib": "^1.17.1",
@@ -41,7 +44,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^16.4.6",
     "supabase": "^2.122.0",
     "tailwindcss": "^4",
     "typescript": "^5"
