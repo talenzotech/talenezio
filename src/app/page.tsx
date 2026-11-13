@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { isLocalDemoSession } from "@/lib/auth/local-demo";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { hasSupabaseAuthCookie } from "@/lib/auth/current-user";
 
 const features = [
   {
@@ -113,15 +113,7 @@ const proofPoints = [
 
 export default async function Home() {
   const isDemo = await isLocalDemoSession();
-  let user = null;
-  if (!isDemo) {
-    try {
-      user = await getCurrentUser();
-    } catch {
-      user = null;
-    }
-  }
-  const isAuthenticated = Boolean(user || isDemo);
+  const isAuthenticated = isDemo || await hasSupabaseAuthCookie();
 
   const getDestination = (targetPath: string) => {
     if (isAuthenticated) return targetPath;
