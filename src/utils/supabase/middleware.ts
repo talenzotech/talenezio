@@ -1,6 +1,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+function isInvalidRefreshTokenError(error: { code?: string } | null): boolean {
+  return error?.code === 'refresh_token_not_found' || error?.code === 'invalid_refresh_token'
+}
+
+function clearSupabaseAuthCookies(response: NextResponse, request: NextRequest): void {
+  request.cookies.getAll()
+    .filter(({ name }) => name.startsWith('sb-') && name.includes('-auth-token'))
+    .forEach(({ name }) => {
+      response.cookies.set(name, '', {
+        expires: new Date(0),
+        maxAge: 0,
+        path: '/',
+      })
+    })
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -37,7 +53,19 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: DO NOT REMOVE auth.getUser()
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser()
+
+  if (isInvalidRefreshTokenError(authError)) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set(
+      'next',
+      request.nextUrl.pathname + request.nextUrl.search,
+    )
+    const loginResponse = NextResponse.redirect(loginUrl)
+    clearSupabaseAuthCookies(loginResponse, request)
+    return loginResponse
+  }
 
   if (
     !user &&
