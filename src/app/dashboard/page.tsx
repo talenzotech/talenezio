@@ -24,13 +24,12 @@ import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMenu'
 import { type ExperienceLevel } from '@/lib/profile/validation'
 import { getAdminUser } from '@/lib/auth/admin'
+import { getCurrentUser } from '@/lib/auth/current-user'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
   const supabase = localDemoSession ? null : await createClient()
-  const { data: { user } } = supabase
-    ? await supabase.auth.getUser()
-    : { data: { user: null } }
+  const user = localDemoSession ? null : await getCurrentUser()
 
   if (!user && !localDemoSession) {
     redirect('/login')
@@ -58,8 +57,32 @@ export default async function DashboardPage() {
   const profileQuery = supabase
     ? supabase.from('profiles').select('full_name, avatar_url, is_admin').eq('id', user?.id || '').maybeSingle()
     : null
-  const { data: dbProfile } = profileQuery ? await profileQuery : { data: null }
-  const adminUser = !localDemoSession ? await getAdminUser() : null
+  const adminUserPromise = !localDemoSession ? getAdminUser(user) : Promise.resolve(null)
+  const upcomingSessionsQuery = supabase
+    ?.from('bookings')
+    .select('id, service_code, status, domain, scheduled_for, meeting_url')
+    .eq('user_id', user?.id || '')
+    .in('status', ['pending', 'confirmed'])
+    .order('scheduled_for', { ascending: true, nullsFirst: false })
+    .limit(3)
+  const serviceOrdersQuery = supabase
+    ?.from('service_orders')
+    .select('id, service_code, status, scheduled_for, meeting_url, fulfilment_note')
+    .eq('user_id', user?.id || '')
+    .order('created_at', { ascending: false })
+    .limit(5)
+  const certificatesQuery = supabase && user
+    ? supabase.from('certificates').select('id, topic, certificate_number, pdf_path').eq('user_id', user.id).not('pdf_path', 'is', null).order('issued_at', { ascending: false })
+    : null
+
+  const [profileResult, adminUser, upcomingSessionsResult, serviceOrdersResult, certificatesResult] = await Promise.all([
+    profileQuery ?? Promise.resolve({ data: null }),
+    adminUserPromise,
+    upcomingSessionsQuery ?? Promise.resolve({ data: [] }),
+    serviceOrdersQuery ?? Promise.resolve({ data: [] }),
+    certificatesQuery ?? Promise.resolve({ data: [] }),
+  ])
+  const dbProfile = profileResult.data
   const isAdmin = Boolean(adminUser)
 
   const userMetadata = user?.user_metadata || {}
@@ -81,30 +104,9 @@ export default async function DashboardPage() {
   const avatarUrl = dbProfile?.avatar_url || userMetadata.avatar_url || null
   const email = user?.email || (localDemoSession ? 'demo@talenezio.local' : undefined)
 
-  // Fetch upcoming sessions for this user
-  const upcomingSessionsQuery = supabase
-    ?.from('bookings')
-    .select('*')
-    .eq('user_id', user?.id || '')
-    .in('status', ['pending', 'confirmed'])
-    .order('scheduled_for', { ascending: true, nullsFirst: false })
-    .limit(3)
-  const { data: upcomingSessions } = upcomingSessionsQuery
-    ? await upcomingSessionsQuery
-    : { data: [] }
-
-  const serviceOrdersQuery = supabase
-    ?.from('service_orders')
-    .select('id, service_code, status, scheduled_for, meeting_url, fulfilment_note')
-    .order('created_at', { ascending: false })
-    .limit(5)
-  const { data: serviceOrders } = serviceOrdersQuery
-    ? await serviceOrdersQuery
-    : { data: [] }
-
-  const { data: certificates } = supabase && user
-    ? await supabase.from('certificates').select('id, topic, certificate_number, pdf_path').eq('user_id', user.id).not('pdf_path', 'is', null).order('issued_at', { ascending: false })
-    : { data: [] }
+  const upcomingSessions = upcomingSessionsResult.data
+  const serviceOrders = serviceOrdersResult.data
+  const certificates = certificatesResult.data
 
   const features = [
     {

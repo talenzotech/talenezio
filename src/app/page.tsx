@@ -11,8 +11,8 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
 import { isLocalDemoSession } from "@/lib/auth/local-demo";
+import { hasSupabaseAuthCookie } from "@/lib/auth/current-user";
 
 const features = [
   {
@@ -113,17 +113,7 @@ const proofPoints = [
 
 export default async function Home() {
   const isDemo = await isLocalDemoSession();
-  let user = null;
-  if (!isDemo) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
-    } catch {
-      user = null;
-    }
-  }
-  const isAuthenticated = Boolean(user || isDemo);
+  const isAuthenticated = isDemo || await hasSupabaseAuthCookie();
 
   const getDestination = (targetPath: string) => {
     if (isAuthenticated) return targetPath;

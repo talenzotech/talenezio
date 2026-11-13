@@ -2,8 +2,8 @@ import React from 'react'
 // import { Sparkles } from 'lucide-react' // Only used by the disabled eyebrow badge above.
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { CareerCardsView } from '@/components/career/CareerCardsView'
-import { createClient } from '@/utils/supabase/server'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { getCurrentUser } from '@/lib/auth/current-user'
 
 export const metadata = {
   title: 'Career Services | Talenezio',
@@ -12,10 +12,7 @@ export const metadata = {
 
 export default async function CareerPage() {
   const localDemoSession = await isLocalDemoSession()
-  const supabase = localDemoSession ? null : await createClient()
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } }
+  const user = localDemoSession ? null : await getCurrentUser()
 
   const userMetadata = user?.user_metadata || {}
   const fullName = userMetadata.full_name || (localDemoSession ? 'Demo User' : '')

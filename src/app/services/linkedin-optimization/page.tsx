@@ -1,8 +1,8 @@
 import React from 'react'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
+import { getCurrentUser } from '@/lib/auth/current-user'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { LinkedInOptimizationRegistration } from '@/components/services/LinkedInOptimizationRegistration'
 
@@ -14,10 +14,7 @@ export const metadata = {
 
 export default async function LinkedInOptimizationPage() {
   const localDemoSession = await isLocalDemoSession()
-  const supabase = localDemoSession ? null : await createClient()
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } }
+  const user = localDemoSession ? null : await getCurrentUser()
 
   const userMetadata = user?.user_metadata || {}
   const fullName = userMetadata.full_name || (localDemoSession ? 'Demo User' : '')

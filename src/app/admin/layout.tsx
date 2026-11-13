@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { getAdminUser } from '@/lib/auth/admin';
-import { createClient } from '@/utils/supabase/server';
+import { getCurrentUser } from '@/lib/auth/current-user';
 import AdminNavigation from './AdminNavigation';
 
 const navigation = [
@@ -16,10 +16,9 @@ const navigation = [
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect('/login?next=/admin');
-  if (!await getAdminUser()) redirect('/dashboard');
+  if (!await getAdminUser(user)) redirect('/dashboard');
 
   return (
     <div className="flex min-h-screen w-full bg-slate-50 text-slate-900">
