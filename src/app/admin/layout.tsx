@@ -8,6 +8,7 @@ import AdminNavigation from './AdminNavigation';
 const navigation = [
   { href: '/admin', label: 'Overview', icon: 'layout' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
+  { href: '/admin/referrals', label: 'Referrals', icon: 'network' },
   { href: '/admin/tests', label: 'Test Attempts', icon: 'clipboard' },
   { href: '/admin/bookings', label: 'Career Guidance', icon: 'calendar' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },

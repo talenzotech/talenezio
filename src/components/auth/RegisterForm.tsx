@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { signup } from '@/app/(auth)/actions'
 import { ArrowRight, Mail, Lock, User } from 'lucide-react'
 
-export default function RegisterForm({ next }: { next: string }) {
+export default function RegisterForm({ next, referralCode }: { next: string; referralCode?: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const validatePasswords = (event: React.FormEvent<HTMLFormElement>) => {
@@ -42,7 +42,7 @@ export default function RegisterForm({ next }: { next: string }) {
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Referral Code <span className="font-normal text-gray-400">(Optional)</span></label>
-        <input id="referralCode" name="referralCode" type="text" className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" placeholder="e.g. TALENEZIO2024" />
+        <input id="referralCode" name="referralCode" type="text" defaultValue={referralCode} className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" placeholder="e.g. TZ-7K4M2Q" />
       </div>
       <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700">
         Create account <ArrowRight className="h-4 w-4" />

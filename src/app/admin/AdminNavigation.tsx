@@ -9,6 +9,7 @@ import {
   CreditCard,
   Inbox,
   LayoutDashboard,
+  Network,
   Users,
 } from 'lucide-react';
 
@@ -19,6 +20,7 @@ const icons = {
   creditCard: CreditCard,
   inbox: Inbox,
   layout: LayoutDashboard,
+  network: Network,
   users: Users,
 } as const;
 

@@ -6,12 +6,13 @@ import { safeNextPath } from '@/lib/auth/redirect'
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; message?: string; next?: string }>
+    searchParams?: Promise<{ error?: string; message?: string; next?: string; ref?: string }>
 }) {
   const params = await searchParams
   const error = params?.error
   const message = params?.message
   const next = safeNextPath(params?.next)
+  const referralCode = params?.ref?.trim().toUpperCase()
 
   return (
     <div className="w-full">
@@ -33,7 +34,7 @@ export default async function RegisterPage({
         </div>
       )}
 
-      <RegisterForm next={next} />
+      <RegisterForm next={next} referralCode={referralCode} />
 
       <div className="mt-8">
         <div className="relative">

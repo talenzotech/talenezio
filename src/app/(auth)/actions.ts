@@ -49,7 +49,7 @@ export async function signup(formData: FormData): Promise<void> {
   const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
   const fullName = formData.get('fullName') as string
-  const referralCode = formData.get('referralCode') as string
+  const referralCode = String(formData.get('referralCode') || '').trim().toUpperCase()
   const next = safeNextPath(formData.get('next') as string | null)
 
   if (!email || !password || !confirmPassword || !fullName) {
@@ -73,7 +73,7 @@ export async function signup(formData: FormData): Promise<void> {
       emailRedirectTo: `${appUrl}/auth/callback?flow=email_verification&next=${encodeURIComponent(next)}`,
       data: {
         full_name: fullName,
-        referral_code: referralCode || null,
+          referral_code: referralCode || null,
       },
     },
   })

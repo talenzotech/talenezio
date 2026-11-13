@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -13,6 +14,10 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      if (flow === 'email_verification') {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) await createAdminClient().rpc('mark_referral_verified', { p_user_id: user.id })
+      }
       if (flow === 'recovery') {
         return NextResponse.redirect(`${origin}/reset-password?next=${encodeURIComponent(next)}`)
       }
