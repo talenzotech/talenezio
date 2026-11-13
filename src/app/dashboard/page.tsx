@@ -25,6 +25,7 @@ import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMen
 import { type ExperienceLevel } from '@/lib/profile/validation'
 import { getAdminUser } from '@/lib/auth/admin'
 import { getCurrentUser } from '@/lib/auth/current-user'
+import ReferralCodeCard from '@/components/dashboard/ReferralCodeCard'
 
 export default async function DashboardPage() {
   const localDemoSession = await isLocalDemoSession()
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
   }
 
   const profileQuery = supabase
-    ? supabase.from('profiles').select('full_name, avatar_url, is_admin').eq('id', user?.id || '').maybeSingle()
+    ? supabase.from('profiles').select('full_name, avatar_url, is_admin, referral_code').eq('id', user?.id || '').maybeSingle()
     : null
   const adminUserPromise = !localDemoSession ? getAdminUser(user) : Promise.resolve(null)
   const upcomingSessionsQuery = supabase
@@ -103,6 +104,7 @@ export default async function DashboardPage() {
     : []
   const avatarUrl = dbProfile?.avatar_url || userMetadata.avatar_url || null
   const email = user?.email || (localDemoSession ? 'demo@talenezio.local' : undefined)
+  const referralCode = dbProfile?.referral_code || null
 
   const upcomingSessions = upcomingSessionsResult.data
   const serviceOrders = serviceOrdersResult.data
@@ -203,6 +205,9 @@ export default async function DashboardPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-8">
+        {referralCode && (
+          <ReferralCodeCard code={referralCode} />
+        )}
         {certificates && certificates.length > 0 && (
           <section className="mb-12">
             <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Your Certificates</h2>
