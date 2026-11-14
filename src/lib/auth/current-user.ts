@@ -2,11 +2,12 @@ import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
-
 export async function hasSupabaseAuthCookie() {
   const cookieStore = await cookies()
   return cookieStore.getAll().some(({ name }) =>
-    name.startsWith('sb-') && name.includes('-auth-token')
+    name.startsWith('sb-') &&
+    name.includes('-auth-token') &&
+    !name.endsWith('-code-verifier')
   )
 }
 

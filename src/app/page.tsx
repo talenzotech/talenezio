@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ThemeWordmark } from "@/components/ThemeWordmark";
 import {
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { isLocalDemoSession } from "@/lib/auth/local-demo";
+import { safeNextPath } from "@/lib/auth/redirect";
 import { hasSupabaseAuthCookie } from "@/lib/auth/current-user";
 
 const features = [
@@ -111,7 +113,28 @@ const proofPoints = [
   "Expert-led career support",
 ];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    code?: string;
+    flow?: string;
+    next?: string;
+    error?: string;
+    error_description?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  if (params?.code || params?.error) {
+    const callbackQuery = new URLSearchParams();
+    if (params.code) callbackQuery.set("code", params.code);
+    if (params.error) callbackQuery.set("error", params.error);
+    if (params.error_description) callbackQuery.set("error_description", params.error_description);
+    callbackQuery.set("flow", params.flow || "oauth");
+    callbackQuery.set("next", safeNextPath(params.next, "/dashboard"));
+    redirect(`/auth/callback?${callbackQuery.toString()}`);
+  }
+
   const isDemo = await isLocalDemoSession();
   const isAuthenticated = isDemo || await hasSupabaseAuthCookie();
 
@@ -151,111 +174,116 @@ export default async function Home() {
           </div>
         </nav>
 
-        {/* Hero Section with balanced laptop spacing */}
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 pt-8 sm:px-8 sm:pb-16 sm:pt-10 md:gap-14 md:pb-16 md:pt-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
-              <Sparkles className="h-4 w-4" />
-              <span>Your next opportunity starts here</span>
+        {/* Hero Section */}
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-16 sm:px-8 sm:py-24 lg:grid-cols-12 lg:gap-8">
+          <div className="max-w-2xl lg:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-semibold text-blue-700 backdrop-blur-xs dark:border-blue-900/60 dark:bg-blue-950/50 dark:text-blue-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              Career Acceleration Platform
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-950 dark:text-white sm:text-5xl md:text-6xl lg:text-[4rem]">
-              Your Career Journey Starts Here.
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-6xl sm:leading-none">
+              Evaluate your skills. <br />
+              Build a stronger profile. <br />
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400">
+                Land better opportunities.
+              </span>
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-400 sm:text-lg sm:leading-8">
-              From skill assessments to professional resumes and career support, Talenezio helps you prepare for what is next.
+
+            <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
+              Talenezio helps students and job seekers test their knowledge,
+              create professional resumes and access practical career support to
+              move forward with confidence.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center">
               <Link
-                href={getDestination('/resume-builder')}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-bold text-white shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
+                href={getDestination("/tests")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700"
               >
-                Start building your future
-                <ArrowRight className="h-5 w-5" />
+                Take a Skill Assessment <ArrowRight className="h-4 w-4" />
               </Link>
+
               <Link
-                href={getDestination('/tests')}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-bold text-gray-700 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:text-blue-400"
+                href={getDestination("/resume-builder")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:bg-gray-800"
               >
-                Explore free tests
+                Build ATS-Friendly Resume
               </Link>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-              {proofPoints.map((point) => (
-                <span key={point} className="flex items-center gap-2">
+            <div className="mt-10 flex flex-wrap items-center gap-y-3 gap-x-6 text-sm text-gray-500 dark:text-gray-400">
+              {proofPoints.map((item) => (
+                <div key={item} className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  {point}
-                </span>
+                  <span>{item}</span>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Starting Box */}
-          <div className="relative mx-auto w-full max-w-lg">
-            <div className="absolute -inset-4 rounded-[2.5rem] bg-blue-500/10 blur-2xl dark:bg-blue-500/15" />
-            <div className="relative rounded-[2rem] border border-gray-200 bg-white p-6 shadow-2xl shadow-blue-900/10 dark:border-gray-800 dark:bg-gray-900 sm:p-7">
-              <div className="mb-5 flex items-start justify-between">
+          <div className="lg:col-span-5">
+            <div className="relative mx-auto max-w-md rounded-3xl border border-gray-200/80 bg-white/80 p-6 shadow-xl backdrop-blur-md sm:p-8 dark:border-gray-800 dark:bg-gray-900/80">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-5 dark:border-gray-800">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-950 dark:text-white">
-                    Everything You Need to Move Forward.
-                  </h2>
-                  <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Your career, your next big step.
+                  <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                    What We Offer
                   </p>
+                  <h2 className="mt-1 text-xl font-bold">5 Core Career Pathways</h2>
                 </div>
-                <div className="ml-3 shrink-0 rounded-2xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
-                  <Sparkles className="h-5 w-5" />
-                </div>
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="mt-6 space-y-4">
                 {boxItems.map((item) => {
+                  const Icon = item.icon;
                   return (
                     <Link
-                      key={item.num}
+                      key={item.title}
                       href={getDestination(item.href)}
-                      className="group flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/70 p-3 transition-all hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm dark:border-gray-800/80 dark:bg-gray-950/60 dark:hover:border-blue-900 dark:hover:bg-blue-950/30"
+                      className="group flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:border-blue-100 hover:bg-blue-50/40 dark:border-gray-800/80 dark:bg-gray-800/40 dark:hover:border-blue-900/60 dark:hover:bg-blue-950/20"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3.5">
                         <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${item.bg} ${item.color}`}
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${item.bg} ${item.color}`}
                         >
-                          {item.num}
+                          <Icon className="h-5 w-5" />
                         </div>
-                        <p className="text-sm font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                          {item.title}
-                        </p>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                            Path {item.num}
+                          </p>
+                          <h3 className="font-bold text-gray-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+                            {item.title}
+                          </h3>
+                        </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600 dark:text-gray-500" />
+                      <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-blue-600 dark:text-gray-500 dark:group-hover:text-blue-400" />
                     </Link>
                   );
                 })}
-
-                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-3.5 text-white shadow-lg shadow-blue-500/20">
-                  <div className="shrink-0 rounded-xl bg-white/15 p-2">
-                    <Users className="h-4 w-4" />
-                  </div>
-                  <p className="text-xs sm:text-sm font-semibold leading-tight">
-                    You don&apos;t have to figure out your career alone.
-                  </p>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section with corrected laptop spacing */}
-      <section className="mx-auto max-w-7xl px-4 pt-12 pb-16 sm:px-8 sm:pt-14 sm:pb-20 lg:pt-16 lg:pb-24">
-        <div className="mb-12 max-w-2xl">
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Everything in one place</p>
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Build confidence at every step.</h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">From your first resume draft to your final interview, Talenezio helps you turn preparation into momentum.</p>
+      {/* Feature Grid */}
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-8">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold tracking-wider text-blue-600 uppercase dark:text-blue-400">
+            Platform Capabilities
+          </p>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Everything you need to advance your career.
+          </h2>
+          <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
+            A practical suite of tools designed to help you prepare, showcase
+            your strengths and find the right professional direction.
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
@@ -264,12 +292,18 @@ export default async function Home() {
                 href={getDestination(feature.href)}
                 className="group rounded-3xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-900"
               >
-                <div className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${feature.accent}`}>
+                <div
+                  className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${feature.accent}`}
+                >
                   <Icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">{feature.title}</h3>
-                <p className="mt-3 min-h-20 leading-7 text-gray-600 dark:text-gray-400">{feature.description}</p>
-                <span className={`mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${feature.tint}`}>
+                <h3 className="text-xl font-bold tracking-tight text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 min-h-20 leading-7 text-gray-600 dark:text-gray-400">
+                  {feature.description}
+                </p>
+                <span className="mt-7 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
                   Explore feature <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </Link>
@@ -278,14 +312,22 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-4 mb-20 overflow-hidden rounded-[2rem] bg-gray-900 px-6 py-14 text-white shadow-2xl shadow-gray-900/20 dark:bg-blue-950 sm:mx-8 sm:px-12 lg:mx-auto lg:max-w-7xl lg:px-16">
-        <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-300">Your unfair advantage</p>
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">A stronger career starts with one focused step.</h2>
-            <p className="mt-4 text-lg leading-8 text-gray-300">Create your free account and start with the tool that will make the biggest difference today.</p>
+      {/* CTA Band */}
+      <section className="bg-gray-900 py-16 text-white dark:bg-black">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 sm:flex-row sm:items-center sm:px-8">
+          <div className="max-w-xl">
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+              A stronger career starts with one focused step.
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-gray-300">
+              Create your free account and start with the tool that will make the
+              biggest difference today.
+            </p>
           </div>
-          <Link href={isAuthenticated ? '/dashboard' : '/register'} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-bold text-gray-900 transition-colors hover:bg-blue-50">
+          <Link
+            href={isAuthenticated ? "/dashboard" : "/register"}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-bold text-gray-900 transition-colors hover:bg-blue-50"
+          >
             Join Talenezio <ArrowRight className="h-5 w-5" />
           </Link>
         </div>

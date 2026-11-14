@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   '/tests',
   '/resume-builder',
   '/dashboard',
+  '/admin',
 ]
 
 function isProtectedPath(pathname: string): boolean {
@@ -20,11 +21,18 @@ export async function proxy(request: NextRequest) {
   // If an OAuth code arrives at any non-auth route (e.g. root fallback /?code=...),
   // seamlessly forward it to /auth/callback so the session exchange occurs
   const code = request.nextUrl.searchParams.get('code')
-  if (code && !request.nextUrl.pathname.startsWith('/auth')) {
+  const error = request.nextUrl.searchParams.get('error')
+  if ((code || error) && !request.nextUrl.pathname.startsWith('/auth')) {
     const callbackUrl = new URL('/auth/callback', request.url)
     request.nextUrl.searchParams.forEach((val, key) => {
       callbackUrl.searchParams.set(key, val)
     })
+    if (!callbackUrl.searchParams.has('flow')) {
+      callbackUrl.searchParams.set('flow', 'oauth')
+    }
+    if (!callbackUrl.searchParams.has('next')) {
+      callbackUrl.searchParams.set('next', '/dashboard')
+    }
     return NextResponse.redirect(callbackUrl)
   }
 
@@ -50,6 +58,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/services/:path*',
     '/tests/:path*',
     '/resume-builder/:path*',
