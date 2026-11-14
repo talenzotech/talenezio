@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ThemeWordmark } from "@/components/ThemeWordmark";
 import {
   ArrowRight,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { isLocalDemoSession } from "@/lib/auth/local-demo";
+import { safeNextPath } from "@/lib/auth/redirect";
 
 const features = [
   {
@@ -111,7 +113,28 @@ const proofPoints = [
   "Expert-led career support",
 ];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    code?: string;
+    flow?: string;
+    next?: string;
+    error?: string;
+    error_description?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  if (params?.code || params?.error) {
+    const callbackQuery = new URLSearchParams();
+    if (params.code) callbackQuery.set("code", params.code);
+    if (params.error) callbackQuery.set("error", params.error);
+    if (params.error_description) callbackQuery.set("error_description", params.error_description);
+    callbackQuery.set("flow", params.flow || "oauth");
+    callbackQuery.set("next", safeNextPath(params.next, "/dashboard"));
+    redirect(`/auth/callback?${callbackQuery.toString()}`);
+  }
+
   const isDemo = await isLocalDemoSession();
   let user = null;
   if (!isDemo) {

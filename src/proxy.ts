@@ -20,11 +20,18 @@ export async function proxy(request: NextRequest) {
   // If an OAuth code arrives at any non-auth route (e.g. root fallback /?code=...),
   // seamlessly forward it to /auth/callback so the session exchange occurs
   const code = request.nextUrl.searchParams.get('code')
-  if (code && !request.nextUrl.pathname.startsWith('/auth')) {
+  const error = request.nextUrl.searchParams.get('error')
+  if ((code || error) && !request.nextUrl.pathname.startsWith('/auth')) {
     const callbackUrl = new URL('/auth/callback', request.url)
     request.nextUrl.searchParams.forEach((val, key) => {
       callbackUrl.searchParams.set(key, val)
     })
+    if (!callbackUrl.searchParams.has('flow')) {
+      callbackUrl.searchParams.set('flow', 'oauth')
+    }
+    if (!callbackUrl.searchParams.has('next')) {
+      callbackUrl.searchParams.set('next', '/dashboard')
+    }
     return NextResponse.redirect(callbackUrl)
   }
 
@@ -51,12 +58,10 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * Explicitly match root '/' and all other app routes so root OAuth callbacks
+     * (e.g. /?code=...) are intercepted by the proxy.
      */
+    '/',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

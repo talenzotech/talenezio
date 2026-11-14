@@ -72,7 +72,12 @@ export async function GET(request: Request) {
   // Attach all cookies set during the session exchange to the outgoing redirect response
   // to prevent Next.js from dropping Set-Cookie headers on NextResponse.redirect
   cookiesToSetOnResponse.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options)
+    response.cookies.set(name, value, {
+      ...options,
+      path: options?.path ?? '/',
+      sameSite: (options?.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
   })
 
   return response
