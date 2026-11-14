@@ -52,15 +52,21 @@ The application appends a validated internal `next` destination to these URLs. E
 
 Password reset requests intentionally show the same success message whether or not the email is registered. This prevents account enumeration. Reset links establish a recovery session before `/reset-password` is rendered, and successful password updates always send the user to login before continuing to the validated destination.
 
+## Application URL & Canonical OAuth Origin
+
+OAuth callback URLs are constructed from a canonical, trusted application origin to prevent host header injection attacks.
+
+In priority order:
+1. Explicitly configured `NEXT_PUBLIC_APP_URL` or `NEXT_PUBLIC_SITE_URL`.
+2. Trusted platform environment variables (e.g. `VERCEL_PROJECT_PRODUCTION_URL` or `VERCEL_URL` set by Vercel's orchestration infrastructure).
+3. Local development fallback (`http://localhost:3000` when `NODE_ENV === 'development'`).
+
+In production, if no canonical application URL is configured, the application fails safely rather than trusting arbitrary or unverified request headers.
+
 ## Google OAuth Configuration & Fixing "Error 401: deleted_client"
 
 ### Why `Error 401: deleted_client` happens
 Google's authorization server returns `deleted_client` when the OAuth 2.0 Client ID entered in your Supabase Dashboard (**Authentication > Providers > Google**) has been deleted, disabled, or regenerated in the Google Cloud Console.
-
-In your current setup, Supabase is attempting to use:
-`client_id: 810802314537-9f5hr0qvppo5n4tg9101ual3btmv6jp9.apps.googleusercontent.com`
-Google directly responds with:
-`"Error 401: deleted_client - The OAuth client was deleted."`
 
 ### Step-by-Step Fix for Google:
 1. **Open Google Cloud Console**:
@@ -71,14 +77,15 @@ Google directly responds with:
    - Name: `Talenezio Web Client`.
 3. **Set Authorized JavaScript Origins**:
    - `http://localhost:3000`
-   - `https://talenezio.com` (or your production domain).
+   - `https://your-production-domain.com` (and your Vercel deployment URL).
 4. **Set Authorized Redirect URIs**:
    - Enter your Supabase callback URL:
      ```text
-     https://scypbnmgktnqyerfgrmi.supabase.co/auth/v1/callback
+     https://<YOUR_SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback
      ```
+     *(Replace `<YOUR_SUPABASE_PROJECT_REF>` with your Supabase project ID, found in `NEXT_PUBLIC_SUPABASE_URL`)*.
 5. **Update Supabase Dashboard**:
-   - Open your Supabase project (`scypbnmgktnqyerfgrmi`) > **Authentication > Providers > Google**.
+   - Open your Supabase project > **Authentication > Providers > Google**.
    - Toggle **Enable Sign in with Google** to ON.
    - Enter your new **Client ID** (ends with `.apps.googleusercontent.com`).
    - Enter your new **Client Secret**.
@@ -86,10 +93,15 @@ Google directly responds with:
 
 ---
 
-## LinkedIn OAuth Configuration & Fixing "Unsupported provider: provider is not enabled"
+## LinkedIn OAuth Configuration & Feature Flag
 
 ### Why `Unsupported provider: provider is not enabled` happens
 Supabase GoTrue returns HTTP 400 with `Unsupported provider: provider is not enabled` when a provider is invoked in the code (`linkedin_oidc` or `linkedin`) but is toggled **OFF** or unconfigured in the Supabase Dashboard under **Authentication > Providers > LinkedIn (OIDC)**.
+
+### Conditional UI Availability Flag
+To prevent user errors while LinkedIn Developer App product verification is finalized, LinkedIn login is conditionally displayed in the UI via the `NEXT_PUBLIC_ENABLE_LINKEDIN_AUTH` feature flag:
+- When unset or `false`: The login and register pages render Google sign-in full-width.
+- When `NEXT_PUBLIC_ENABLE_LINKEDIN_AUTH=true`: The UI immediately displays both Google and LinkedIn in a balanced 2-column grid without code changes.
 
 ### Step-by-Step Fix for LinkedIn:
 1. **Open LinkedIn Developer Portal**:
@@ -104,11 +116,11 @@ Supabase GoTrue returns HTTP 400 with `Unsupported provider: provider is not ena
    - Go to the **Auth** tab.
    - Under **OAuth 2.0 settings > Authorized redirect URLs for your app**, click the plus icon and add:
      ```text
-     https://scypbnmgktnqyerfgrmi.supabase.co/auth/v1/callback
+     https://<YOUR_SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback
      ```
    - Copy your **Client ID** and **Primary Client Secret**.
 5. **Enable in Supabase Dashboard**:
-   - Open Supabase project (`scypbnmgktnqyerfgrmi`) > **Authentication > Providers > LinkedIn (OIDC)**.
+   - Open Supabase project > **Authentication > Providers > LinkedIn (OIDC)**.
    - Toggle **Enable LinkedIn (OIDC)** to **ON**.
    - Paste your LinkedIn **Client ID**.
    - Paste your LinkedIn **Client Secret**.
@@ -116,6 +128,8 @@ Supabase GoTrue returns HTTP 400 with `Unsupported provider: provider is not ena
 6. **URL Configuration in Supabase**:
    - Under **Authentication > URL Configuration > Redirect URLs**, ensure:
      - `http://localhost:3000/auth/callback`
-     - `https://talenezio.com/auth/callback` (or your production URL).
+     - `https://your-production-domain.com/auth/callback` (and preview URLs if testing previews).
+7. **Activate Feature Flag**:
+   - Set `NEXT_PUBLIC_ENABLE_LINKEDIN_AUTH=true` in your environment (e.g., Vercel) once Supabase provider configuration is active.
 
 
