@@ -9,6 +9,8 @@ export async function GET(request: Request) {
   // if "next" is in param, use it as the redirect URL
   const next = safeNextPath(searchParams.get('next'))
 
+  const oauthError = searchParams.get('error_description') || searchParams.get('error')
+
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
@@ -30,9 +32,16 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`)
       }
     }
+
+    const failureMessage = error?.message || oauthError || 'Could not authenticate user'
+    const errorPath = flow === 'recovery' ? '/forgot-password' : '/login'
+    return NextResponse.redirect(`${origin}${errorPath}?error=${encodeURIComponent(failureMessage)}&next=${encodeURIComponent(next)}`)
   }
 
   // return the user to an error page with instructions
   const errorPath = flow === 'recovery' ? '/forgot-password' : '/login'
-  return NextResponse.redirect(`${origin}${errorPath}?error=${encodeURIComponent(flow === 'recovery' ? 'This reset link is invalid or expired. Request a new one.' : 'Could not authenticate user')}&next=${encodeURIComponent(next)}`)
+  const defaultErrorMessage = flow === 'recovery'
+    ? 'This reset link is invalid or expired. Request a new one.'
+    : (oauthError || 'Could not authenticate user')
+  return NextResponse.redirect(`${origin}${errorPath}?error=${encodeURIComponent(defaultErrorMessage)}&next=${encodeURIComponent(next)}`)
 }
