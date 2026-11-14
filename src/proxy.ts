@@ -17,6 +17,17 @@ function isProtectedPath(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  // If an OAuth code arrives at any non-auth route (e.g. root fallback /?code=...),
+  // seamlessly forward it to /auth/callback so the session exchange occurs
+  const code = request.nextUrl.searchParams.get('code')
+  if (code && !request.nextUrl.pathname.startsWith('/auth')) {
+    const callbackUrl = new URL('/auth/callback', request.url)
+    request.nextUrl.searchParams.forEach((val, key) => {
+      callbackUrl.searchParams.set(key, val)
+    })
+    return NextResponse.redirect(callbackUrl)
+  }
+
   // Allow local demo session if active
   if (hasLocalDemoCookie(request.cookies.get(LOCAL_DEMO_COOKIE)?.value)) {
     return NextResponse.next()

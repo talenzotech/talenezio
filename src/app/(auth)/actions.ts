@@ -2,39 +2,20 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
 import {
   endLocalDemoSession,
   isLocalDemoSession,
 } from '@/lib/auth/local-demo'
+import {
+  getAppUrl,
+  formatOAuthErrorMessage,
+  buildOAuthCallbackUrl,
+  type OAuthProvider,
+} from '@/lib/auth/oauth'
 
-export async function getAppUrl(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim() !== '') {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
-  }
-  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '') {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  }
-  try {
-    const headerList = await headers()
-    const host = headerList.get('x-forwarded-host') || headerList.get('host')
-    const proto = headerList.get('x-forwarded-proto') || 'https'
-    if (host) {
-      return `${proto}://${host}`
-    }
-  } catch {
-    // headers() might not be available in all contexts
-  }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return 'http://localhost:3000'
-}
+export { getAppUrl, formatOAuthErrorMessage, buildOAuthCallbackUrl, type OAuthProvider }
 
 export async function login(formData: FormData): Promise<void> {
   // type-casting here for convenience
@@ -117,19 +98,6 @@ export async function signup(formData: FormData): Promise<void> {
   redirect(`/login?message=${encodeURIComponent('Check your email for the confirmation link.')}&next=${encodeURIComponent(next)}`)
 }
 
-export type OAuthProvider = 'google' | 'linkedin_oidc' | 'linkedin'
-
-function formatOAuthErrorMessage(provider: OAuthProvider, rawMessage?: string): string {
-  const isNotEnabled = rawMessage && /provider.*not enabled/i.test(rawMessage)
-  if (isNotEnabled) {
-    if (provider === 'google') {
-      return 'Google sign-in is not enabled in your Supabase project. Please enable Google in Supabase Dashboard > Authentication > Providers.'
-    }
-    return 'LinkedIn sign-in is not enabled in your Supabase project. Please enable LinkedIn (OIDC) in Supabase Dashboard > Authentication > Providers.'
-  }
-  return rawMessage || 'Could not initiate social authentication. Please try again.'
-}
-
 export async function loginWithOAuth(
   provider: OAuthProvider,
   requestedNext?: string
@@ -137,12 +105,11 @@ export async function loginWithOAuth(
   const next = safeNextPath(requestedNext)
   const supabase = await createClient()
   const appUrl = await getAppUrl()
-  const callbackPath = `/auth/callback?flow=oauth&next=${encodeURIComponent(next)}`
-  const redirectUrl = `${appUrl}${callbackPath}`
+  const redirectUrl = buildOAuthCallbackUrl(appUrl, next)
 
   let targetProvider: OAuthProvider = provider
   let { data, error } = await supabase.auth.signInWithOAuth({
-    provider: targetProvider as any,
+    provider: targetProvider,
     options: {
       redirectTo: redirectUrl,
       queryParams: targetProvider === 'google' ? {
