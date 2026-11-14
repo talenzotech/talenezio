@@ -11,28 +11,50 @@ import {
 } from '@/lib/auth/local-demo'
 
 export async function getAppUrl(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim() !== '') {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
-  }
-  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '') {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  }
+  // 1. Check request headers: when user clicks on deployed site, this is the exact domain they are on
   try {
     const headerList = await headers()
     const host = headerList.get('x-forwarded-host') || headerList.get('host')
     const proto = headerList.get('x-forwarded-proto') || 'https'
-    if (host) {
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
       return `${proto}://${host}`
     }
   } catch {
     // headers() might not be available in all contexts
   }
+
+  // 2. If an explicit production URL is set (and not localhost), use it
+  if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim() !== '') {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+    if (!appUrl.includes('localhost') && !appUrl.includes('127.0.0.1')) {
+      return appUrl
+    }
+  }
+  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '') {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+    if (!siteUrl.includes('localhost') && !siteUrl.includes('127.0.0.1')) {
+      return siteUrl
+    }
+  }
+
+  // 3. Vercel deployment URLs (set automatically by Vercel)
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   }
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`
   }
+
+  // 4. Local development requests
+  try {
+    const headerList = await headers()
+    const host = headerList.get('x-forwarded-host') || headerList.get('host')
+    const proto = headerList.get('x-forwarded-proto') || 'http'
+    if (host) {
+      return `${proto}://${host}`
+    }
+  } catch {}
+
   return 'http://localhost:3000'
 }
 

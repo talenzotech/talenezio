@@ -29,3 +29,13 @@ test('Supabase unsupported provider error detection pattern', () => {
   assert.equal(isNotEnabled('Validation failed: provider not enabled'), true)
   assert.equal(isNotEnabled('Invalid credentials'), false)
 })
+
+test('OAuth code arriving at non-auth route forward destination construction', () => {
+  const incoming = new URL('http://localhost:3000/?code=f58bef4a-a4f7-489e-b31f-f35a5524e7e5')
+  const callbackUrl = new URL('/auth/callback', incoming)
+  incoming.searchParams.forEach((val, key) => {
+    callbackUrl.searchParams.set(key, val)
+  })
+  assert.equal(callbackUrl.pathname, '/auth/callback')
+  assert.equal(callbackUrl.searchParams.get('code'), 'f58bef4a-a4f7-489e-b31f-f35a5524e7e5')
+})
