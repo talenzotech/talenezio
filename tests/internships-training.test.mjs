@@ -130,7 +130,7 @@ test('sendTrainingApplicationEmail dispatches email with program, batch, contact
 
   const result = await sendTrainingApplicationEmail({
     programTitle: 'Graphic Designing Training',
-    fee: '₹5000 per month',
+    fee: '₹4999 per month',
     fullName: 'Kavita Iyer',
     email: 'kavita@example.com',
     phone: '+91 9988776655',

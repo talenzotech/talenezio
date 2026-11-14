@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
@@ -87,10 +87,6 @@ export async function POST(request: Request) {
 
       if (!uploadError) {
         resumePath = storagePath;
-        const { data: signed } = await admin.storage
-          .from('unlock_evidence')
-          .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
-        resumeStorageUrl = signed?.signedUrl || null;
       }
     } catch (storageErr) {
       console.warn('Notice: resume upload to storage bypassed:', storageErr);
@@ -121,32 +117,36 @@ export async function POST(request: Request) {
       console.warn('Notice: could not record interview prep enquiry in DB:', dbErr);
     }
 
-    // Send email with applicant details and attached resume
-    const emailResult = await sendInterviewPrepApplicationEmail({
-      fullName,
-      email,
-      phone,
-      batch,
-      domain,
-      resumeFileName: resumeFile.name,
-      resumeBuffer: buffer,
-      resumeStorageUrl,
+    after(async () => {
+      try {
+        if (resumePath) {
+          const admin = createAdminClient();
+          const { data: signed } = await admin.storage
+            .from('unlock_evidence')
+            .createSignedUrl(resumePath, 60 * 60 * 24 * 7);
+          resumeStorageUrl = signed?.signedUrl || null;
+        }
+        const emailResult = await sendInterviewPrepApplicationEmail({
+          fullName,
+          email,
+          phone,
+          batch,
+          domain,
+          resumeFileName: resumeFile.name,
+          resumeBuffer: buffer,
+          resumeStorageUrl,
+        });
+        if (!emailResult.success) {
+          console.error('Interview prep email dispatch error:', emailResult.error);
+        }
+      } catch (error) {
+        console.error('Interview prep notification failed:', error);
+      }
     });
-
-    if (!emailResult.success) {
-      console.error('Interview prep email dispatch error:', emailResult.error);
-      const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
-      const isConfigError = errText.includes('RESEND_API_KEY');
-      const errorMessage = isConfigError
-        ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
-        : 'Failed to send your application email. Please try again or reach out to taleneziocontact@gmail.com.';
-
-      return NextResponse.json({ error: errorMessage }, { status: 502 });
-    }
 
     return NextResponse.json({
       success: true,
-      message: `Your application for the ${batch} batch has been submitted successfully! We have sent your resume and details to taleneziocontact@gmail.com.`,
+      message: `Your application for the ${batch} batch has been submitted successfully! Our team will review your resume and details.`,
       batch,
       fullName,
     });

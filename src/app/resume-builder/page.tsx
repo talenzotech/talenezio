@@ -6,7 +6,6 @@ import {
   Eye, FileText, LayoutTemplate, Plus, Settings2, Trash2, X,
 } from 'lucide-react'
 import ResumePreview from '@/components/resume/ResumePreview'
-import { buildResumePdf } from '@/lib/resume/pdf'
 import {
   defaultSectionLabels, defaultSectionOrder, initialResumeData, ResumeData,
   ResumeLayout, ResumeSectionId,
@@ -348,6 +347,7 @@ export default function ResumeBuilderPage() {
         throw new Error('Your resume could not be saved. Fix the save issue and try again before downloading.')
       }
 
+      const { buildResumePdf } = await import('@/lib/resume/pdf')
       const pdfBytes = await buildResumePdf(data)
       const safeName = (resumeName.trim() || `${data.personalInfo.fullName.trim()}_Resume`)
         .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')

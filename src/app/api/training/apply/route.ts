@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
@@ -90,10 +90,6 @@ export async function POST(request: Request) {
 
         if (!uploadError) {
           resumePath = storagePath;
-          const { data: signed } = await admin.storage
-            .from('unlock_evidence')
-            .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
-          resumeStorageUrl = signed?.signedUrl || null;
         }
       } catch (storageErr) {
         console.warn('Notice: resume upload to storage bypassed:', storageErr);
@@ -128,36 +124,40 @@ export async function POST(request: Request) {
       console.warn('Notice: could not record training enquiry in DB:', dbErr);
     }
 
-    // Dispatch email notification to taleneziocontact@gmail.com
-    const emailResult = await sendTrainingApplicationEmail({
-      programTitle,
-      fee: fee || '₹4,999 / month',
-      fullName,
-      email,
-      phone,
-      city,
-      collegeOrCompany,
-      age: parsedAge,
-      batch: batch || 'Upcoming Cohort',
-      resumeFileName,
-      resumeBuffer: buffer,
-      resumeStorageUrl,
+    after(async () => {
+      try {
+        if (resumePath) {
+          const admin = createAdminClient();
+          const { data: signed } = await admin.storage
+            .from('unlock_evidence')
+            .createSignedUrl(resumePath, 60 * 60 * 24 * 7);
+          resumeStorageUrl = signed?.signedUrl || null;
+        }
+        const emailResult = await sendTrainingApplicationEmail({
+          programTitle,
+          fee: fee || '₹4,999 / month',
+          fullName,
+          email,
+          phone,
+          city,
+          collegeOrCompany,
+          age: parsedAge,
+          batch: batch || 'Upcoming Cohort',
+          resumeFileName,
+          resumeBuffer: buffer,
+          resumeStorageUrl,
+        });
+        if (!emailResult.success) {
+          console.error('Training application email delivery error:', emailResult.error);
+        }
+      } catch (error) {
+        console.error('Training application notification failed:', error);
+      }
     });
-
-    if (!emailResult.success) {
-      console.error('Training application email delivery error:', emailResult.error);
-      const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
-      const isConfigError = errText.includes('RESEND_API_KEY');
-      const errorMessage = isConfigError
-        ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
-        : 'Failed to send your application email. Please try again or reach out to taleneziocontact@gmail.com.';
-
-      return NextResponse.json({ error: errorMessage }, { status: 502 });
-    }
 
     return NextResponse.json({
       success: true,
-      message: `Your application for ${programTitle} has been submitted successfully! We have notified our admissions team.`,
+      message: `Your application for ${programTitle} has been submitted successfully! Our admissions team will review it.`,
       programTitle,
       fullName,
     });

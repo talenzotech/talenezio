@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   '/tests',
   '/resume-builder',
   '/dashboard',
+  '/admin',
 ]
 
 function isProtectedPath(pathname: string): boolean {
@@ -57,11 +58,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Explicitly match root '/' and all other app routes so root OAuth callbacks
-     * (e.g. /?code=...) are intercepted by the proxy.
-     */
     '/',
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/services/:path*',
+    '/tests/:path*',
+    '/resume-builder/:path*',
+    '/dashboard/:path*',
+    '/admin/:path*',
   ],
 }

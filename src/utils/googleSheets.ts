@@ -9,6 +9,9 @@ import {
 } from '@/lib/tests/questionBank';
 import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
 
+const QUESTION_CACHE_TTL_MS = 5 * 60 * 1000;
+const questionCache = new Map<string, { expiresAt: number; value: Promise<Question[]> }>();
+
 export type { PublicQuestion, Question } from '@/lib/tests/questionBank';
 export { normalizeCategory, parseQuestionRows, QuestionBankError, toPublicQuestion } from '@/lib/tests/questionBank';
 
@@ -24,6 +27,17 @@ function getFallbackQuestions(category: string, type: 'free' | 'pro'): Question[
 }
 
 export async function fetchGoogleSheetQuestions(category: string, type: 'free' | 'pro' = 'free'): Promise<Question[]> {
+  const cacheKey = `${category}:${type}`;
+  const cached = questionCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const value = fetchGoogleSheetQuestionsUncached(category, type);
+  questionCache.set(cacheKey, { expiresAt: Date.now() + QUESTION_CACHE_TTL_MS, value });
+  void value.catch(() => questionCache.delete(cacheKey));
+  return value;
+}
+
+async function fetchGoogleSheetQuestionsUncached(category: string, type: 'free' | 'pro'): Promise<Question[]> {
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
   const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const spreadsheetId = process.env.GOOGLE_SHEETS_ID;

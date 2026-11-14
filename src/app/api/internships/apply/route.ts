@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
@@ -85,11 +85,6 @@ export async function POST(request: Request) {
 
         if (!uploadError) {
           resumePath = storagePath
-          // Generate a 7-day signed link for convenience
-          const { data: signed } = await admin.storage
-            .from('unlock_evidence')
-            .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
-          resumeStorageUrl = signed?.signedUrl || null
         } else {
           console.warn('Notice: resume upload to unlock_evidence bucket returned:', uploadError.message)
         }
@@ -122,28 +117,33 @@ export async function POST(request: Request) {
       }
     }
 
-    // Dispatch email with complete application details and uploaded resume attachment
-    const emailResult = await sendInternshipApplicationEmail({
-      internshipTitle,
-      fullName,
-      email,
-      phone,
-      college,
-      resumeFileName: resumeFile.name,
-      resumeBuffer: buffer,
-      resumeStorageUrl,
+    // Email is non-blocking after the application has been recorded.
+    after(async () => {
+      try {
+        if (resumePath) {
+          const admin = createAdminClient()
+          const { data: signed } = await admin.storage
+            .from('unlock_evidence')
+            .createSignedUrl(resumePath, 60 * 60 * 24 * 7)
+          resumeStorageUrl = signed?.signedUrl || null
+        }
+        const emailResult = await sendInternshipApplicationEmail({
+          internshipTitle,
+          fullName,
+          email,
+          phone,
+          college,
+          resumeFileName: resumeFile.name,
+          resumeBuffer: buffer,
+          resumeStorageUrl,
+        });
+        if (!emailResult.success) {
+          console.error('Notice: error sending internship application notification email:', emailResult.error);
+        }
+      } catch (error) {
+        console.error('Notice: internship application notification failed:', error)
+      }
     });
-
-    if (!emailResult.success) {
-      console.error('Notice: error sending internship application notification email:', emailResult.error);
-      const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
-      const isConfigError = errText.includes('RESEND_API_KEY');
-      const errorMessage = isConfigError
-        ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
-        : 'Failed to send your application email. Please try again or reach out to taleneziocontact@gmail.com.';
-
-      return NextResponse.json({ error: errorMessage }, { status: 502 });
-    }
 
     return NextResponse.json({
       success: true,

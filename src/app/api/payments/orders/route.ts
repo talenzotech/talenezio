@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     let validatedLinkedInUrl: string | undefined;
     let validatedBookingDateIso: string | undefined;
     let rawBookingDate: string | undefined;
+    let careerEmailPayload: Parameters<typeof sendCareerServiceRegistrationEmail>[0] | null = null;
 
     if (isCareerRegistration && body?.applicantDetails) {
       const details = body.applicantDetails;
@@ -174,7 +175,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // If this is a Career Service registration, dispatch and verify email notification to taleneziocontact@gmail.com
+    // Prepare the career notification. It is sent after the payment record is durable.
     if (isCareerRegistration && body?.applicantDetails) {
       const details = body.applicantDetails;
       const serviceName =
@@ -190,7 +191,7 @@ export async function POST(request: Request) {
       const email = details.email || user.email || 'Not provided';
       const phone = validatedPhone || details.phone || details.contactNumber || '';
 
-      const emailResult = await sendCareerServiceRegistrationEmail({
+      careerEmailPayload = {
         serviceName,
         fullName,
         careerDetails,
@@ -200,18 +201,7 @@ export async function POST(request: Request) {
         selectedBookingDate: rawBookingDate,
         linkedinUrl: validatedLinkedInUrl,
         price: productCode === 'career:career-guidance' ? '₹199' : '₹499',
-      });
-
-      if (!emailResult.success) {
-        console.error('Notice: error sending career service registration email:', emailResult.error);
-        const errText = emailResult.error instanceof Error ? emailResult.error.message : String(emailResult.error || '');
-        const isConfigError = errText.includes('RESEND_API_KEY');
-        const errorMessage = isConfigError
-          ? 'Application could not be delivered by email because the email service is not configured. Please contact taleneziocontact@gmail.com directly.'
-          : 'Failed to send your application notification email. Please try again or reach out to taleneziocontact@gmail.com.';
-
-        return NextResponse.json({ error: errorMessage }, { status: 502 });
-      }
+      };
     }
 
     const receipt = `talenezio_${user.id.slice(0, 8)}_${Date.now()}`;
@@ -329,6 +319,19 @@ export async function POST(request: Request) {
           console.warn('Notice: exception inserting into bookings table:', bookingErr);
         }
       }
+    }
+
+    if (careerEmailPayload) {
+      after(async () => {
+        try {
+          const emailResult = await sendCareerServiceRegistrationEmail(careerEmailPayload!);
+          if (!emailResult.success) {
+            console.error('Notice: error sending career service registration email:', emailResult.error);
+          }
+        } catch (error) {
+          console.error('Career service registration notification failed:', error);
+        }
+      });
     }
 
     return NextResponse.json({
