@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
 import {
@@ -72,7 +73,9 @@ export async function signup(formData: FormData): Promise<void> {
     redirect(`/register?error=${encodeURIComponent('Passwords do not match')}&next=${encodeURIComponent(next)}`)
   }
 
-  const appUrl = await getAppUrl()
+  const headerList = await headers()
+  const requestHost = headerList.get('x-forwarded-host') || headerList.get('host')
+  const appUrl = getAppUrl(process.env, requestHost)
 
   const { error, data } = await supabase.auth.signUp({
     email,
@@ -104,7 +107,9 @@ export async function loginWithOAuth(
 ): Promise<void> {
   const next = safeNextPath(requestedNext)
   const supabase = await createClient()
-  const appUrl = await getAppUrl()
+  const headerList = await headers()
+  const requestHost = headerList.get('x-forwarded-host') || headerList.get('host')
+  const appUrl = getAppUrl(process.env, requestHost)
   const redirectUrl = buildOAuthCallbackUrl(appUrl, next)
 
   let targetProvider: OAuthProvider = provider
@@ -149,7 +154,9 @@ export async function requestPasswordReset(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const email = String(formData.get('email') || '').trim()
   const next = safeNextPath(formData.get('next') as string | null)
-  const appUrl = await getAppUrl()
+  const headerList = await headers()
+  const requestHost = headerList.get('x-forwarded-host') || headerList.get('host')
+  const appUrl = getAppUrl(process.env, requestHost)
 
   if (!email) {
     redirect(`/forgot-password?error=${encodeURIComponent('Email is required')}&next=${encodeURIComponent(next)}`)

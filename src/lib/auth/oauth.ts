@@ -16,18 +16,44 @@ export interface AppUrlEnv {
 }
 
 /**
- * Resolves the canonical application URL for OAuth redirects.
- * Prioritizes explicitly configured environment variables and trusted platform deployment
- * variables to prevent host header injection vulnerabilities.
+ * Verifies whether a given hostname belongs to trusted project domains
+ * (canonical domain, custom www subdomain, Vercel deployments, or local development).
  */
-export function getAppUrl(env: AppUrlEnv = process.env): string {
-  // 1. Explicitly configured application URL (Highest priority)
+export function isTrustedHost(host: string): boolean {
+  if (!host) return false
+  const cleanHost = host.toLowerCase().split(',')[0].trim().split(':')[0].trim()
+  return (
+    cleanHost === 'talenezio.com' ||
+    cleanHost === 'www.talenezio.com' ||
+    cleanHost === 'localhost' ||
+    cleanHost === '127.0.0.1' ||
+    cleanHost.endsWith('.vercel.app')
+  )
+}
+
+/**
+ * Resolves the canonical application URL for OAuth redirects.
+ * Allows verified trusted request hosts (e.g. talenezio.com, preview vercel deployments)
+ * so session cookies match the origin, and falls back to explicitly configured environment variables.
+ */
+export function getAppUrl(env: AppUrlEnv = process.env, requestHost?: string | null): string {
+  // 1. If an explicit request host is provided and verified against trusted project domains,
+  // use it so cookies set on preview deployments or custom domains match the callback origin.
+  if (requestHost && isTrustedHost(requestHost)) {
+    const rawClean = requestHost.trim().split(',')[0].trim()
+    const cleanHostOnly = rawClean.split(':')[0]
+    const isLocal = cleanHostOnly === 'localhost' || cleanHostOnly === '127.0.0.1'
+    const protocol = isLocal ? 'http' : 'https'
+    return `${protocol}://${rawClean.replace(/\/$/, '')}`
+  }
+
+  // 2. Explicitly configured application URL (Highest priority when no trusted request host)
   const configuredAppUrl = env.NEXT_PUBLIC_APP_URL?.trim() || env.NEXT_PUBLIC_SITE_URL?.trim()
   if (configuredAppUrl) {
     return configuredAppUrl.replace(/\/$/, '')
   }
 
-  // 2. Trusted platform environment variables (Vercel system variables)
+  // 3. Trusted platform environment variables (Vercel system variables)
   if (env.VERCEL_PROJECT_PRODUCTION_URL?.trim()) {
     return `https://${env.VERCEL_PROJECT_PRODUCTION_URL.trim().replace(/\/$/, '')}`
   }
@@ -35,12 +61,12 @@ export function getAppUrl(env: AppUrlEnv = process.env): string {
     return `https://${env.VERCEL_URL.trim().replace(/\/$/, '')}`
   }
 
-  // 3. Local development / test fallback
+  // 4. Local development / test fallback
   if (env.NODE_ENV === 'development' || !env.NODE_ENV || env.NODE_ENV === 'test') {
     return 'http://localhost:3000'
   }
 
-  // 4. In production without a configured URL, fail safely instead of trusting arbitrary host headers
+  // 5. In production without a configured URL, fail safely instead of trusting arbitrary host headers
   throw new Error('Canonical application URL is not configured. Please set NEXT_PUBLIC_APP_URL in your production environment.')
 }
 
@@ -79,6 +105,18 @@ export interface OAuthCallbackResolutionParams {
   exchangeErrorMessage?: string | null
   forwardedHost?: string | null
   isLocalEnv?: boolean
+}
+
+/**
+ * Formats callback and exchange error messages into friendly, user-facing text,
+ * particularly for PKCE code verifier mismatches caused by in-app browsers or cross-device links.
+ */
+export function formatCallbackErrorMessage(rawMessage: string | null | undefined): string {
+  if (!rawMessage) return 'Could not authenticate user'
+  if (/pkce|code.*verifier/i.test(rawMessage)) {
+    return 'Your sign-in session expired or was opened in a different browser. If you opened this link from WhatsApp, Instagram, or an email app, please open the website directly in your browser (Chrome or Safari) and try again.'
+  }
+  return rawMessage
 }
 
 /**
@@ -122,7 +160,7 @@ export function resolveOAuthCallbackRedirect(params: OAuthCallbackResolutionPara
   const errorPath = flow === 'recovery' ? '/forgot-password' : '/login'
   const failureMessage = flow === 'recovery'
     ? 'This reset link is invalid or expired. Request a new one.'
-    : (exchangeErrorMessage || oauthError || 'Could not authenticate user')
+    : formatCallbackErrorMessage(exchangeErrorMessage || oauthError)
 
   return `${origin}${errorPath}?error=${encodeURIComponent(failureMessage)}&next=${encodeURIComponent(next)}`
 }
