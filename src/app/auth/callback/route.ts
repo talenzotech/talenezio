@@ -10,6 +10,8 @@ export async function GET(request: Request) {
   const next = searchParams.get('next')
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
+  const tokenHash = searchParams.get('token_hash')
+  const otpType = searchParams.get('type')
   const rawForwardedHost = request.headers.get('x-forwarded-host')
   const forwardedHost = rawForwardedHost ? rawForwardedHost.split(',')[0].trim() : null
   const isLocalEnv = process.env.NODE_ENV === 'development'
@@ -24,7 +26,9 @@ export async function GET(request: Request) {
     options?: Parameters<typeof cookieStore.set>[2]
   }> = []
 
-  if (code) {
+  const hasAuthToken = Boolean(code || tokenHash)
+
+  if (hasAuthToken) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
 
@@ -35,22 +39,40 @@ export async function GET(request: Request) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
+            const normalizedOptions = {
+              ...options,
+              path: options?.path ?? '/',
+              sameSite: (options?.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+              secure: process.env.NODE_ENV === 'production',
+            }
             try {
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, normalizedOptions)
             } catch {
               // Ignore if context forbids cookie mutation
             }
-            cookiesToSetOnResponse.push({ name, value, options })
+            cookiesToSetOnResponse.push({ name, value, options: normalizedOptions })
           })
         },
       },
     })
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-    if (!exchangeError) {
-      isSuccessfulExchange = true
-    } else {
-      exchangeErrorMessage = exchangeError.message
+    if (tokenHash && otpType) {
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: otpType as any,
+      })
+      if (!otpError) {
+        isSuccessfulExchange = true
+      } else {
+        exchangeErrorMessage = otpError.message
+      }
+    } else if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      if (!exchangeError) {
+        isSuccessfulExchange = true
+      } else {
+        exchangeErrorMessage = exchangeError.message
+      }
     }
   }
 

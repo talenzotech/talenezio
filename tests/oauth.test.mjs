@@ -3,7 +3,9 @@ import test from 'node:test'
 import { safeNextPath } from '../src/lib/auth/redirect.ts'
 import {
   getAppUrl,
+  isTrustedHost,
   formatOAuthErrorMessage,
+  formatCallbackErrorMessage,
   buildOAuthCallbackUrl,
   resolveOAuthCallbackRedirect,
 } from '../src/lib/auth/oauth.ts'
@@ -15,6 +17,33 @@ test('safeNextPath validates destination paths correctly and blocks open redirec
   assert.equal(safeNextPath('https://malicious.com'), '/dashboard')
   assert.equal(safeNextPath('//malicious.com'), '/dashboard')
   assert.equal(safeNextPath(null, '/login'), '/login')
+})
+
+test('isTrustedHost validates canonical, subdomain, vercel, and localhost domains', () => {
+  assert.equal(isTrustedHost('talenezio.com'), true)
+  assert.equal(isTrustedHost('www.talenezio.com'), true)
+  assert.equal(isTrustedHost('talenezio-5ytb.vercel.app'), true)
+  assert.equal(isTrustedHost('preview-123.vercel.app'), true)
+  assert.equal(isTrustedHost('localhost:3000'), true)
+  assert.equal(isTrustedHost('127.0.0.1:3000'), true)
+  assert.equal(isTrustedHost('evil.com'), false)
+  assert.equal(isTrustedHost('talenezio.com.evil.com'), false)
+  assert.equal(isTrustedHost(''), false)
+})
+
+test('getAppUrl uses verified request host when present', () => {
+  assert.equal(
+    getAppUrl({ NEXT_PUBLIC_APP_URL: 'https://talenezio.com' }, 'talenezio-5ytb.vercel.app'),
+    'https://talenezio-5ytb.vercel.app'
+  )
+  assert.equal(
+    getAppUrl({ NEXT_PUBLIC_APP_URL: 'https://talenezio.com' }, 'talenezio.com'),
+    'https://talenezio.com'
+  )
+  assert.equal(
+    getAppUrl({ NEXT_PUBLIC_APP_URL: 'https://talenezio.com' }, 'evil.com'),
+    'https://talenezio.com'
+  )
 })
 
 test('getAppUrl prioritizes explicit application environment variables', () => {
@@ -147,4 +176,23 @@ test('resolveOAuthCallbackRedirect handles error states and provider failures sa
     exchangeErrorRedirect,
     'https://talenezio.com/login?error=Token%20expired&next=%2Fdashboard'
   )
+
+  // PKCE code verifier missing failure produces user-friendly explanation
+  const pkceErrorRedirect = resolveOAuthCallbackRedirect({
+    code: 'bad-code',
+    origin: 'https://talenezio.com',
+    isSuccessfulExchange: false,
+    exchangeErrorMessage: 'PKCE code verifier not found in storage. This can happen if the auth flow was initiated in a different browser or device...',
+  })
+  assert.match(
+    pkceErrorRedirect,
+    /login\?error=Your%20sign-in%20session%20expired/
+  )
+})
+
+test('formatCallbackErrorMessage formats raw PKCE error messages clearly', () => {
+  const pkceRaw = 'PKCE code verifier not found in storage. This can happen if the auth flow was initiated in a different browser or device...'
+  assert.match(formatCallbackErrorMessage(pkceRaw), /different browser/)
+  assert.equal(formatCallbackErrorMessage('Some random error'), 'Some random error')
+  assert.equal(formatCallbackErrorMessage(null), 'Could not authenticate user')
 })
