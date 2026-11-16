@@ -203,7 +203,18 @@ export default function UnlockProgramClient() {
               <StepCard number={1} title="Take any free test and share your certificate on LinkedIn, mentioning Talenzo." accessory={
                 <Link href="/tests?type=free" className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-blue-700 hover:underline">Take Free Test <ArrowRight className="h-4 w-4" /></Link>
               }>
-                <p className="mt-2 text-sm leading-5 text-slate-500">Post your certificate to your LinkedIn feed with a mention of @Talenzo.</p>
+                <p className="mt-2 text-sm leading-5 text-slate-500">
+                  Post your certificate to your LinkedIn feed with a mention of{' '}
+                  <a
+                    href="https://www.linkedin.com/company/talenzoofficial/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-600 underline hover:text-blue-700"
+                  >
+                    @Talenzo
+                  </a>
+                  .
+                </p>
               </StepCard>
               <StepCard number={2} title="Share the Talenzo app with 5 friends and in 2 student WhatsApp groups." accessory={
                 <button type="button" onClick={shareOnWhatsApp} className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700">

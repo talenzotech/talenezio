@@ -25,16 +25,20 @@ export async function POST(request: Request) {
   if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
     let scoringQuestions: { id: string; correct: number }[] = [];
 
-    if (body.category) {
+    const defaultMap = new Map(DEFAULT_QUESTIONS.map(q => [q.id, q.correct]));
+    const allFoundInDefault = Array.isArray(body.questionIds) && body.questionIds.length > 0 &&
+      body.questionIds.every(id => defaultMap.has(id));
+
+    if (allFoundInDefault && body.questionIds) {
+      scoringQuestions = body.questionIds.map(id => ({ id, correct: defaultMap.get(id) ?? -1 }));
+    } else if (body.category) {
       try {
         const questions = await fetchGoogleSheetQuestions(body.category, body.type || 'free');
         scoringQuestions = questions.map(q => ({ id: q.id, correct: q.correct }));
       } catch {
-        // Fallback to default questions
+        scoringQuestions = DEFAULT_QUESTIONS.map(q => ({ id: q.id, correct: q.correct }));
       }
-    }
-
-    if (scoringQuestions.length === 0) {
+    } else {
       scoringQuestions = DEFAULT_QUESTIONS.map(q => ({ id: q.id, correct: q.correct }));
     }
 

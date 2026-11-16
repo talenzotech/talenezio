@@ -48,9 +48,18 @@ const normalizeResumeData = (value: Partial<ResumeData>): ResumeData => ({
 })
 
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+const normalizeWebUrl = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
+
 const isValidWebUrl = (value: string) => {
   try {
-    return ['http:', 'https:'].includes(new URL(value).protocol)
+    const trimmed = value.trim()
+    if (!trimmed) return false
+    const parsed = new URL(normalizeWebUrl(trimmed))
+    return ['http:', 'https:'].includes(parsed.protocol) && parsed.hostname.includes('.')
   } catch {
     return false
   }
@@ -254,9 +263,9 @@ export default function ResumeBuilderPage() {
     awards: [...current.awards, { id: crypto.randomUUID(), title: '', issuer: '', date: '', description: '' }],
   }))
 
-  const addLink = () => setData(current => ({
+  const addLink = (label = '', defaultUrl = '') => setData(current => ({
     ...current,
-    links: [...current.links, { id: crypto.randomUUID(), label: '', url: '' }],
+    links: [...current.links, { id: crypto.randomUUID(), label, url: defaultUrl }],
   }))
 
   const addCustomSection = () => setData(current => ({
@@ -299,13 +308,13 @@ export default function ResumeBuilderPage() {
       return false
     }
     if (data.links.some(link => link.url.trim() && !isValidWebUrl(link.url.trim()))) {
-      setError('Use complete http:// or https:// URLs for portfolio and profile links.')
+      setError('Please enter a valid website or profile URL (e.g. https://linkedin.com/in/... or linkedin.com/in/...).')
       setActiveSection('personal')
       setScreen('edit')
       return false
     }
     if (data.projects.some(project => project.link.trim() && !isValidWebUrl(project.link.trim()))) {
-      setError('Use a complete http:// or https:// URL for each project link.')
+      setError('Please enter a valid URL for each project link.')
       setActiveSection('projects')
       setScreen('edit')
       return false
@@ -324,10 +333,24 @@ export default function ResumeBuilderPage() {
     return true
   }
 
+  const normalizeDataUrls = (currentData: ResumeData): ResumeData => ({
+    ...currentData,
+    links: currentData.links.map(link => ({
+      ...link,
+      url: link.url.trim() ? normalizeWebUrl(link.url) : link.url,
+    })),
+    projects: currentData.projects.map(proj => ({
+      ...proj,
+      link: proj.link.trim() ? normalizeWebUrl(proj.link) : proj.link,
+    })),
+  })
+
   const finalizeResume = async () => {
     if (!validateResume()) return
+    const normalized = normalizeDataUrls(data)
+    setData(normalized)
     setIsFinalizing(true)
-    const saved = await saveDraft(data, true)
+    const saved = await saveDraft(normalized, true)
     setIsFinalizing(false)
     if (!saved) {
       setError('Your resume could not be saved. Please fix the save issue before finalizing.')
@@ -339,16 +362,18 @@ export default function ResumeBuilderPage() {
 
   const downloadResume = async () => {
     if (!validateResume()) return
+    const normalized = normalizeDataUrls(data)
+    setData(normalized)
     setDownloading(true)
     setError('')
     try {
-      const saved = await saveDraft(data, true)
+      const saved = await saveDraft(normalized, true)
       if (!saved) {
         throw new Error('Your resume could not be saved. Fix the save issue and try again before downloading.')
       }
 
       const { buildResumePdf } = await import('@/lib/resume/pdf')
-      const pdfBytes = await buildResumePdf(data)
+      const pdfBytes = await buildResumePdf(normalized)
       const safeName = (resumeName.trim() || `${data.personalInfo.fullName.trim()}_Resume`)
         .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
         .replace(/\s+/g, '_')
@@ -542,15 +567,48 @@ export default function ResumeBuilderPage() {
                     <label className="block"><span className={labelClass}>Professional Summary</span><textarea rows={4} className={`${fieldClass} h-auto min-h-24 py-2.5`} placeholder="Summarize your experience, strengths, and goals." value={data.summary} onChange={event => setData(current => ({ ...current, summary: event.target.value }))} /></label>
 
                     <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
-                      <div className="mb-2 flex items-center justify-between">
-                        <div><h3 className="text-sm font-semibold">Links & Social Profiles</h3><p className="mt-0.5 text-xs text-gray-500">Portfolio, GitHub, LinkedIn, or personal website.</p></div>
-                        <button type="button" onClick={addLink} className={`${actionClass} text-xs`}><Plus className="h-3.5 w-3.5" /> Add Link</button>
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h3 className="text-sm font-semibold">Links & Social Profiles</h3>
+                          <p className="mt-0.5 text-xs text-gray-500">Portfolio, GitHub, LinkedIn, or personal website.</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => addLink('LinkedIn', 'https://linkedin.com/in/')}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                          >
+                            + LinkedIn
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addLink('GitHub', 'https://github.com/')}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                          >
+                            + GitHub
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addLink('Portfolio', 'https://')}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                          >
+                            + Portfolio
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addLink('Instagram', 'https://instagram.com/')}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                          >
+                            + Instagram
+                          </button>
+                          <button type="button" onClick={() => addLink()} className={`${actionClass} text-xs`}><Plus className="h-3.5 w-3.5" /> Add Link</button>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         {data.links.map(link => (
                           <div key={link.id} className="flex gap-2">
                             <input className={`${fieldClass} w-1/3`} placeholder="Label (e.g. GitHub)" value={link.label} onChange={event => setData(current => ({ ...current, links: current.links.map(item => item.id === link.id ? { ...item, label: event.target.value } : item) }))} />
-                            <input type="url" className={`${fieldClass} flex-1`} placeholder="https://..." value={link.url} onChange={event => setData(current => ({ ...current, links: current.links.map(item => item.id === link.id ? { ...item, url: event.target.value } : item) }))} />
+                            <input type="text" inputMode="url" className={`${fieldClass} flex-1`} placeholder="https://... or linkedin.com/in/..." value={link.url} onChange={event => setData(current => ({ ...current, links: current.links.map(item => item.id === link.id ? { ...item, url: event.target.value } : item) }))} />
                             <button type="button" aria-label="Remove link" onClick={() => setData(current => ({ ...current, links: current.links.filter(item => item.id !== link.id) }))} className="rounded px-2 text-gray-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         ))}

@@ -3,12 +3,14 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCertificatePdf } from '@/lib/certificates/pdf';
 import { buildCertificateNumberBase } from '@/lib/certificates/numbering';
+import { normalizeCategory } from '@/lib/tests/questionBank';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const url = new URL(request.url);
   const candidateName = url.searchParams.get('name') || 'Talenezio Learner';
   const rawTopic = url.searchParams.get('topic') || 'Skill Assessment';
+  const categoryKey = normalizeCategory(rawTopic) || rawTopic;
 
   const TOPIC_NAMES: Record<string, string> = {
     technology: 'Technology & Software',
@@ -16,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     'digital-marketing': 'Digital Marketing',
     ai: 'Artificial Intelligence',
   };
-  const topic = TOPIC_NAMES[rawTopic] || rawTopic;
+  const topic = TOPIC_NAMES[categoryKey] || TOPIC_NAMES[rawTopic] || rawTopic;
 
   const scoreParam = url.searchParams.get('score');
   const totalParam = url.searchParams.get('total');
@@ -30,7 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     let certificateNumber: string;
     try {
       certificateNumber = buildCertificateNumberBase({
-        category: rawTopic, testType: url.searchParams.get('type') || 'free',
+        category: categoryKey, testType: url.searchParams.get('type') || 'free',
         score, candidateName, issuedAt,
       });
       if (!Number.isSafeInteger(totalQuestions) || totalQuestions <= 0 || score > totalQuestions) throw new Error('Invalid score');
