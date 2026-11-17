@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
-import { ChevronDown, LayoutDashboard, LogOut, UserPen } from 'lucide-react'
+import { ChevronDown, LayoutDashboard, Loader2, LogOut, UserPen } from 'lucide-react'
 import { type ExperienceLevel } from '@/lib/profile/validation'
 
 export interface DashboardProfileMenuProps {
@@ -18,6 +19,23 @@ export interface DashboardProfileMenuProps {
   signoutAction: (formData: FormData) => void | Promise<void>
 }
 
+function SignoutButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <button
+      type="submit"
+      role="menuitem"
+      disabled={pending}
+      aria-busy={pending}
+      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-70 dark:text-gray-200 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+    >
+      {pending ? <Loader2 className="h-4 w-4 animate-spin text-red-500 dark:text-red-400" /> : <LogOut className="h-4 w-4 text-red-500 dark:text-red-400" />}
+      <span>{pending ? 'Signing out...' : 'Sign out'}</span>
+    </button>
+  )
+}
+
 export function DashboardProfileMenu({ initialProfile, signoutAction }: DashboardProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -29,10 +47,7 @@ export function DashboardProfileMenu({ initialProfile, signoutAction }: Dashboar
   const handleSignout = (event: React.FormEvent<HTMLFormElement>) => {
     if (!window.confirm('Are you sure you want to sign out?')) {
       event.preventDefault()
-      return
     }
-
-    setIsOpen(false)
   }
 
   // Close dropdown when clicking outside
@@ -151,14 +166,7 @@ export function DashboardProfileMenu({ initialProfile, signoutAction }: Dashboar
               </Link>
             )}
             <form action={signoutAction} onSubmit={handleSignout}>
-              <button
-                type="submit"
-                role="menuitem"
-                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-200 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-              >
-                <LogOut className="h-4 w-4 text-red-500 dark:text-red-400" />
-                <span>Sign out</span>
-              </button>
+              <SignoutButton />
             </form>
           </div>
         </div>
