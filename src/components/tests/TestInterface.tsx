@@ -32,6 +32,7 @@ export default function TestInterface({
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
   const router = useRouter()
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
   const testOptionsPath = `/tests/${category}`
@@ -61,24 +62,42 @@ export default function TestInterface({
     return () => window.removeEventListener('popstate', onPopState)
   }, [isSubmitted, attemptId])
 
-  // Keep active test progress protected when the browser Back button is used.
+  // Keep active test progress protected when browser navigation or unload is used.
   useEffect(() => {
-    if (isSubmitted || typeof window === 'undefined') return
+    if (isSubmitted || isExiting || typeof window === 'undefined') return
 
-    window.history.pushState({ ...window.history.state, testInProgress: true }, '', window.location.href)
+    window.history.replaceState({ ...window.history.state, testInProgress: true }, '', window.location.href)
+    let restoringHistory = false
 
     const onPopState = () => {
-      if (window.confirm(EXIT_CONFIRMATION)) {
-        router.push(testOptionsPath)
+      if (restoringHistory) {
+        restoringHistory = false
         return
       }
 
-      window.history.pushState({ ...window.history.state, testInProgress: true }, '', window.location.href)
+      if (window.confirm(EXIT_CONFIRMATION)) {
+        setIsExiting(true)
+        router.replace(testOptionsPath)
+        return
+      }
+
+      // Return to the protected entry without adding another history entry.
+      restoringHistory = true
+      window.history.go(1)
+    }
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
     }
 
     window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
-  }, [isSubmitted, router, testOptionsPath])
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [isSubmitted, isExiting, router, testOptionsPath])
 
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
@@ -122,7 +141,8 @@ export default function TestInterface({
 
   const handleExit = () => {
     if (window.confirm(EXIT_CONFIRMATION)) {
-      router.push(testOptionsPath)
+      setIsExiting(true)
+      router.replace(testOptionsPath)
     }
   }
 
@@ -148,10 +168,10 @@ export default function TestInterface({
         return
       }
 
-      // Mark test as completed in session storage and push history state
+      // Mark test as completed without adding another history entry.
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-        window.history.pushState({ testCompleted: true }, '', window.location.href)
+        window.history.replaceState({ ...window.history.state, testCompleted: true }, '', window.location.href)
       }
 
       setResult(payload)
