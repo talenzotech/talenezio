@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback, type CSSProperties } from 'react'
 import {
   ArrowDown, ArrowLeft, ArrowUp, Check, ChevronLeft, ChevronRight, Download,
   Eye, FileText, LayoutTemplate, Plus, Settings2, Trash2, X,
@@ -10,8 +10,10 @@ import {
   defaultSectionLabels, defaultSectionOrder, initialResumeData, ResumeData,
   ResumeLayout, ResumeSectionId,
 } from '@/components/resume/types'
+import { getPreviewFrameStyleVariables } from '@/lib/resume/preview'
 
 const STORAGE_KEY = 'talenzo-resume-builder-v2'
+const previewFrameStyle = getPreviewFrameStyleVariables() as CSSProperties
 const SECTION_ICONS: Record<ResumeSectionId, string> = {
   personal: '◉',
   education: '▤',
@@ -696,8 +698,8 @@ export default function ResumeBuilderPage() {
                 <button type="button" aria-label="Open full preview" onClick={() => setScreen('preview')} className="rounded-lg p-2 text-gray-500 hover:bg-purple-50/60 hover:text-purple-500 dark:hover:bg-gray-800 dark:hover:text-purple-300"><Eye className="h-4 w-4" /></button>
               </div>
               <div className="max-h-[75vh] overflow-auto bg-gray-100 p-4 dark:bg-gray-950">
-                <div className="mx-auto h-[148.5mm] w-[105mm] min-[1200px]:h-[172.26mm] min-[1200px]:w-[121.8mm] min-[1400px]:h-[193.05mm] min-[1400px]:w-[136.5mm]">
-                  <div className="origin-top-left scale-[0.50] min-[1200px]:scale-[0.58] min-[1400px]:scale-[0.65]">
+                <div className="resume-preview-frame mx-auto" style={previewFrameStyle}>
+                  <div className="resume-preview-frame__content">
                     <ResumePreview data={data} />
                   </div>
                 </div>
@@ -713,8 +715,8 @@ export default function ResumeBuilderPage() {
                 <p className="text-xs text-gray-500 capitalize">{data.layout} template · A4 page</p>
               </div>
               <div className="max-h-[75vh] overflow-auto bg-gray-100 p-4 dark:bg-gray-950">
-                <div className="mx-auto h-[148.5mm] w-[105mm] min-[1200px]:h-[172.26mm] min-[1200px]:w-[121.8mm] min-[1400px]:h-[193.05mm] min-[1400px]:w-[136.5mm]">
-                  <div className="origin-top-left scale-[0.50] min-[1200px]:scale-[0.58] min-[1400px]:scale-[0.65]">
+                <div className="resume-preview-frame mx-auto" style={previewFrameStyle}>
+                  <div className="resume-preview-frame__content">
                     <ResumePreview data={data} />
                   </div>
                 </div>
