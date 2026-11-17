@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import {
   Code,
   TrendingUp,
@@ -14,8 +14,6 @@ import {
 } from 'lucide-react'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import ProTestCheckout from '@/components/tests/ProTestCheckout'
-import { buildCertificateNumberBase } from '@/lib/certificates/numbering'
-import { createClient } from '@/utils/supabase/client'
 
 export const TEST_CATEGORIES = [
   {
@@ -52,59 +50,9 @@ export const TEST_CATEGORIES = [
   },
 ]
 
-export default function TestsClient({
-  error,
-  initialUserName = '',
-  initialDate = '',
-}: {
-  error?: string
-  initialUserName?: string
-  initialDate?: string
-}) {
+export default function TestsClient({ error }: { error?: string }) {
   const [selectedCategory, setSelectedCategory] = useState('technology')
-  const [userName, setUserName] = useState(initialUserName)
   const activeCategory = TEST_CATEGORIES.find((category) => category.id === selectedCategory) ?? TEST_CATEGORIES[0]
-
-  useEffect(() => {
-    if (!userName) {
-      try {
-        const supabase = createClient()
-        supabase.auth.getUser().then(({ data: { user } }) => {
-          if (user) {
-            const name =
-              user.user_metadata?.full_name ||
-              user.user_metadata?.name ||
-              (user.email ? user.email.split('@')[0] : '')
-            if (name) setUserName(name)
-          }
-        })
-      } catch {
-        // demo session fallback
-      }
-    }
-  }, [userName])
-
-  const displayName = (userName && userName.trim()) || 'Talenezio Learner'
-  const displayDate = initialDate || '16th November 2026'
-
-  const sampleCertNumber = useMemo(() => {
-    try {
-      return buildCertificateNumberBase({
-        category: activeCategory.id,
-        testType: 'free',
-        score: 18,
-        candidateName: displayName,
-        issuedAt: new Date().toISOString(),
-      })
-    } catch {
-      const code = ({ 'digital-marketing': '1', finance: '2', ai: '3', technology: '4' } as Record<string, string>)[activeCategory.id] || '4'
-      return `${code}20102618BTL`
-    }
-  }, [activeCategory.id, displayName])
-
-  const nameFontSize = useMemo(() => {
-    return Math.min(50, Math.max(26, Math.floor(750 / Math.max(14, displayName.length))))
-  }, [displayName])
 
   return (
     <div className="min-h-screen bg-white pb-24 pt-8 dark:bg-gray-950 sm:pb-28">
@@ -206,129 +154,20 @@ export default function TestsClient({
         </section>
 
         <section className="mt-8 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6" aria-labelledby="certificate-preview-title">
-          <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 id="certificate-preview-title" className="text-lg font-bold text-gray-900 dark:text-white">Your certificate, at a glance</h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">A personalized preview of the verified certificate you will earn upon assessment completion.</p>
-            </div>
-            {displayName && (
-              <div className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-blue-50 px-3.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60">
-                <span className="text-blue-500 dark:text-blue-400">Issued to:</span>
-                <span className="font-bold text-blue-950 dark:text-blue-100">{displayName}</span>
-              </div>
-            )}
+          <div className="mb-5">
+            <h2 id="certificate-preview-title" className="text-lg font-bold text-gray-900 dark:text-white">Your certificate, at a glance</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">A preview of the certificate you can earn after completing your assessment.</p>
           </div>
           <figure className="mx-auto max-w-3xl">
-            <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm select-none">
-              <Image
-                src="/talenezio-certificate-blank-template-hd.png"
-                alt={`Sample Talenezio Certificate of Completion for ${displayName}`}
-                fill
-                sizes="(max-width: 639px) calc(100vw - 66px), (max-width: 895px) calc(100vw - 98px), 768px"
-                className="h-full w-full object-contain pointer-events-none"
-                priority
-              />
-              <svg
-                viewBox="0 0 900 600"
-                className="absolute inset-0 h-full w-full pointer-events-none select-none"
-                aria-hidden="true"
-              >
-                {/* Dynamic Candidate Name */}
-                <text
-                  x="450"
-                  y="298"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: '"Times New Roman", Times, Georgia, serif',
-                    fontSize: `${nameFontSize}px`,
-                    fontWeight: 'bold',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {displayName}
-                </text>
-
-                {/* Dynamic Topic Under "has successfully completed the test in" */}
-                <text
-                  x="450"
-                  y="370"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {activeCategory.title}
-                </text>
-
-                {/* Bottom Metadata: Topic */}
-                <text
-                  x="172"
-                  y="478"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {activeCategory.title}
-                </text>
-
-                {/* Bottom Metadata: Score */}
-                <text
-                  x="356"
-                  y="478"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: '15px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  18 / 20
-                </text>
-
-                {/* Bottom Metadata: Date */}
-                <text
-                  x="540"
-                  y="478"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: '15px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {displayDate}
-                </text>
-
-                {/* Bottom Metadata: Certificate Number */}
-                <text
-                  x="736"
-                  y="478"
-                  textAnchor="middle"
-                  fill="#05084a"
-                  style={{
-                    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    fontSize: '13.5px',
-                    fontWeight: 'bold',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {sampleCertNumber}
-                </text>
-              </svg>
-            </div>
-            <figcaption className="mt-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-              Personalized preview for {displayName} — your certificate will be generated and accredited upon test completion
-            </figcaption>
+            <Image
+              src="/talenezio-certificate-demo.png?v=1"
+              alt="Sample Talenezio Certificate of Completion showing a completed certificate with candidate and assessment details."
+              width={1536}
+              height={1024}
+              sizes="(max-width: 639px) calc(100vw - 66px), (max-width: 895px) calc(100vw - 98px), 768px"
+              className="h-auto w-full rounded-lg border border-gray-100 bg-white shadow-sm"
+            />
+            <figcaption className="mt-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">A sample of the certificate you can earn after completing your assessment</figcaption>
           </figure>
         </section>
       </div>
