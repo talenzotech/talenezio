@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { grantEntitlement } from '@/lib/payments/access';
@@ -102,6 +103,8 @@ export async function POST(request: Request) {
       });
     }
   }
+
+  revalidatePath('/dashboard');
 
   return NextResponse.json({ verified: true });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeTestAttempt } from '@/lib/payments/access';
@@ -125,6 +126,10 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: 'Could not save test result' }, { status: 500 });
   }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/tests');
+  revalidatePath(`/tests/${attempt.category}`);
 
   return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
 }
