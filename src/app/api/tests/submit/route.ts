@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeTestAttempt } from '@/lib/payments/access';
-import { scoreAnswers } from '@/lib/tests/scoring';
+import { scoreAnswers, isAttemptExpired } from '@/lib/tests/scoring';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
 import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ submitted: true, score: attempt.score, total: attempt.total_questions, certificateId: attempt.certificate_id });
   }
 
-  if (attempt.status !== 'in_progress' || new Date(attempt.expires_at).getTime() <= Date.now()) {
+  if (attempt.status !== 'in_progress' || isAttemptExpired(attempt.expires_at)) {
     await admin.from('test_attempts').update({ status: 'expired' }).eq('id', attempt.id).eq('status', 'in_progress');
     return NextResponse.json({ error: 'This test attempt has expired' }, { status: 409 });
   }

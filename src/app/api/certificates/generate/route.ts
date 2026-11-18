@@ -59,21 +59,66 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'You do not have permission to generate this certificate' }, { status: 403 });
   }
 
-  if (attempt.score === null) {
+  // Preserve lifecycle rule: certificates can only be generated for legitimately submitted attempts
+  if (attempt.status !== 'submitted' || attempt.score === null) {
     return NextResponse.json({ error: 'Completed test not found' }, { status: 404 });
   }
 
-  // If certificate was already allocated for this attempt, return it directly
-  if (attempt.certificate_id) {
-    const { data: existingCert } = await admin.from('certificates').select('id, pdf_path').eq('id', attempt.certificate_id).maybeSingle();
-    if (existingCert?.id) {
-      return NextResponse.json({ certificateId: existingCert.id });
-    }
-  }
+  const categoryKey = normalizeCategory(attempt.category) || attempt.category;
+  const topicTitle = topicNames[categoryKey] || topicNames[attempt.category] || attempt.category;
 
-  // Ensure attempt status is submitted so the allocation RPC succeeds
-  if (attempt.status !== 'submitted') {
-    await admin.from('test_attempts').update({ status: 'submitted' }).eq('id', attempt.id);
+  // If certificate was already allocated for this attempt:
+  if (attempt.certificate_id) {
+    const { data: existingCert } = await admin
+      .from('certificates')
+      .select('id, attempt_id, certificate_number, candidate_name, issued_at, pdf_path')
+      .eq('id', attempt.certificate_id)
+      .maybeSingle<AllocatedCertificate>();
+
+    if (existingCert?.id) {
+      // If PDF is already stored and ready, return immediately
+      if (existingCert.pdf_path) {
+        return NextResponse.json({ certificateId: existingCert.id });
+      }
+
+      // Retry PDF generation and storage upload if previous attempt failed to upload
+      try {
+        const certCandidateName = existingCert.candidate_name || name;
+        const pdf = await buildCertificatePdf({
+          candidateName: certCandidateName,
+          certificateNumber: existingCert.certificate_number,
+          topic: topicTitle,
+          score: attempt.score,
+          totalQuestions: attempt.total_questions,
+          issuedAt: existingCert.issued_at,
+        });
+
+        const pdfPath = `${user.id}/${existingCert.id}/${attempt.id}.pdf`;
+        const { error: uploadError } = await admin.storage
+          .from('certificates')
+          .upload(pdfPath, Buffer.from(pdf), { contentType: 'application/pdf', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: updated, error: updateError } = await admin
+          .from('certificates')
+          .update({ pdf_path: pdfPath })
+          .eq('id', existingCert.id)
+          .eq('attempt_id', attempt.id)
+          .select('id')
+          .maybeSingle();
+
+        if (updateError) throw updateError;
+        if (!updated) {
+          return NextResponse.json({ error: 'A newer result is updating this certificate. Please retry.' }, { status: 409 });
+        }
+
+        return NextResponse.json({ certificateId: existingCert.id });
+      } catch (retryError) {
+        console.error('Certificate retry PDF generation failed:', retryError);
+        return NextResponse.json({ error: 'Unable to generate certificate. Please retry.' }, { status: 500 });
+      }
+    }
   }
 
   try {

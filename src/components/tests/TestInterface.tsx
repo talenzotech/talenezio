@@ -240,22 +240,36 @@ export default function TestInterface({
             Confirm your name to generate your certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong>.
           </p>
 
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Name on Certificate:
-            </label>
-            <input
-              type="text"
-              value={candidateName}
-              disabled={isGenerating}
-              onChange={(e) => {
-                setCandidateName(e.target.value)
-                setGeneratedCertificateId(null)
-              }}
-              placeholder="Enter your full name"
-              className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+          {(() => {
+            const isCertGenerated = Boolean(generatedCertificateId || result?.certificateId)
+            return (
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Name on Certificate:
+                </label>
+                <input
+                  type="text"
+                  value={candidateName}
+                  disabled={isCertGenerated || isGenerating}
+                  onChange={(e) => {
+                    if (isCertGenerated) return
+                    setCandidateName(e.target.value)
+                  }}
+                  placeholder="Enter your full name"
+                  className={`w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 text-sm font-medium outline-none transition-colors ${
+                    isCertGenerated
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                  }`}
+                />
+                {isCertGenerated && (
+                  <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    Certificate has been officially issued to this name.
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
           <button
             type="button"
