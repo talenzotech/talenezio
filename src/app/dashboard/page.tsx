@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { ThemeWordmark } from '@/components/ThemeWordmark'
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { signout } from '../(auth)/actions'
@@ -151,17 +152,18 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 sm:pb-28 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-28 dark:bg-gray-950">
       
       {/* Top Navigation */}
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
-            <ThemeWordmark />
-            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
+      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 sm:px-8 py-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex min-w-0 justify-between items-center gap-2">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5" aria-label="Talenezio home">
+            <Image src="/talenezio-icon.svg" alt="" width={32} height={32} className="h-8 w-8 sm:hidden" />
+            <ThemeWordmark className="hidden sm:relative sm:block sm:h-[19px] sm:w-[33px] sm:shrink-0 sm:overflow-hidden" />
+            <span className="hidden text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:inline">Talenezio</span>
           </Link>
-          
-           <div className="flex items-center gap-4">
+
+           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
              {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
              {/* <ThemeToggle /> */}
              {isAdmin && (
