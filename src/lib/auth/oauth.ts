@@ -150,7 +150,10 @@ export function resolveOAuthCallbackRedirect(params: OAuthCallbackResolutionPara
     if (isLocalEnv) {
       return `${origin}${next}`
     } else if (forwardedHost) {
-      return `https://${forwardedHost}${next}`
+      const cleanHost = forwardedHost.split(':')[0].toLowerCase()
+      const isLocal = cleanHost === 'localhost' || cleanHost === '127.0.0.1'
+      const protocol = isLocal ? 'http' : 'https'
+      return `${protocol}://${forwardedHost}${next}`
     } else {
       return `${origin}${next}`
     }

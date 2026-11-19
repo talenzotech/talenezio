@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     if (tokenHash && otpType) {
       const { error: otpError } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
-        type: otpType as any,
+        type: otpType as Parameters<typeof supabase.auth.verifyOtp>[0]['type'],
       })
       if (!otpError) {
         isSuccessfulExchange = true

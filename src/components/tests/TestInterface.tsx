@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 
 export default function TestInterface({ 
@@ -29,7 +29,16 @@ export default function TestInterface({
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isRetaking, setIsRetaking] = useState(false)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
+
+  const handleRetake = () => {
+    setIsRetaking(true)
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+      window.location.href = `/tests/${category}?type=${type}&retake=${Date.now()}`
+    }
+  }
 
   // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
   useEffect(() => {
@@ -59,8 +68,60 @@ export default function TestInterface({
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
 
+  const handleSubmit = async (isAutoSubmit = false) => {
+    if (isSubmitting || isSubmitted) return
+    if (!isAutoSubmit && !confirm("Are you sure you want to submit the test?")) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attemptId,
+          answers,
+          category,
+          type,
+          questionIds: questions.map(q => q.id),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
+
+      // Mark test as completed in session storage and push history state
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
+        window.history.pushState({ testCompleted: true }, '', window.location.href)
+      }
+
+      if (payload?.certificateId) {
+        setGeneratedCertificateId(payload.certificateId)
+      }
+
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch (err) {
+      console.error('Submission error:', err)
+      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSubmitRef = useRef(handleSubmit)
   useEffect(() => {
-    if (isSubmitted || timeLeft <= 0) return
+    handleSubmitRef.current = handleSubmit
+  })
+
+  useEffect(() => {
+    if (isSubmitted) return
+    if (timeLeft <= 0) {
+      void handleSubmitRef.current(true)
+      return
+    }
     const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
     return () => clearInterval(timer)
   }, [isSubmitted, timeLeft])
@@ -96,74 +157,60 @@ export default function TestInterface({
     }
   }
 
-  const handleSubmit = async () => {
-    if (!confirm("Are you sure you want to submit the test?")) return
-    setIsSubmitting(true)
-    setSubmitError(null)
-    try {
-      const response = await fetch('/api/tests/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attemptId,
-          answers,
-          category,
-          type,
-          questionIds: questions.map(q => q.id),
-        }),
-      })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) {
-        setSubmitError(payload?.error || 'Could not submit the test')
-        return
-      }
-
-      // Mark test as completed in session storage and push history state
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-        window.history.pushState({ testCompleted: true }, '', window.location.href)
-      }
-
-      setResult(payload)
-      setIsSubmitted(true)
-    } catch (err) {
-      console.error('Submission error:', err)
-      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
-  const generateCertificate = async () => {
-    if (!candidateName.trim()) {
+  const handleDownloadCertificate = async () => {
+    const trimmedName = candidateName.trim()
+    if (!trimmedName) {
       setCertificateError('Enter the name to appear on your certificate.')
       return
     }
     setCertificateError(null)
-    if (result?.certificateId?.startsWith('demo-')) {
-      setGeneratedCertificateId(result.certificateId)
+
+    let certId: string | null = generatedCertificateId || result?.certificateId || null
+
+    if (!certId) {
+      setIsGenerating(true)
+      try {
+        const response = await fetch('/api/certificates/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ attemptId, candidateName: trimmedName }),
+        })
+        const payload = await response.json()
+        if (!response.ok) throw new Error(payload.error || 'Certificate generation failed')
+        certId = typeof payload.certificateId === 'string' ? payload.certificateId : null
+        setGeneratedCertificateId(certId)
+      } catch (error) {
+        setCertificateError(error instanceof Error ? error.message : 'Certificate generation failed')
+        setIsGenerating(false)
+        return
+      } finally {
+        setIsGenerating(false)
+      }
+    }
+
+    if (!certId) {
+      setCertificateError('Unable to prepare certificate. Please retry.')
       return
     }
-    setIsGenerating(true)
-    try {
-      const response = await fetch('/api/certificates/generate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attemptId, candidateName }),
-      })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error || 'Certificate generation failed')
-      setGeneratedCertificateId(payload.certificateId)
-    } catch (error) {
-      setCertificateError(error instanceof Error ? error.message : 'Certificate generation failed')
-    } finally {
-      setIsGenerating(false)
-    }
+
+    const downloadEndpoint = `/api/certificates/${certId}/download${
+      certId.startsWith('demo-')
+        ? `?name=${encodeURIComponent(trimmedName)}&topic=${encodeURIComponent(category)}&type=${type}&score=${result?.score}&total=${result?.total}`
+        : ''
+    }`
+
+    const link = document.createElement('a')
+    link.href = downloadEndpoint
+    link.download = `Certificate_${trimmedName.replace(/\s+/g, '_')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (isSubmitted) {
@@ -173,10 +220,6 @@ export default function TestInterface({
       'digital-marketing': 'Digital Marketing',
       ai: 'Artificial Intelligence',
     } as Record<string, string>)[category] || category.toUpperCase()
-
-    const downloadUrl = generatedCertificateId
-      ? `/api/certificates/${generatedCertificateId}/download${generatedCertificateId.startsWith('demo-') ? `?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(category)}&type=${type}&score=${result?.score}&total=${result?.total}` : ''}`
-      : null
 
     return (
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
@@ -197,33 +240,53 @@ export default function TestInterface({
             Confirm your name to generate your certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong>.
           </p>
 
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Name on Certificate:
-            </label>
-            <input
-              type="text"
-              value={candidateName}
-              disabled={!!generatedCertificateId || isGenerating}
-              onChange={(e) => setCandidateName(e.target.value)}
-              placeholder="Enter your full name"
-              className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+          {(() => {
+            const isCertGenerated = Boolean(generatedCertificateId || result?.certificateId)
+            return (
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Name on Certificate:
+                </label>
+                <input
+                  type="text"
+                  value={candidateName}
+                  disabled={isCertGenerated || isGenerating}
+                  onChange={(e) => {
+                    if (isCertGenerated) return
+                    setCandidateName(e.target.value)
+                  }}
+                  placeholder="Enter your full name"
+                  className={`w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 text-sm font-medium outline-none transition-colors ${
+                    isCertGenerated
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                  }`}
+                />
+                {isCertGenerated && (
+                  <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    Certificate has been officially issued to this name.
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
-          {downloadUrl ? (
-            <a
-              href={downloadUrl}
-              download
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
-            >
-              <Download className="w-4 h-4" /> Download Official Certificate (PDF)
-            </a>
-          ) : (
-            <button type="button" onClick={generateCertificate} disabled={isGenerating} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md disabled:opacity-50">
-              {isGenerating ? 'Generating…' : 'Generate Certificate'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleDownloadCertificate}
+            disabled={isGenerating}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-colors disabled:opacity-60 cursor-pointer"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Preparing Certificate...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" /> Download Official Certificate (PDF)
+              </>
+            )}
+          </button>
           {certificateError && <p role="alert" className="mt-3 text-sm text-red-600">{certificateError}</p>}
         </div>
 
@@ -250,17 +313,14 @@ export default function TestInterface({
           >
             All Skill Tests
           </Link>
-          <Link
-            href={`/tests/${category}?type=${type}`}
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
-              }
-            }}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm"
+          <button
+            type="button"
+            onClick={handleRetake}
+            disabled={isRetaking}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm disabled:opacity-50 inline-flex items-center justify-center cursor-pointer"
           >
-            Retake Assessment
-          </Link>
+            {isRetaking ? 'Starting Assessment...' : 'Retake Assessment'}
+          </button>
         </div>
       </div>
     )
@@ -384,11 +444,19 @@ export default function TestInterface({
           {currentQuestion === questions.length - 1 ? (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Test <CheckCircle2 className="w-4 h-4" />
+                </>
+              )}
             </button>
           ) : (
             <button
