@@ -5,6 +5,12 @@ interface Props {
   data: ResumeData;
 }
 
+function formatLinkHref(url: string) {
+  const trimmed = (url || '').trim()
+  if (!trimmed) return '#'
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
+
 const sectionContent: Record<ResumeSectionId, (data: ResumeData) => ReactNode> = {
   personal: data => data.summary ? (
     <p className="whitespace-pre-wrap leading-relaxed text-gray-700">{data.summary}</p>
@@ -39,7 +45,16 @@ const sectionContent: Record<ResumeSectionId, (data: ResumeData) => ReactNode> =
     <article key={project.id} className="mb-4 break-inside-avoid">
       <div className="flex flex-wrap items-baseline gap-x-3">
         <h3 className="font-semibold">{project.title}</h3>
-        {project.link && <span className="text-sm text-gray-500">{project.link}</span>}
+        {project.link && (
+          <a
+            href={formatLinkHref(project.link)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {project.link}
+          </a>
+        )}
       </div>
       {project.description && <p className="mt-1 whitespace-pre-wrap leading-relaxed text-gray-600">{project.description}</p>}
     </article>
@@ -95,7 +110,17 @@ const ResumePreview = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
           {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
           {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
           {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
-          {contactLinks.map(link => <span key={link.id}>{link.label}: {link.url}</span>)}
+          {contactLinks.map(link => (
+            <a
+              key={link.id}
+              href={formatLinkHref(link.url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              <span className="font-medium">{link.label}:</span> {link.url}
+            </a>
+          ))}
         </div>
       </header>
 

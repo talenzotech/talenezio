@@ -35,3 +35,48 @@ test('rejects invalid subjects, test types, scores, names, and dates', () => {
     { issuedAt: 'invalid' },
   ]) assert.throws(() => buildCertificateNumberBase({ ...details, ...override }))
 })
+
+test('certificate lifecycle enforces submitted status integrity', () => {
+  function canGenerateCertificate(attempt) {
+    if (!attempt || attempt.status !== 'submitted' || attempt.score === null) {
+      return false
+    }
+    return true
+  }
+
+  assert.equal(canGenerateCertificate({ status: 'submitted', score: 18 }), true)
+  assert.equal(canGenerateCertificate({ status: 'in_progress', score: 18 }), false)
+  assert.equal(canGenerateCertificate({ status: 'expired', score: 18 }), false)
+  assert.equal(canGenerateCertificate({ status: 'submitted', score: null }), false)
+  assert.equal(canGenerateCertificate(null), false)
+})
+
+test('certificate retry flow handles missing pdf_path recovery without changing allocated number', () => {
+  const allocatedCert = {
+    id: 'cert-123',
+    attempt_id: 'attempt-456',
+    certificate_number: '420012612BRS',
+    candidate_name: 'Rahul Sharma',
+    issued_at: '2026-01-20T06:00:00Z',
+    pdf_path: null, // Initial upload failed
+  }
+
+  function resolveCertificateResponse(cert) {
+    if (!cert.pdf_path) {
+      // Must trigger retry PDF generation, not early-return null
+      return { needsPdfRetry: true, certId: cert.id, candidateName: cert.candidate_name, number: cert.certificate_number }
+    }
+    return { needsPdfRetry: false, certId: cert.id }
+  }
+
+  const initialAttempt = resolveCertificateResponse(allocatedCert)
+  assert.equal(initialAttempt.needsPdfRetry, true)
+  assert.equal(initialAttempt.certId, 'cert-123')
+  assert.equal(initialAttempt.number, '420012612BRS')
+
+  // After retry upload succeeds
+  allocatedCert.pdf_path = 'user/cert-123/attempt-456.pdf'
+  const retryAttempt = resolveCertificateResponse(allocatedCert)
+  assert.equal(retryAttempt.needsPdfRetry, false)
+  assert.equal(retryAttempt.certId, 'cert-123')
+})

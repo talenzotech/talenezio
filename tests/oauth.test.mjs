@@ -118,6 +118,18 @@ test('resolveOAuthCallbackRedirect handles successful OAuth and role flows', () 
   })
   assert.equal(localRedirect, 'http://localhost:3000/dashboard')
 
+  // Local OAuth success with forwardedHost (must remain http, never https)
+  const localForwardedRedirect = resolveOAuthCallbackRedirect({
+    code: 'valid-code',
+    flow: 'oauth',
+    next: '/dashboard',
+    origin: 'http://internal-cluster',
+    isSuccessfulExchange: true,
+    forwardedHost: 'localhost:3000',
+    isLocalEnv: false,
+  })
+  assert.equal(localForwardedRedirect, 'http://localhost:3000/dashboard')
+
   // Standard OAuth success behind load balancer
   const prodRedirect = resolveOAuthCallbackRedirect({
     code: 'valid-code',

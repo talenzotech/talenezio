@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 export async function requestService(serviceCode: string, domain?: string) {
@@ -22,6 +23,8 @@ export async function requestService(serviceCode: string, domain?: string) {
 
   if (error) {
     console.error('Failed to request service:', error);
+  } else {
+    revalidatePath('/dashboard');
   }
 
   redirect('/dashboard');

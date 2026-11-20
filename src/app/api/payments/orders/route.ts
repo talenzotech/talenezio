@@ -1,4 +1,5 @@
 import { after, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -146,6 +147,8 @@ export async function POST(request: Request) {
         console.error('Unable to create free service order:', error);
         return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
       }
+
+      revalidatePath('/dashboard');
 
       return NextResponse.json({ freeAccess: true });
     }
@@ -319,6 +322,10 @@ export async function POST(request: Request) {
           console.warn('Notice: exception inserting into bookings table:', bookingErr);
         }
       }
+    }
+
+    if (product.serviceCode) {
+      revalidatePath('/dashboard');
     }
 
     if (careerEmailPayload) {

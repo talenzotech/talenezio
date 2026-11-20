@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeTestAttempt } from '@/lib/payments/access';
-import { scoreAnswers } from '@/lib/tests/scoring';
+import { scoreAnswers, isAttemptExpired } from '@/lib/tests/scoring';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import { DEFAULT_QUESTIONS } from '@/lib/tests/defaultQuestions';
 import { fetchGoogleSheetQuestions } from '@/utils/googleSheets';
@@ -25,16 +26,20 @@ export async function POST(request: Request) {
   if (isDemo && body.attemptId.startsWith('demo-attempt-')) {
     let scoringQuestions: { id: string; correct: number }[] = [];
 
-    if (body.category) {
+    const defaultMap = new Map(DEFAULT_QUESTIONS.map(q => [q.id, q.correct]));
+    const allFoundInDefault = Array.isArray(body.questionIds) && body.questionIds.length > 0 &&
+      body.questionIds.every(id => defaultMap.has(id));
+
+    if (allFoundInDefault && body.questionIds) {
+      scoringQuestions = body.questionIds.map(id => ({ id, correct: defaultMap.get(id) ?? -1 }));
+    } else if (body.category) {
       try {
         const questions = await fetchGoogleSheetQuestions(body.category, body.type || 'free');
         scoringQuestions = questions.map(q => ({ id: q.id, correct: q.correct }));
       } catch {
-        // Fallback to default questions
+        scoringQuestions = DEFAULT_QUESTIONS.map(q => ({ id: q.id, correct: q.correct }));
       }
-    }
-
-    if (scoringQuestions.length === 0) {
+    } else {
       scoringQuestions = DEFAULT_QUESTIONS.map(q => ({ id: q.id, correct: q.correct }));
     }
 
@@ -86,7 +91,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ submitted: true, score: attempt.score, total: attempt.total_questions, certificateId: attempt.certificate_id });
   }
 
-  if (attempt.status !== 'in_progress' || new Date(attempt.expires_at).getTime() <= Date.now()) {
+  if (attempt.status !== 'in_progress' || isAttemptExpired(attempt.expires_at)) {
     await admin.from('test_attempts').update({ status: 'expired' }).eq('id', attempt.id).eq('status', 'in_progress');
     return NextResponse.json({ error: 'This test attempt has expired' }, { status: 409 });
   }
@@ -125,6 +130,10 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: 'Could not save test result' }, { status: 500 });
   }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/tests');
+  revalidatePath(`/tests/${attempt.category}`);
 
   return NextResponse.json({ submitted: true, score, total: attempt.total_questions, certificateId: null });
 }

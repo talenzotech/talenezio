@@ -5,6 +5,15 @@ import path from 'node:path';
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib';
 import { CERTIFICATE_TIME_ZONE, certificateDateParts } from './numbering';
 
+let cachedTemplateBytes: Uint8Array | null = null;
+
+async function getTemplateBytes(): Promise<Uint8Array> {
+  if (cachedTemplateBytes) return cachedTemplateBytes;
+  const buffer = await readFile(path.join(process.cwd(), 'public', 'talenezio-certificate-blank-template-hd.png'));
+  cachedTemplateBytes = new Uint8Array(buffer);
+  return cachedTemplateBytes;
+}
+
 export async function buildCertificatePdf(input: {
   candidateName: string;
   certificateNumber: string;
@@ -19,7 +28,7 @@ export async function buildCertificatePdf(input: {
   const width = 900;
   const height = 600;
   const page = document.addPage([width, height]);
-  const template = await document.embedPng(await readFile(path.join(process.cwd(), 'public', 'talenezio-certificate-blank-template-hd.png')));
+  const template = await document.embedPng(await getTemplateBytes());
   page.drawImage(template, { x: 0, y: 0, width, height });
   const nameFont = await document.embedFont(StandardFonts.TimesRomanBoldItalic);
   const boldFont = await document.embedFont(StandardFonts.HelveticaBold);
