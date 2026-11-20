@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   experimental: {
     // Avoid multi-second cache writes/compaction on slow Windows filesystems.
     turbopackFileSystemCacheForDev: process.platform !== "win32",
+    // Keep recently visited dynamic feature routes in the client router cache so
+    // switching between dashboard sections does not refetch them immediately.
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   images: {
     localPatterns: [
