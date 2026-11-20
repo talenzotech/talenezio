@@ -22,7 +22,8 @@
     "test:interview-prep": "node --experimental-strip-types --test tests/interview-prep.test.mjs",
     "test:career-services": "node --experimental-strip-types --test tests/career-services.test.mjs",
     "test:oauth": "node --experimental-strip-types --test tests/oauth.test.mjs",
-    "test": "npm run test:auth && npm run test:scoring && npm run test:question-bank && npm run test:unlock-entitlements && npm run test:profile && npm run test:internships-training && npm run test:certificates && npm run test:payments && npm run test:payments-lifecycle && npm run test:interview-prep && npm run test:career-services && npm run test:oauth"
+    "test:resume-preview": "node --experimental-strip-types --test tests/resume-preview.test.mjs",
+    "test": "npm run test:auth && npm run test:scoring && npm run test:question-bank && npm run test:unlock-entitlements && npm run test:profile && npm run test:internships-training && npm run test:certificates && npm run test:payments && npm run test:payments-lifecycle && npm run test:interview-prep && npm run test:career-services && npm run test:oauth && npm run test:resume-preview"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
