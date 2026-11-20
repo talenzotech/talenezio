@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 import { validateFullName } from '@/lib/validation/form-fields'
 
@@ -141,31 +141,55 @@ export default function TestInterface({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
-  const generateCertificate = async () => {
+  const handleDownloadCertificate = async () => {
     const nameValidation = validateFullName(candidateName, { minLength: 2, maxLength: 100, fieldName: 'Name on certificate' })
     if (!nameValidation.valid) {
       setCertificateError(nameValidation.error || 'Enter the name to appear on your certificate.')
       return
     }
     setCertificateError(null)
-    if (result?.certificateId?.startsWith('demo-')) {
-      setGeneratedCertificateId(result.certificateId)
+    const trimmedName = nameValidation.normalized || candidateName.trim()
+
+    let certId: string | null = generatedCertificateId || result?.certificateId || null
+
+    if (!certId) {
+      setIsGenerating(true)
+      try {
+        const response = await fetch('/api/certificates/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ attemptId, candidateName: trimmedName }),
+        })
+        const payload = await response.json()
+        if (!response.ok) throw new Error(payload.error || 'Certificate generation failed')
+        certId = typeof payload.certificateId === 'string' ? payload.certificateId : null
+        setGeneratedCertificateId(certId)
+      } catch (error) {
+        setCertificateError(error instanceof Error ? error.message : 'Certificate generation failed')
+        setIsGenerating(false)
+        return
+      } finally {
+        setIsGenerating(false)
+      }
+    }
+
+    if (!certId) {
+      setCertificateError('Unable to prepare certificate. Please retry.')
       return
     }
-    setIsGenerating(true)
-    try {
-      const response = await fetch('/api/certificates/generate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attemptId, candidateName }),
-      })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error || 'Certificate generation failed')
-      setGeneratedCertificateId(payload.certificateId)
-    } catch (error) {
-      setCertificateError(error instanceof Error ? error.message : 'Certificate generation failed')
-    } finally {
-      setIsGenerating(false)
-    }
+
+    const downloadEndpoint = `/api/certificates/${certId}/download${
+      certId.startsWith('demo-')
+        ? `?name=${encodeURIComponent(trimmedName)}&topic=${encodeURIComponent(category)}&type=${type}&score=${result?.score}&total=${result?.total}`
+        : ''
+    }`
+
+    const link = document.createElement('a')
+    link.href = downloadEndpoint
+    link.download = `Certificate_${trimmedName.replace(/\s+/g, '_')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (isSubmitted) {
@@ -175,10 +199,6 @@ export default function TestInterface({
       'digital-marketing': 'Digital Marketing',
       ai: 'Artificial Intelligence',
     } as Record<string, string>)[category] || category.toUpperCase()
-
-    const downloadUrl = generatedCertificateId
-      ? `/api/certificates/${generatedCertificateId}/download${generatedCertificateId.startsWith('demo-') ? `?name=${encodeURIComponent(candidateName)}&topic=${encodeURIComponent(category)}&type=${type}&score=${result?.score}&total=${result?.total}` : ''}`
-      : null
 
     return (
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
@@ -208,26 +228,32 @@ export default function TestInterface({
               minLength={2}
               maxLength={100}
               value={candidateName}
-              disabled={!!generatedCertificateId || isGenerating}
-              onChange={(e) => setCandidateName(e.target.value)}
+              disabled={isGenerating}
+              onChange={(e) => {
+                setCandidateName(e.target.value)
+                setGeneratedCertificateId(null)
+              }}
               placeholder="Enter your full name"
               className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
-          {downloadUrl ? (
-            <a
-              href={downloadUrl}
-              download
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
-            >
-              <Download className="w-4 h-4" /> Download Official Certificate (PDF)
-            </a>
-          ) : (
-            <button type="button" onClick={generateCertificate} disabled={isGenerating} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md disabled:opacity-50">
-              {isGenerating ? 'Generating…' : 'Generate Certificate'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleDownloadCertificate}
+            disabled={isGenerating}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-colors disabled:opacity-60 cursor-pointer"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Preparing Certificate...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" /> Download Official Certificate (PDF)
+              </>
+            )}
+          </button>
           {certificateError && <p role="alert" className="mt-3 text-sm text-red-600">{certificateError}</p>}
         </div>
 

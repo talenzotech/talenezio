@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import type { EmailOtpType } from '@supabase/supabase-js'
 import { resolveOAuthCallbackRedirect } from '@/lib/auth/oauth'
 
 export async function GET(request: Request) {
@@ -60,7 +59,7 @@ export async function GET(request: Request) {
     if (tokenHash && otpType) {
       const { error: otpError } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
-        type: otpType as EmailOtpType,
+        type: otpType as Parameters<typeof supabase.auth.verifyOtp>[0]['type'],
       })
       if (!otpError) {
         isSuccessfulExchange = true
