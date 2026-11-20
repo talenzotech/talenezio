@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
+
+const EXIT_CONFIRMATION = 'Your progress will be lost. Are you sure you want to exit?'
 
 export default function TestInterface({ 
   category, 
@@ -29,8 +32,11 @@ export default function TestInterface({
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
+  const router = useRouter()
   const [isRetaking, setIsRetaking] = useState(false)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
+  const testOptionsPath = `/tests/${category}`
 
   const handleRetake = () => {
     setIsRetaking(true)
@@ -65,6 +71,43 @@ export default function TestInterface({
     return () => window.removeEventListener('popstate', onPopState)
   }, [isSubmitted, attemptId])
 
+  // Keep active test progress protected when browser navigation or unload is used.
+  useEffect(() => {
+    if (isSubmitted || isExiting || typeof window === 'undefined') return
+
+    window.history.replaceState({ ...window.history.state, testInProgress: true }, '', window.location.href)
+    let restoringHistory = false
+
+    const onPopState = () => {
+      if (restoringHistory) {
+        restoringHistory = false
+        return
+      }
+
+      if (window.confirm(EXIT_CONFIRMATION)) {
+        setIsExiting(true)
+        router.replace(testOptionsPath)
+        return
+      }
+
+      // Return to the protected entry without adding another history entry.
+      restoringHistory = true
+      window.history.go(1)
+    }
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('popstate', onPopState)
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [isSubmitted, isExiting, router, testOptionsPath])
+
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
 
@@ -91,10 +134,10 @@ export default function TestInterface({
         return
       }
 
-      // Mark test as completed in session storage and push history state
+      // Mark test as completed without adding another history entry.
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-        window.history.pushState({ testCompleted: true }, '', window.location.href)
+        window.history.replaceState({ ...window.history.state, testCompleted: true }, '', window.location.href)
       }
 
       if (payload?.certificateId) {
@@ -154,6 +197,13 @@ export default function TestInterface({
   const handlePrev = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(curr => curr - 1)
+    }
+  }
+
+  const handleExit = () => {
+    if (window.confirm(EXIT_CONFIRMATION)) {
+      setIsExiting(true)
+      router.replace(testOptionsPath)
     }
   }
 
@@ -340,16 +390,25 @@ export default function TestInterface({
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-        <div>
-          <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
-           <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (45 Questions)'}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div>
+            <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
+            <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (45 Questions)'}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExit}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4" /> Exit Test
+            </button>
+            <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
+              <Clock className="w-5 h-5" />
+              {formatTime(timeLeft)}
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
-          <Clock className="w-5 h-5" />
-          {formatTime(timeLeft)}
-        </div>
-      </div>
 
       {/* Main Question Area */}
       <div className="bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 min-h-[400px] flex flex-col">
