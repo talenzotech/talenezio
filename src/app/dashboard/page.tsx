@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { signout } from '../(auth)/actions'
 import {
-  LogOut,
   FileText,
   Target,
   GraduationCap,
@@ -176,24 +175,18 @@ export default async function DashboardPage() {
                </Link>
              )}
              <DashboardProfileMenu
-              initialProfile={{
-                fullName,
-                email,
-                collegeName,
-                experience,
-                interests,
-                avatarUrl,
+               initialProfile={{
+                 fullName,
+                 email,
+                 collegeName,
+                 experience,
+                 interests,
+                 avatarUrl,
                  isAdmin,
-              }}
-            />
-
-            <form action={signout}>
-              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign out</span>
-              </button>
-            </form>
-          </div>
+               }}
+               signoutAction={signout}
+             />
+           </div>
         </div>
       </nav>
 
