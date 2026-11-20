@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
@@ -30,7 +30,16 @@ export default function TestInterface({
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isRetaking, setIsRetaking] = useState(false)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
+
+  const handleRetake = () => {
+    setIsRetaking(true)
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+      window.location.href = `/tests/${category}?type=${type}&retake=${Date.now()}`
+    }
+  }
 
   // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
   useEffect(() => {
@@ -60,8 +69,60 @@ export default function TestInterface({
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
 
+  const handleSubmit = async (isAutoSubmit = false) => {
+    if (isSubmitting || isSubmitted) return
+    if (!isAutoSubmit && !confirm("Are you sure you want to submit the test?")) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attemptId,
+          answers,
+          category,
+          type,
+          questionIds: questions.map(q => q.id),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
+
+      // Mark test as completed in session storage and push history state
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
+        window.history.pushState({ testCompleted: true }, '', window.location.href)
+      }
+
+      if (payload?.certificateId) {
+        setGeneratedCertificateId(payload.certificateId)
+      }
+
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch (err) {
+      console.error('Submission error:', err)
+      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSubmitRef = useRef(handleSubmit)
   useEffect(() => {
-    if (isSubmitted || timeLeft <= 0) return
+    handleSubmitRef.current = handleSubmit
+  })
+
+  useEffect(() => {
+    if (isSubmitted) return
+    if (timeLeft <= 0) {
+      void handleSubmitRef.current(true)
+      return
+    }
     const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
     return () => clearInterval(timer)
   }, [isSubmitted, timeLeft])
@@ -94,44 +155,6 @@ export default function TestInterface({
   const handlePrev = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(curr => curr - 1)
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (!confirm("Are you sure you want to submit the test?")) return
-    setIsSubmitting(true)
-    setSubmitError(null)
-    try {
-      const response = await fetch('/api/tests/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attemptId,
-          answers,
-          category,
-          type,
-          questionIds: questions.map(q => q.id),
-        }),
-      })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) {
-        setSubmitError(payload?.error || 'Could not submit the test')
-        return
-      }
-
-      // Mark test as completed in session storage and push history state
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-        window.history.pushState({ testCompleted: true }, '', window.location.href)
-      }
-
-      setResult(payload)
-      setIsSubmitted(true)
-    } catch (err) {
-      console.error('Submission error:', err)
-      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -280,17 +303,14 @@ export default function TestInterface({
           >
             All Skill Tests
           </Link>
-          <Link
-            href={`/tests/${category}?type=${type}`}
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
-              }
-            }}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm"
+          <button
+            type="button"
+            onClick={handleRetake}
+            disabled={isRetaking}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm disabled:opacity-50 inline-flex items-center justify-center cursor-pointer"
           >
-            Retake Assessment
-          </Link>
+            {isRetaking ? 'Starting Assessment...' : 'Retake Assessment'}
+          </button>
         </div>
       </div>
     )
@@ -414,11 +434,19 @@ export default function TestInterface({
           {currentQuestion === questions.length - 1 ? (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Test <CheckCircle2 className="w-4 h-4" />
+                </>
+              )}
             </button>
           ) : (
             <button

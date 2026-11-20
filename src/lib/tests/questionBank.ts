@@ -5,7 +5,10 @@ const REQUIRED_HEADERS = [
 
 const CATEGORY_ALIASES: Record<string, string> = {
   ai: 'ai',
+  'artificial intelligence': 'ai',
   technology: 'technology',
+  'technology & software': 'technology',
+  'technology and software': 'technology',
   'software engineering': 'technology',
   'software-engineering': 'technology',
   finance: 'finance',
