@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
+import { validateFullName } from '@/lib/validation/form-fields'
 
 export default function TestInterface({ 
   category, 
@@ -141,8 +142,9 @@ export default function TestInterface({
   }
 
   const generateCertificate = async () => {
-    if (!candidateName.trim()) {
-      setCertificateError('Enter the name to appear on your certificate.')
+    const nameValidation = validateFullName(candidateName, { minLength: 2, maxLength: 100, fieldName: 'Name on certificate' })
+    if (!nameValidation.valid) {
+      setCertificateError(nameValidation.error || 'Enter the name to appear on your certificate.')
       return
     }
     setCertificateError(null)
@@ -203,6 +205,8 @@ export default function TestInterface({
             </label>
             <input
               type="text"
+              minLength={2}
+              maxLength={100}
               value={candidateName}
               disabled={!!generatedCertificateId || isGenerating}
               onChange={(e) => setCandidateName(e.target.value)}

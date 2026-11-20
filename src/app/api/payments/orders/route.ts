@@ -16,6 +16,7 @@ import {
   isValidLinkedInUrl,
   isValidBookingDate,
 } from '@/lib/career/validation';
+import { validateFullName } from '@/lib/validation/form-fields';
 
 export async function POST(request: Request) {
   try {
@@ -73,8 +74,9 @@ export async function POST(request: Request) {
       const areaOfInterest = (details.areaOfInterest || '').trim();
       const phoneInput = (details.phone || details.contactNumber || '').trim();
 
-      if (!fullName || fullName.length < 2) {
-        return NextResponse.json({ error: 'Please enter your full name (at least 2 characters).' }, { status: 400 });
+      const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' });
+      if (!nameValidation.valid) {
+        return NextResponse.json({ error: nameValidation.error || 'Please enter your full name (at least 2 characters).' }, { status: 400 });
       }
 
       if (!phoneInput) {

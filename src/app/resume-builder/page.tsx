@@ -10,6 +10,12 @@ import {
   defaultSectionLabels, defaultSectionOrder, initialResumeData, ResumeData,
   ResumeLayout, ResumeSectionId,
 } from '@/components/resume/types'
+import {
+  MAX_SUMMARY_LENGTH,
+  validateFullName,
+  validatePhoneNumber,
+  validateProfessionalSummary,
+} from '@/lib/validation/form-fields'
 
 const STORAGE_KEY = 'talenzo-resume-builder-v2'
 const SECTION_ICONS: Record<ResumeSectionId, string> = {
@@ -32,7 +38,7 @@ const normalizeResumeData = (value: Partial<ResumeData>): ResumeData => ({
       ...(value.personalInfo?.portfolio ? [{ id: 'legacy-portfolio', label: 'Portfolio', url: value.personalInfo.portfolio }] : []),
       ...(value.personalInfo?.linkedin ? [{ id: 'legacy-linkedin', label: 'LinkedIn', url: value.personalInfo.linkedin }] : []),
     ],
-  summary: typeof value.summary === 'string' ? value.summary : '',
+  summary: typeof value.summary === 'string' ? value.summary.slice(0, MAX_SUMMARY_LENGTH) : '',
   experience: Array.isArray(value.experience) ? value.experience : [],
   education: Array.isArray(value.education)
     ? value.education.map(item => ({ ...item, score: item.score ?? '', courses: item.courses ?? '' }))
@@ -280,14 +286,31 @@ export default function ResumeBuilderPage() {
   }
 
   const validateResume = () => {
-    if (!data.personalInfo.fullName.trim()) {
-      setError('Add your full name in Personal Information before finalizing.')
+    const nameValidation = validateFullName(data.personalInfo.fullName, { minLength: 2, maxLength: 60, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      setError(nameValidation.error || 'Add your full name in Personal Information before finalizing.')
       setActiveSection('personal')
       setScreen('edit')
       return false
     }
+    if (data.personalInfo.phone.trim()) {
+      const phoneValidation = validatePhoneNumber(data.personalInfo.phone, { fieldName: 'Phone number' })
+      if (!phoneValidation.valid) {
+        setError(phoneValidation.error || 'Enter a valid phone number before finalizing.')
+        setActiveSection('personal')
+        setScreen('edit')
+        return false
+      }
+    }
     if (data.personalInfo.email && !isValidEmail(data.personalInfo.email)) {
       setError('Enter a valid email address before finalizing.')
+      setActiveSection('personal')
+      setScreen('edit')
+      return false
+    }
+    const summaryValidation = validateProfessionalSummary(data.summary, MAX_SUMMARY_LENGTH)
+    if (!summaryValidation.valid) {
+      setError(summaryValidation.error || `Professional summary cannot exceed ${MAX_SUMMARY_LENGTH} characters.`)
       setActiveSection('personal')
       setScreen('edit')
       return false
@@ -533,13 +556,52 @@ export default function ResumeBuilderPage() {
                 {activeSection === 'personal' && (
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <label><span className={labelClass}>Full Name</span><input autoComplete="name" className={fieldClass} placeholder="Enter your full name" value={data.personalInfo.fullName} onChange={event => updatePersonalInfo('fullName', event.target.value)} /></label>
+                      <label><span className={labelClass}>Full Name</span><input autoComplete="name" minLength={2} maxLength={60} className={fieldClass} placeholder="Enter your full name" value={data.personalInfo.fullName} onChange={event => updatePersonalInfo('fullName', event.target.value)} /></label>
                       <label><span className={labelClass}>Job Title</span><input className={fieldClass} placeholder="Enter your current or target title" value={data.personalInfo.jobTitle} onChange={event => updatePersonalInfo('jobTitle', event.target.value)} /></label>
                       <label><span className={labelClass}>Email Address</span><input type="email" autoComplete="email" className={fieldClass} placeholder="you@example.com" value={data.personalInfo.email} onChange={event => updatePersonalInfo('email', event.target.value)} /></label>
-                      <label><span className={labelClass}>Phone Number</span><input type="tel" autoComplete="tel" className={fieldClass} placeholder="Enter your phone number" value={data.personalInfo.phone} onChange={event => updatePersonalInfo('phone', event.target.value)} /></label>
+                      <label><span className={labelClass}>Phone Number</span><input type="tel" autoComplete="tel" maxLength={20} className={fieldClass} placeholder="Enter your phone number" value={data.personalInfo.phone} onChange={event => updatePersonalInfo('phone', event.target.value)} /></label>
                     </div>
                     <label className="block"><span className={labelClass}>Location</span><input autoComplete="address-level2" className={fieldClass} placeholder="City, region" value={data.personalInfo.location} onChange={event => updatePersonalInfo('location', event.target.value)} /></label>
-                    <label className="block"><span className={labelClass}>Professional Summary</span><textarea rows={4} className={`${fieldClass} h-auto min-h-24 py-2.5`} placeholder="Summarize your experience, strengths, and goals." value={data.summary} onChange={event => setData(current => ({ ...current, summary: event.target.value }))} /></label>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="resume-professional-summary" className={labelClass}>
+                          Professional Summary
+                        </label>
+                        <span
+                          className={`text-xs ${
+                            data.summary.length >= MAX_SUMMARY_LENGTH
+                              ? 'font-medium text-amber-600 dark:text-amber-400'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        >
+                          {data.summary.length} / {MAX_SUMMARY_LENGTH} characters
+                        </span>
+                      </div>
+                      <textarea
+                        id="resume-professional-summary"
+                        rows={4}
+                        maxLength={MAX_SUMMARY_LENGTH}
+                        className={`${fieldClass} h-auto min-h-24 py-2.5 ${
+                          data.summary.length >= MAX_SUMMARY_LENGTH
+                            ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/20 dark:border-amber-500/60'
+                            : ''
+                        }`}
+                        placeholder="Summarize your experience, strengths, and goals."
+                        value={data.summary}
+                        onChange={event => {
+                          const val = event.target.value.slice(0, MAX_SUMMARY_LENGTH)
+                          setData(current => ({ ...current, summary: val }))
+                          if (error && error.includes('Professional summary')) {
+                            setError('')
+                          }
+                        }}
+                      />
+                      {data.summary.length >= MAX_SUMMARY_LENGTH && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400" role="status">
+                          Maximum limit of {MAX_SUMMARY_LENGTH} characters reached.
+                        </p>
+                      )}
+                    </div>
 
                     <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
                       <div className="mb-2 flex items-center justify-between">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { cleanupUnlockEvidence, getSubmissionStatus, submitUnlockEvidence } from './actions'
+import { validatePhoneNumber } from '@/lib/validation/form-fields'
 import {
   ArrowRight,
   CheckCircle,
@@ -136,9 +137,9 @@ export default function UnlockProgramClient() {
       setError('Enter a valid email address.')
       return
     }
-    const digits = whatsappPhone.replace(/\D/g, '')
-    if (digits.length < 8 || digits.length > 15) {
-      setError('Enter a WhatsApp number with 8 to 15 digits.')
+    const phoneValidation = validatePhoneNumber(whatsappPhone, { fieldName: 'WhatsApp phone number' })
+    if (!phoneValidation.valid) {
+      setError(phoneValidation.error || 'Please enter a valid WhatsApp phone number.')
       return
     }
 
@@ -259,7 +260,7 @@ export default function UnlockProgramClient() {
                   </label>
                   <label className="block text-sm font-semibold text-slate-700">
                     WhatsApp Phone Number:
-                    <input type="tel" required value={whatsappPhone} onChange={event => setWhatsappPhone(event.target.value)} placeholder="+91 98765 43210" className="mt-2 block h-12 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-base font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                    <input type="tel" required maxLength={20} value={whatsappPhone} onChange={event => setWhatsappPhone(event.target.value)} placeholder="+91 98765 43210" className="mt-2 block h-12 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-base font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                   </label>
                   <p className="border-t border-slate-100 pt-4 text-center text-sm text-slate-500">Our team reviews submissions within 24 hours.</p>
                   {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

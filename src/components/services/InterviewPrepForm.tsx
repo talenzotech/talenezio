@@ -15,10 +15,10 @@ import {
 } from 'lucide-react'
 import {
   INTERVIEW_PREP_BATCHES,
-  isValidPhoneNumber,
   isValidResumeFile,
   type InterviewPrepBatch,
 } from '@/lib/interview-prep/batches'
+import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields'
 
 interface InterviewPrepFormProps {
   onSuccess?: () => void
@@ -72,8 +72,9 @@ export function InterviewPrepForm({
     const trimmedEmail = email.trim()
     const trimmedPhone = phone.trim()
 
-    if (!trimmedName || trimmedName.length < 2) {
-      setErrorMessage('Please enter your full name (at least 2 characters).')
+    const nameValidation = validateFullName(trimmedName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      setErrorMessage(nameValidation.error || 'Please enter your full name (at least 2 characters).')
       return
     }
 
@@ -82,8 +83,9 @@ export function InterviewPrepForm({
       return
     }
 
-    if (!trimmedPhone || !isValidPhoneNumber(trimmedPhone)) {
-      setErrorMessage('Please enter a valid contact number (at least 10 digits).')
+    const phoneValidation = validatePhoneNumber(trimmedPhone, { fieldName: 'Contact number' })
+    if (!phoneValidation.valid) {
+      setErrorMessage(phoneValidation.error || 'Please enter a valid contact number (at least 10 digits).')
       return
     }
 
@@ -257,6 +259,8 @@ export function InterviewPrepForm({
               id="prep-form-full-name"
               type="text"
               required
+              minLength={2}
+              maxLength={50}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Rahul Sharma"
@@ -301,6 +305,7 @@ export function InterviewPrepForm({
               id="prep-form-phone"
               type="tel"
               required
+              maxLength={20}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. +91 9876543210"

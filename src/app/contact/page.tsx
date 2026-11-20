@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { validateFullName } from '@/lib/validation/form-fields';
 
 function LinkedInIcon({ className }: { className?: string }) {
   return (
@@ -60,8 +61,9 @@ export default function ContactPage() {
     const trimmedEmail = email.trim();
     const trimmedMessage = message.trim();
 
-    if (!trimmedName) {
-      setError('Please provide your name.');
+    const nameValidation = validateFullName(trimmedName, { minLength: 2, maxLength: 50, fieldName: 'Name' });
+    if (!nameValidation.valid) {
+      setError(nameValidation.error || 'Please provide your name.');
       return;
     }
 
@@ -167,6 +169,8 @@ export default function ContactPage() {
                   type="text"
                   name="name"
                   id="name"
+                  minLength={2}
+                  maxLength={50}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="block min-h-11 w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm px-4 py-2 border"

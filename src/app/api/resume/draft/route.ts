@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import type { ResumeData } from '@/components/resume/types';
+import { MAX_SUMMARY_LENGTH, type ResumeData } from '@/components/resume/types';
 
 const MAX_DRAFT_BYTES = 100_000;
 const sectionIds = ['personal', 'education', 'experience', 'projects', 'skills', 'awards'] as const;
@@ -24,6 +24,7 @@ function isResumeData(value: unknown): value is ResumeData {
     ['classic', 'modern', 'minimalist'].includes(String(value.layout)) &&
     hasStringFields(value.personalInfo, ['fullName', 'jobTitle', 'email', 'phone', 'linkedin', 'location', 'portfolio']) &&
     typeof value.summary === 'string' &&
+    value.summary.length <= MAX_SUMMARY_LENGTH &&
     hasStringEntries(value.links, ['id', 'label', 'url']) &&
     hasStringEntries(value.experience, ['id', 'title', 'company', 'location', 'startDate', 'endDate', 'description']) &&
     hasStringEntries(value.education, ['id', 'degree', 'institution', 'location', 'startDate', 'endDate', 'gpa', 'score', 'courses']) &&
@@ -74,6 +75,9 @@ export async function POST(request: Request) {
   }
   if (JSON.stringify(body).length > MAX_DRAFT_BYTES) {
     return NextResponse.json({ error: 'Resume draft exceeds maximum allowed size' }, { status: 413 });
+  }
+  if (isRecord(body?.draft) && typeof body.draft.summary === 'string' && body.draft.summary.length > MAX_SUMMARY_LENGTH) {
+    return NextResponse.json({ error: `Professional summary cannot exceed ${MAX_SUMMARY_LENGTH} characters` }, { status: 400 });
   }
   if (!isResumeData(body?.draft)) {
     return NextResponse.json({ error: 'Invalid resume draft' }, { status: 400 });
