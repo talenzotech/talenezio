@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
   experimental: {
+    agentUpgrade: "security",
     // Avoid multi-second cache writes/compaction on slow Windows filesystems.
     turbopackFileSystemCacheForDev: process.platform !== "win32",
     // Keep recently visited dynamic feature routes in the client router cache so
