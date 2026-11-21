@@ -16,6 +16,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { isValidPhoneNumber, isValidLinkedInUrl } from '@/lib/career/validation'
+import { validateFullName } from '@/lib/validation/form-fields'
 import type { PaymentApiResponse, PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 interface LinkedInOptimizationRegistrationProps {
@@ -60,8 +61,9 @@ export function LinkedInOptimizationRegistration({
     const trimmedCareerDetails = careerDetails.trim()
     const trimmedAreaOfInterest = areaOfInterest.trim()
 
-    if (!trimmedName || trimmedName.length < 2) {
-      setErrorMessage('Please enter your full name (at least 2 characters).')
+    const nameValidation = validateFullName(trimmedName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      setErrorMessage(nameValidation.error || 'Please enter your full name (at least 2 characters).')
       return
     }
 
@@ -296,6 +298,8 @@ export function LinkedInOptimizationRegistration({
                 <input
                   type="text"
                   required
+                  minLength={2}
+                  maxLength={50}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Rahul Sharma"
@@ -311,6 +315,7 @@ export function LinkedInOptimizationRegistration({
                 <input
                   type="tel"
                   required
+                  maxLength={20}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"

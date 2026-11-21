@@ -13,6 +13,7 @@ import {
   Briefcase,
 } from 'lucide-react'
 import { type InternshipOpportunity } from '@/lib/internships-training/data'
+import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields'
 
 interface InternshipApplyModalProps {
   internship: InternshipOpportunity | null
@@ -66,8 +67,9 @@ export function InternshipApplyModal({
     e.preventDefault()
     setErrorMessage(null)
 
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      setErrorMessage('Please enter your full name.')
+    const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      setErrorMessage(nameValidation.error || 'Please enter your full name.')
       return
     }
 
@@ -76,8 +78,9 @@ export function InternshipApplyModal({
       return
     }
 
-    if (!phone.trim() || phone.trim().length < 7) {
-      setErrorMessage('Please enter a valid phone number.')
+    const phoneValidation = validatePhoneNumber(phone, { fieldName: 'Phone number' })
+    if (!phoneValidation.valid) {
+      setErrorMessage(phoneValidation.error || 'Please enter a valid phone number.')
       return
     }
 
@@ -233,6 +236,8 @@ export function InternshipApplyModal({
                     id="internship-full-name"
                     type="text"
                     required
+                    minLength={2}
+                    maxLength={50}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your full name"
@@ -271,6 +276,7 @@ export function InternshipApplyModal({
                     id="internship-phone"
                     type="tel"
                     required
+                    maxLength={20}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"

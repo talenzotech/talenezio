@@ -1,3 +1,5 @@
+import { validatePhoneNumber } from '../validation/form-fields.ts';
+
 export const INTERVIEW_PREP_BATCHES = [
   '23 November to 30 November',
   '1 October to 8 October',
@@ -11,9 +13,7 @@ export const MAX_RESUME_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function isValidPhoneNumber(phone: string): boolean {
   if (!phone || typeof phone !== 'string') return false;
-  const digitsOnly = phone.replace(/\D/g, '');
-  // Valid contact numbers should contain between 10 and 15 digits
-  return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+  return validatePhoneNumber(phone).valid;
 }
 
 export function isValidResumeFile(file: { name: string; size: number } | null | undefined): {

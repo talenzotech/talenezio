@@ -5,34 +5,14 @@
  * - Booking date & time slot validation (future date enforcement)
  */
 
+import { validatePhoneNumber } from '../validation/form-fields.ts';
+
 export function isValidPhoneNumber(phone: string): { valid: boolean; normalized?: string; error?: string } {
-  const trimmed = (phone || '').trim();
-  if (!trimmed) {
-    return { valid: false, error: 'Contact number is required.' };
+  const result = validatePhoneNumber(phone, { fieldName: 'Contact number' });
+  if (!result.valid) {
+    return { valid: false, error: result.error };
   }
-
-  // Remove common separators (spaces, hyphens, parentheses)
-  const cleaned = trimmed.replace(/[\s\-\(\)\.]/g, '');
-
-  // Check if string contains only digits and at most one leading +
-  const phoneRegex = /^\+?[0-9]{10,15}$/;
-  if (!phoneRegex.test(cleaned)) {
-    return {
-      valid: false,
-      error: 'Please enter a valid contact number (10 to 15 digits).',
-    };
-  }
-
-  // Extract pure digits
-  const digitsOnly = cleaned.replace(/\D/g, '');
-  if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-    return {
-      valid: false,
-      error: 'Please enter a valid contact number with at least 10 digits.',
-    };
-  }
-
-  return { valid: true, normalized: cleaned };
+  return { valid: true, normalized: result.normalized };
 }
 
 export function isValidLinkedInUrl(url: string): { valid: boolean; normalized?: string; error?: string } {

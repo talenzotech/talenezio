@@ -3,7 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import { sendTrainingApplicationEmail } from '@/utils/email';
-import { isValidPhoneNumber, isValidResumeFile } from '@/lib/interview-prep/batches';
+import { isValidResumeFile } from '@/lib/interview-prep/batches';
+import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields';
 
 export async function POST(request: Request) {
   const localDemo = await isLocalDemoSession();
@@ -32,17 +33,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Program title is required.' }, { status: 400 });
     }
 
-    if (!fullName || fullName.length < 2) {
-      return NextResponse.json({ error: 'Please enter your full name (at least 2 characters).' }, { status: 400 });
+    const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' });
+    if (!nameValidation.valid) {
+      return NextResponse.json({ error: nameValidation.error || 'Please enter your full name (at least 2 characters).' }, { status: 400 });
     }
 
     if (!email || !email.includes('@') || !email.includes('.')) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    if (!phone || !isValidPhoneNumber(phone)) {
+    const phoneValidation = validatePhoneNumber(phone, { fieldName: 'Contact number' });
+    if (!phoneValidation.valid) {
       return NextResponse.json(
-        { error: 'Please enter a valid contact number (at least 10 digits).' },
+        { error: phoneValidation.error || 'Please enter a valid contact number (at least 10 digits).' },
         { status: 400 }
       );
     }
@@ -108,9 +111,9 @@ export async function POST(request: Request) {
           productCode: productCode || 'training',
           programTitle,
           fee,
-          fullName,
+          fullName: nameValidation.normalized || fullName,
           email,
-          phone,
+          phone: phoneValidation.normalized || phone,
           city,
           collegeOrCompany,
           age: parsedAge,
@@ -136,9 +139,9 @@ export async function POST(request: Request) {
         const emailResult = await sendTrainingApplicationEmail({
           programTitle,
           fee: fee || '₹4,999 / month',
-          fullName,
+          fullName: nameValidation.normalized || fullName,
           email,
-          phone,
+          phone: phoneValidation.normalized || phone,
           city,
           collegeOrCompany,
           age: parsedAge,

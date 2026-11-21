@@ -15,6 +15,7 @@ import {
   buildOAuthCallbackUrl,
   type OAuthProvider,
 } from '@/lib/auth/oauth'
+import { validateFullName } from '@/lib/validation/form-fields'
 
 export { getAppUrl, formatOAuthErrorMessage, buildOAuthCallbackUrl, type OAuthProvider }
 
@@ -63,6 +64,11 @@ export async function signup(formData: FormData): Promise<void> {
 
   if (!email || !password || !confirmPassword || !fullName) {
     redirect(`/register?error=${encodeURIComponent('All fields are required')}&next=${encodeURIComponent(next)}`)
+  }
+
+  const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+  if (!nameValidation.valid) {
+    redirect(`/register?error=${encodeURIComponent(nameValidation.error || 'Please enter a valid full name.')}&next=${encodeURIComponent(next)}`)
   }
 
   if (password.length < 8) {

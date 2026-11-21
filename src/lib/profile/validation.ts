@@ -1,3 +1,5 @@
+import { validateFullName } from '../validation/form-fields.ts'
+
 export type ExperienceLevel = 'Fresher' | 'Internship Experience' | 'Experienced'
 
 export interface ProfileData {
@@ -30,14 +32,14 @@ export const AVAILABLE_INTERESTS: readonly string[] = [
 ] as const
 
 export function validateProfileData(data: ProfileData): { isValid: boolean; error?: string } {
-  const fullName = (data.fullName || '').trim()
   const experience = data.experience || 'Fresher'
   const interests = Array.isArray(data.interests) ? data.interests.filter(Boolean) : []
 
-  if (!fullName || fullName.length < 2) {
+  const nameResult = validateFullName(data.fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+  if (!nameResult.valid) {
     return {
       isValid: false,
-      error: 'Full name is required (at least 2 characters).',
+      error: nameResult.error,
     }
   }
 
