@@ -5,9 +5,9 @@ import { isLocalDemoSession } from '@/lib/auth/local-demo';
 import { sendInterviewPrepApplicationEmail } from '@/utils/email';
 import {
   INTERVIEW_PREP_BATCHES,
-  isValidPhoneNumber,
   isValidResumeFile,
 } from '@/lib/interview-prep/batches';
+import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields';
 
 export async function POST(request: Request) {
   const localDemo = await isLocalDemoSession();
@@ -26,9 +26,10 @@ export async function POST(request: Request) {
     const domain = String(formData.get('domain') || '').trim();
     const resumeFile = formData.get('resume') as File | null;
 
-    if (!fullName || fullName.length < 2) {
+    const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' });
+    if (!nameValidation.valid) {
       return NextResponse.json(
-        { error: 'Please enter your full name (at least 2 characters).' },
+        { error: nameValidation.error || 'Please enter your full name (at least 2 characters).' },
         { status: 400 }
       );
     }
@@ -40,9 +41,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!phone || !isValidPhoneNumber(phone)) {
+    const phoneValidation = validatePhoneNumber(phone, { fieldName: 'Contact number' });
+    if (!phoneValidation.valid) {
       return NextResponse.json(
-        { error: 'Please enter a valid contact number (at least 10 digits).' },
+        { error: phoneValidation.error || 'Please enter a valid contact number (at least 10 digits).' },
         { status: 400 }
       );
     }
@@ -102,9 +104,9 @@ export async function POST(request: Request) {
         message: JSON.stringify({
           serviceCode: 'interview-prep',
           serviceTitle: 'Interview Preparation',
-          fullName,
+          fullName: nameValidation.normalized || fullName,
           email,
-          phone,
+          phone: phoneValidation.normalized || phone,
           batch,
           domain: domain || 'General',
           resumeFileName: resumeFile.name,
@@ -127,9 +129,9 @@ export async function POST(request: Request) {
           resumeStorageUrl = signed?.signedUrl || null;
         }
         const emailResult = await sendInterviewPrepApplicationEmail({
-          fullName,
+          fullName: nameValidation.normalized || fullName,
           email,
-          phone,
+          phone: phoneValidation.normalized || phone,
           batch,
           domain,
           resumeFileName: resumeFile.name,

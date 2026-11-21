@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isLocalDemoSession } from '@/lib/auth/local-demo'
 import { sendInternshipApplicationEmail } from '@/utils/email'
+import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields'
 
 export async function POST(request: Request) {
   const localDemo = await isLocalDemoSession()
@@ -30,16 +31,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Internship role is required.' }, { status: 400 })
     }
 
-    if (!fullName || fullName.length < 2) {
-      return NextResponse.json({ error: 'Full name is required.' }, { status: 400 })
+    const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      return NextResponse.json({ error: nameValidation.error || 'Full name is required.' }, { status: 400 })
     }
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 })
     }
 
-    if (!phone || phone.length < 7) {
-      return NextResponse.json({ error: 'A valid phone number is required.' }, { status: 400 })
+    const phoneValidation = validatePhoneNumber(phone, { fieldName: 'Phone number' })
+    if (!phoneValidation.valid) {
+      return NextResponse.json({ error: phoneValidation.error || 'A valid phone number is required.' }, { status: 400 })
     }
 
     if (!resumeFile || typeof resumeFile === 'string' || resumeFile.size === 0) {
@@ -102,9 +105,9 @@ export async function POST(request: Request) {
           message: JSON.stringify({
             internshipId,
             internshipTitle,
-            fullName,
+            fullName: nameValidation.normalized || fullName,
             email,
-            phone,
+            phone: phoneValidation.normalized || phone,
             college,
             resumeFileName: resumeFile.name,
             resumeFileSize: resumeFile.size,
@@ -129,9 +132,9 @@ export async function POST(request: Request) {
         }
         const emailResult = await sendInternshipApplicationEmail({
           internshipTitle,
-          fullName,
+          fullName: nameValidation.normalized || fullName,
           email,
-          phone,
+          phone: phoneValidation.normalized || phone,
           college,
           resumeFileName: resumeFile.name,
           resumeBuffer: buffer,

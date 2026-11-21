@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
+import { validateFullName } from '@/lib/validation/form-fields'
 
 const EXIT_CONFIRMATION = 'Your progress will be lost. Are you sure you want to exit?'
 
@@ -214,12 +215,13 @@ export default function TestInterface({
   }
 
   const handleDownloadCertificate = async () => {
-    const trimmedName = candidateName.trim()
-    if (!trimmedName) {
-      setCertificateError('Enter the name to appear on your certificate.')
+    const nameValidation = validateFullName(candidateName, { minLength: 2, maxLength: 100, fieldName: 'Name on certificate' })
+    if (!nameValidation.valid) {
+      setCertificateError(nameValidation.error || 'Enter the name to appear on your certificate.')
       return
     }
     setCertificateError(null)
+    const trimmedName = nameValidation.normalized || candidateName.trim()
 
     let certId: string | null = generatedCertificateId || result?.certificateId || null
 
@@ -299,6 +301,8 @@ export default function TestInterface({
                 </label>
                 <input
                   type="text"
+                  minLength={2}
+                  maxLength={100}
                   value={candidateName}
                   disabled={isCertGenerated || isGenerating}
                   onChange={(e) => {

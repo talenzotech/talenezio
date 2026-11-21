@@ -41,6 +41,36 @@ test('validates profile data', () => {
   assert.equal(emptyName.isValid, false)
   assert.match(emptyName.error || '', /Full name is required/i)
 
+  // Name too short (< 2 characters)
+  const shortName = validateProfileData({
+    fullName: 'A',
+    collegeName: 'IIT Delhi',
+    experience: 'Fresher',
+    interests: ['Technology'],
+  })
+  assert.equal(shortName.isValid, false)
+  assert.match(shortName.error || '', /at least 2 characters/i)
+
+  // Name too long (> 50 characters)
+  const longName = validateProfileData({
+    fullName: 'A'.repeat(51),
+    collegeName: 'IIT Delhi',
+    experience: 'Fresher',
+    interests: ['Technology'],
+  })
+  assert.equal(longName.isValid, false)
+  assert.match(longName.error || '', /cannot exceed 50 characters/i)
+
+  // Name with invalid characters (digits or symbols)
+  const invalidCharName = validateProfileData({
+    fullName: 'Rahul Sharma 123',
+    collegeName: 'IIT Delhi',
+    experience: 'Fresher',
+    interests: ['Technology'],
+  })
+  assert.equal(invalidCharName.isValid, false)
+  assert.match(invalidCharName.error || '', /can only contain letters/i)
+
   // Invalid experience
   const invalidExp = validateProfileData({
     fullName: 'Rahul Sharma',

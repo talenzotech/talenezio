@@ -3,14 +3,25 @@
 import { useState } from 'react'
 import { signup } from '@/app/(auth)/actions'
 import { ArrowRight, Mail, Lock, User } from 'lucide-react'
+import { validateFullName } from '@/lib/validation/form-fields'
 
 export default function RegisterForm({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null)
 
-  const validatePasswords = (event: React.FormEvent<HTMLFormElement>) => {
+  const validateForm = (event: React.FormEvent<HTMLFormElement>) => {
     const form = event.currentTarget
+    const fullNameInput = form.elements.namedItem('fullName') as HTMLInputElement
     const password = form.elements.namedItem('password') as HTMLInputElement
     const confirmPassword = form.elements.namedItem('confirmPassword') as HTMLInputElement
+
+    const nameValidation = validateFullName(fullNameInput.value, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      event.preventDefault()
+      setError(nameValidation.error || 'Please enter a valid full name.')
+      fullNameInput.focus()
+      return
+    }
+
     if (password.value !== confirmPassword.value) {
       event.preventDefault()
       setError('Passwords do not match.')
@@ -21,12 +32,12 @@ export default function RegisterForm({ next }: { next: string }) {
   }
 
   return (
-    <form className="space-y-5" action={signup} onSubmit={validatePasswords}>
+    <form className="space-y-5" action={signup} onSubmit={validateForm}>
       <input type="hidden" name="next" value={next} />
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600" role="alert">{error}</div>}
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-        <div className="relative"><User className="pointer-events-none absolute inset-y-0 left-3 my-auto h-5 w-5 text-gray-400" /><input id="fullName" name="fullName" type="text" required className="block w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-3 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" placeholder="John Doe" /></div>
+        <div className="relative"><User className="pointer-events-none absolute inset-y-0 left-3 my-auto h-5 w-5 text-gray-400" /><input id="fullName" name="fullName" type="text" minLength={2} maxLength={50} required className="block w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-3 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white" placeholder="John Doe" /></div>
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>

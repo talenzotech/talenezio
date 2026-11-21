@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { validatePhoneNumber } from '@/lib/validation/form-fields';
 
 const REQUIRED_EVIDENCE = 8;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -71,9 +72,9 @@ export async function submitUnlockEvidence(
   if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(contactEmail.trim())) {
     return { error: 'Enter a valid email address.' };
   }
-  const phoneDigits = whatsappPhone.replace(/\D/g, '');
-  if (phoneDigits.length < 8 || phoneDigits.length > 15) {
-    return { error: 'Enter a valid WhatsApp phone number.' };
+  const phoneValidation = validatePhoneNumber(whatsappPhone, { fieldName: 'WhatsApp phone number' });
+  if (!phoneValidation.valid) {
+    return { error: phoneValidation.error || 'Enter a valid WhatsApp phone number.' };
   }
   if (featureCode !== 'linkedin_optimization') return { error: 'Select a valid unlock feature.' };
 
@@ -99,7 +100,7 @@ export async function submitUnlockEvidence(
       status: 'pending',
       feature_code: featureCode,
       contact_email: contactEmail.trim().toLowerCase(),
-      whatsapp_phone: whatsappPhone.trim(),
+      whatsapp_phone: phoneValidation.normalized || whatsappPhone.trim(),
     })
     .select('id')
     .single();

@@ -1,5 +1,7 @@
 export type ResumeLayout = 'classic' | 'modern' | 'minimalist';
 
+export const MAX_SUMMARY_LENGTH = 500;
+
 export type ResumeSectionId = 'personal' | 'education' | 'experience' | 'projects' | 'skills' | 'awards';
 
 export interface ResumeData {

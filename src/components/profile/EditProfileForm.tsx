@@ -172,6 +172,8 @@ export function EditProfileForm({ initialProfile }: EditProfileFormProps) {
                     id="profile-full-name"
                     type="text"
                     value={fullName}
+                    minLength={2}
+                    maxLength={50}
                     onChange={(e) => {
                       setFullName(e.target.value)
                       setErrorMessage(null)

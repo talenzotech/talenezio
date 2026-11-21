@@ -24,6 +24,7 @@ import {
   isValidBookingDate,
   BOOKING_TIME_SLOTS,
 } from '@/lib/career/validation'
+import { validateFullName } from '@/lib/validation/form-fields'
 import { InterviewPrepApplyModal } from '@/components/services/InterviewPrepApplyModal'
 import type { PaymentApiResponse, PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
@@ -148,8 +149,9 @@ export function CareerServiceApplyModal({
     const trimmedAreaOfInterest = areaOfInterest.trim()
     const trimmedLinkedinUrl = linkedinUrl.trim()
 
-    if (!trimmedName || trimmedName.length < 2) {
-      setErrorMessage('Please enter your full name (at least 2 characters).')
+    const nameValidation = validateFullName(trimmedName, { minLength: 2, maxLength: 50, fieldName: 'Full name' })
+    if (!nameValidation.valid) {
+      setErrorMessage(nameValidation.error || 'Please enter your full name (at least 2 characters).')
       return
     }
 
@@ -425,6 +427,8 @@ export function CareerServiceApplyModal({
                   <input
                     type="text"
                     required
+                    minLength={2}
+                    maxLength={50}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Rahul Sharma"
@@ -440,6 +444,7 @@ export function CareerServiceApplyModal({
                   <input
                     type="tel"
                     required
+                    maxLength={20}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
