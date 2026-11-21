@@ -1,26 +1,36 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import ApplicationsClient, { type ApplicationItem } from './ApplicationsClient';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Disable caching for real-time admin view
 
 export default async function AdminApplicationsPage() {
   const admin = createAdminClient();
 
   let rawEnquiries: any[] = [];
-  const { data, error: fetchError } = await admin
-    .from('service_enquiries')
-    .select('*, profiles:user_id(full_name, avatar_url)')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error: fetchError } = await admin
+      .from('service_enquiries')
+      .select('*, profiles:user_id(full_name, avatar_url)')
+      .order('created_at', { ascending: false });
 
-  if (fetchError) {
-    console.warn('Notice: joined service_enquiries query failed, falling back to direct select:', fetchError.message);
+    if (fetchError || !data) {
+      console.warn('Notice: joined service_enquiries query fallback:', fetchError?.message);
+      const fallback = await admin
+        .from('service_enquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
+      rawEnquiries = fallback.data || [];
+    } else {
+      rawEnquiries = data;
+    }
+  } catch (err) {
+    console.warn('Notice: service_enquiries query exception:', err);
     const fallback = await admin
       .from('service_enquiries')
       .select('*')
       .order('created_at', { ascending: false });
     rawEnquiries = fallback.data || [];
-  } else {
-    rawEnquiries = data || [];
   }
 
   const applications: ApplicationItem[] = await Promise.all(
