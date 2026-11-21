@@ -26,10 +26,10 @@ export default async function AdminBookingsPage() {
           <p className="text-gray-500 mt-1">Manage 1-on-1 career counseling and interview prep sessions.</p>
         </div>
         <Link
-          href="/admin/enquiries"
+          href="/admin/applications"
           className="inline-flex items-center gap-2 self-start rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
         >
-          View Internship & Course Applications →
+          View Submitted Applications & Resumes →
         </Link>
       </div>
       

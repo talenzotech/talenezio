@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
               ...options,
               path: options?.path ?? '/',
               sameSite: (options?.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
-              secure: process.env.NODE_ENV === 'production',
+              secure: options?.secure ?? (process.env.NODE_ENV === 'production'),
             })
           )
         },
