@@ -79,7 +79,7 @@ export default async function AdminOverviewPage() {
     admin.from('test_attempts').select('*', { count: 'exact', head: true }),
     admin.from('unlock_submissions').select('id, created_at, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
     admin.from('bookings').select('id, created_at, service_code, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
-    admin.from('service_enquiries').select('id, created_at, interest, profiles:user_id(full_name)').eq('status', 'new').order('created_at', { ascending: false }).limit(5),
+    admin.from('service_enquiries').select('id, created_at, interest, service_code, message, profiles:user_id(full_name)').order('created_at', { ascending: false }).limit(5),
     admin.from('profiles').select('id, full_name, created_at').order('created_at', { ascending: false }).limit(4),
     admin.from('payments').select('id, amount_paise, created_at, status, profiles:user_id(full_name)').order('created_at', { ascending: false }).limit(4),
     admin.from('test_attempts').select('id, category, started_at, profiles:user_id(full_name)').order('started_at', { ascending: false }).limit(4),
@@ -99,8 +99,26 @@ const queue: QueueItem[] = [
       return { name, detail: `Session: ${item.service_code.replaceAll('-', ' ')}`, type: 'Guidance', status: 'Pending Scheduling', submitted: relativeTime(item.created_at), href: '/admin/bookings', initials: initials(name), tone: 'bg-rose-50 text-rose-600' };
     }),
     ...(newEnquiries.data || []).map((item) => {
-      const name = profileName(item.profiles);
-      return { name, detail: item.interest, type: 'Support', status: 'New', submitted: relativeTime(item.created_at), href: '/admin/enquiries', initials: initials(name), tone: 'bg-emerald-50 text-emerald-600' };
+      let displayName = profileName(item.profiles);
+      if (displayName === 'Unknown user' && item.message) {
+        try {
+          const parsed = JSON.parse(item.message);
+          if (parsed?.fullName) displayName = parsed.fullName;
+        } catch {
+          // ignore
+        }
+      }
+      const isInternship = item.service_code === 'internships';
+      return {
+        name: displayName,
+        detail: item.interest,
+        type: isInternship ? 'Internship' : 'Application',
+        status: 'New',
+        submitted: relativeTime(item.created_at),
+        href: '/admin/applications',
+        initials: initials(displayName),
+        tone: isInternship ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600',
+      };
     }),
   ].slice(0, 6);
 
@@ -163,13 +181,13 @@ const queue: QueueItem[] = [
       <section className="mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 p-6"><h2 className="text-lg font-bold text-gray-900">Pending Work Queue</h2><span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">{queue.length} Actions Required</span></div>
         <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-b border-gray-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-gray-500"><tr><th className="px-6 py-4">Task / Request</th><th className="px-6 py-4">Type</th><th className="px-6 py-4">Status</th><th className="px-6 py-4">Submitted</th><th className="px-6 py-4 text-right">Action</th></tr></thead><tbody className="divide-y divide-gray-100 text-sm">{queue.map((item) => <tr key={`${item.href}-${item.name}-${item.submitted}`} className="transition-colors hover:bg-slate-50"><td className="flex items-center gap-3 px-6 py-4"><div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${item.tone}`}>{item.initials}</div><div><p className="font-bold text-gray-900">{item.name}</p><p className="text-xs text-gray-500">{item.detail}</p></div></td><td className="px-6 py-4"><span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">{item.type}</span></td><td className="px-6 py-4"><span className="inline-flex items-center gap-1.5 font-medium text-amber-600"><Clock3 className="h-3.5 w-3.5" />{item.status}</span></td><td className="px-6 py-4 text-gray-500">{item.submitted}</td><td className="px-6 py-4 text-right"><Link href={item.href} className="font-bold text-blue-600 hover:underline">Process</Link></td></tr>)}</tbody></table>{queue.length === 0 && <p className="p-10 text-center text-sm text-gray-500">Everything is up to date.</p>}</div>
-        <div className="bg-slate-50 p-4 text-center"><Link href="/admin/enquiries" className="text-sm font-semibold text-gray-500 transition-colors hover:text-gray-900">View entire workflow queue</Link></div>
+        <div className="bg-slate-50 p-4 text-center"><Link href="/admin/applications" className="text-sm font-semibold text-gray-500 transition-colors hover:text-gray-900">View all applications & resumes</Link></div>
       </section>
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"><div className="mb-4 flex items-center gap-3"><div className="rounded-xl bg-indigo-50 p-2 text-indigo-600"><ShieldCheck className="h-6 w-6" /></div><h2 className="font-bold text-gray-900">System Integrity</h2></div><p className="mb-6 text-sm text-gray-600">Admin data services and workflow checks are available.</p><div className="space-y-3"><div className="flex items-center justify-between text-xs font-semibold"><span className="uppercase tracking-tighter text-gray-500">Database Access</span><span className="text-emerald-600">Connected</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full w-full bg-emerald-500" /></div><div className="flex items-center justify-between text-xs font-semibold"><span className="uppercase tracking-tighter text-gray-500">Open Workload</span><span className="text-blue-600">{queue.length} items</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-blue-500" style={{ width: `${Math.min(100, queue.length * 12)}%` }} /></div></div></div>
         <div className="flex flex-col justify-between rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"><div><div className="mb-4 flex items-center gap-3"><div className="rounded-xl bg-rose-50 p-2 text-rose-600"><CalendarCheck className="h-6 w-6" /></div><h2 className="font-bold text-gray-900">Advisor Availability</h2></div><p className="text-sm text-gray-600">{pendingBookings.data?.length || 0} guidance sessions are waiting for scheduling.</p></div><Link href="/admin/bookings" className="mt-4 w-full rounded-xl border border-gray-200 py-2.5 text-center text-sm font-bold text-gray-700 transition-colors hover:bg-slate-50">Manage Schedule</Link></div>
-        <div className="flex flex-col justify-between rounded-3xl bg-blue-600 p-6 text-white shadow-lg"><div className="flex items-start justify-between"><div><h2 className="text-lg font-bold">Operational Audit</h2><p className="text-sm text-blue-100">Review the current workflow queue.</p></div><Info className="h-6 w-6 text-blue-200" /></div><Link href="/admin/enquiries" className="mt-8 inline-flex w-fit items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-bold transition-all hover:bg-white/30">Open Queue <ArrowUpRight className="h-4 w-4" /></Link></div>
+        <div className="flex flex-col justify-between rounded-3xl bg-blue-600 p-6 text-white shadow-lg"><div className="flex items-start justify-between"><div><h2 className="text-lg font-bold">Operational Audit</h2><p className="text-sm text-blue-100">Review the current workflow queue.</p></div><Info className="h-6 w-6 text-blue-200" /></div><Link href="/admin/applications" className="mt-8 inline-flex w-fit items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-bold transition-all hover:bg-white/30">Open Applications <ArrowUpRight className="h-4 w-4" /></Link></div>
       </section>
     </div>
   );

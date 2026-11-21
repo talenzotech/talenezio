@@ -7,12 +7,12 @@ import AdminNavigation from './AdminNavigation';
 
 const navigation = [
   { href: '/admin', label: 'Overview', icon: 'layout' },
+  { href: '/admin/applications', label: 'Applications', icon: 'fileText' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { href: '/admin/tests', label: 'Test Attempts', icon: 'clipboard' },
   { href: '/admin/bookings', label: 'Career Guidance', icon: 'calendar' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },
   { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
-  { href: '/admin/enquiries', label: 'Support', icon: 'inbox' },
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

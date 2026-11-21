@@ -86,6 +86,7 @@ test('finds training program by product code', () => {
 test('sendInternshipApplicationEmail dispatches email with applicant details and resume to taleneziocontact@gmail.com', async () => {
   process.env.MOCK_EMAIL = 'true'
   delete process.env.ADMIN_NOTIFICATION_EMAIL
+  delete process.env.ADMIN_NOTIFICATION_CC_EMAIL
 
   const result = await sendInternshipApplicationEmail({
     internshipTitle: 'Website Development Intern',
@@ -99,8 +100,50 @@ test('sendInternshipApplicationEmail dispatches email with applicant details and
 
   assert.equal(result.success, true)
   assert.ok(result.data)
+  assert.equal(result.data.to, 'taleneziocontact@gmail.com')
+  assert.equal(result.data.cc, undefined)
 
   delete process.env.MOCK_EMAIL
+})
+
+test('sendInternshipApplicationEmail supports custom to and cc recipients and environment variables', async () => {
+  process.env.MOCK_EMAIL = 'true'
+  process.env.ADMIN_NOTIFICATION_EMAIL = 'custom-admin@talenezio.com'
+  process.env.ADMIN_NOTIFICATION_CC_EMAIL = 'custom-cc@talenezio.com'
+
+  // Uses custom env vars by default
+  const envResult = await sendInternshipApplicationEmail({
+    internshipTitle: 'Business Development Intern',
+    fullName: 'Rohan Sharma',
+    email: 'rohan@example.com',
+    phone: '+91 9876543210',
+    resumeFileName: 'rohan_resume.docx',
+    resumeBuffer: Buffer.from('mock docx'),
+  })
+
+  assert.equal(envResult.success, true)
+  assert.equal(envResult.data.to, 'custom-admin@talenezio.com')
+  assert.equal(envResult.data.cc, 'custom-cc@talenezio.com')
+
+  // Explicit props override environment variables
+  const overrideResult = await sendInternshipApplicationEmail({
+    internshipTitle: 'Business Development Intern',
+    fullName: 'Rohan Sharma',
+    email: 'rohan@example.com',
+    phone: '+91 9876543210',
+    resumeFileName: 'rohan_resume.docx',
+    resumeBuffer: Buffer.from('mock docx'),
+    to: 'taleneziocontact@gmail.com',
+    cc: 'shubh.talenezio@gmail.com',
+  })
+
+  assert.equal(overrideResult.success, true)
+  assert.equal(overrideResult.data.to, 'taleneziocontact@gmail.com')
+  assert.equal(overrideResult.data.cc, 'shubh.talenezio@gmail.com')
+
+  delete process.env.MOCK_EMAIL
+  delete process.env.ADMIN_NOTIFICATION_EMAIL
+  delete process.env.ADMIN_NOTIFICATION_CC_EMAIL
 })
 
 test('sendInternshipApplicationEmail fails gracefully and returns error when RESEND_API_KEY is missing', async () => {
@@ -169,4 +212,98 @@ test('sendTrainingApplicationEmail fails gracefully when RESEND_API_KEY is not c
   assert.ok(result.error.message.includes('RESEND_API_KEY'))
 
   if (originalApiKey) process.env.RESEND_API_KEY = originalApiKey
+})
+
+test('sendInternshipApplicationEmail detects and reports Resend API error responses instead of falsely returning success', async () => {
+  delete process.env.MOCK_EMAIL
+  const originalApiKey = process.env.RESEND_API_KEY
+  process.env.RESEND_API_KEY = 're_mock_test_key_123'
+
+  const { Resend } = await import('resend')
+  const dummyResend = new Resend('re_mock_test_key_123')
+  const originalSend = dummyResend.emails.constructor.prototype.send
+
+  let capturedPayload = null
+  dummyResend.emails.constructor.prototype.send = async function (payload) {
+    capturedPayload = payload
+    return {
+      data: null,
+      error: {
+        name: 'validation_error',
+        message: 'The domain is not verified on your Resend account.',
+        statusCode: 403,
+      },
+      headers: null,
+    }
+  }
+
+  try {
+    const result = await sendInternshipApplicationEmail({
+      internshipTitle: 'Graphic Designing Intern',
+      fullName: 'Pooja Nair',
+      email: 'pooja@example.com',
+      phone: '+91 9123456789',
+      college: 'NIFT',
+      resumeFileName: 'pooja_resume.pdf',
+      resumeBuffer: Buffer.from('%PDF-1.4 mock content'),
+    })
+
+    assert.equal(result.success, false)
+    assert.ok(result.error.message.includes('The domain is not verified'))
+    assert.ok(result.resendError)
+    assert.equal(result.resendError.statusCode, 403)
+    assert.equal(capturedPayload.to, 'taleneziocontact@gmail.com')
+    assert.equal(capturedPayload.cc, undefined)
+    assert.equal(capturedPayload.attachments.length, 1)
+    assert.equal(capturedPayload.attachments[0].filename, 'pooja_resume.pdf')
+    assert.equal(capturedPayload.attachments[0].contentType, 'application/pdf')
+    assert.ok(Buffer.isBuffer(capturedPayload.attachments[0].content))
+  } finally {
+    dummyResend.emails.constructor.prototype.send = originalSend
+    if (originalApiKey) process.env.RESEND_API_KEY = originalApiKey
+    else delete process.env.RESEND_API_KEY
+  }
+})
+
+test('sendInternshipApplicationEmail successfully delivers when Resend API returns success', async () => {
+  delete process.env.MOCK_EMAIL
+  const originalApiKey = process.env.RESEND_API_KEY
+  process.env.RESEND_API_KEY = 're_mock_test_key_123'
+
+  const { Resend } = await import('resend')
+  const dummyResend = new Resend('re_mock_test_key_123')
+  const originalSend = dummyResend.emails.constructor.prototype.send
+
+  let capturedPayload = null
+  dummyResend.emails.constructor.prototype.send = async function (payload) {
+    capturedPayload = payload
+    return {
+      data: { id: 'email_live_test_id_999' },
+      error: null,
+      headers: null,
+    }
+  }
+
+  try {
+    const result = await sendInternshipApplicationEmail({
+      internshipTitle: 'Website Development Intern',
+      fullName: 'Aniket Deshmukh',
+      email: 'aniket@example.com',
+      phone: '+91 9876543210',
+      college: 'COEP',
+      resumeFileName: 'aniket_resume.docx',
+      resumeBuffer: Buffer.from('mock docx content'),
+    })
+
+    assert.equal(result.success, true)
+    assert.equal(result.data.id, 'email_live_test_id_999')
+    assert.equal(capturedPayload.to, 'taleneziocontact@gmail.com')
+    assert.equal(capturedPayload.cc, undefined)
+    assert.equal(capturedPayload.attachments[0].filename, 'aniket_resume.docx')
+    assert.equal(capturedPayload.attachments[0].contentType, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  } finally {
+    dummyResend.emails.constructor.prototype.send = originalSend
+    if (originalApiKey) process.env.RESEND_API_KEY = originalApiKey
+    else delete process.env.RESEND_API_KEY
+  }
 })

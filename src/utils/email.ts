@@ -71,32 +71,49 @@ export interface SendInternshipApplicationEmailProps {
   resumeFileName: string;
   resumeBuffer: Buffer;
   resumeStorageUrl?: string | null;
+  to?: string | string[];
+  cc?: string | string[];
 }
 
-export async function sendInternshipApplicationEmail({
-  internshipTitle,
-  fullName,
-  email,
-  phone,
-  college,
-  resumeFileName,
-  resumeBuffer,
-  resumeStorageUrl,
-}: SendInternshipApplicationEmailProps) {
+export async function sendInternshipApplicationEmail(props: SendInternshipApplicationEmailProps) {
+  const {
+    internshipTitle,
+    fullName,
+    email,
+    phone,
+    college,
+    resumeFileName,
+    resumeBuffer,
+    resumeStorageUrl,
+  } = props;
+
+  const primaryRecipient = props.to || process.env.ADMIN_NOTIFICATION_EMAIL || 'taleneziocontact@gmail.com';
+  const ccRecipient = props.cc !== undefined ? props.cc : (process.env.ADMIN_NOTIFICATION_CC_EMAIL || undefined);
+
   if (process.env.MOCK_EMAIL === 'true') {
-    return { success: true, data: { id: 'mock-internship-email-id' } };
+    return {
+      success: true,
+      data: {
+        id: 'mock-internship-email-id',
+        to: primaryRecipient,
+        cc: ccRecipient,
+      },
+    };
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const recipient = process.env.ADMIN_NOTIFICATION_EMAIL || 'taleneziocontact@gmail.com';
 
   if (!apiKey) {
-    console.warn(`Notice: RESEND_API_KEY is not configured. Email to ${recipient} could not be sent.`);
-    return { success: false, error: new Error('RESEND_API_KEY is not configured') };
+    const errorMsg = 'RESEND_API_KEY is not configured';
+    console.warn(`Notice: ${errorMsg}. Email to ${primaryRecipient} could not be sent.`);
+    return { success: false, error: new Error(errorMsg) };
   }
 
   const resend = new Resend(apiKey);
   const subject = `New Internship Application: ${internshipTitle} - ${fullName}`;
+
+  const primaryRecipientStr = Array.isArray(primaryRecipient) ? primaryRecipient.join(', ') : primaryRecipient;
+  const ccRecipientStr = ccRecipient ? (Array.isArray(ccRecipient) ? ccRecipient.join(', ') : ccRecipient) : '';
 
   const textLines = [
     '========================================',
@@ -110,6 +127,8 @@ export async function sendInternshipApplicationEmail({
     `College / Institute: ${college && college.trim() ? college : 'Not provided'}`,
     `Resume Attached: ${resumeFileName}`,
     `Submitted At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+    `Delivered To: ${primaryRecipientStr}`,
+    ...(ccRecipientStr ? [`CC: ${ccRecipientStr}`] : []),
     '',
   ];
 
@@ -139,6 +158,8 @@ export async function sendInternshipApplicationEmail({
   const safePhone = escapeHtml(phone);
   const safeCollege = escapeHtml(college && college.trim() ? college : 'Not provided');
   const safeResumeName = escapeHtml(resumeFileName);
+  const safePrimaryRecipient = escapeHtml(primaryRecipientStr);
+  const safeCcRecipient = escapeHtml(ccRecipientStr);
   const submittedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
   const html = `
@@ -194,31 +215,63 @@ export async function sendInternshipApplicationEmail({
       </div>
 
       <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #94a3b8; text-align: center;">
-        Talenezio Automated Recruitment • <a href="mailto:${recipient}" style="color: #94a3b8;">${recipient}</a>
+        Talenezio Automated Recruitment • <a href="mailto:${safePrimaryRecipient}" style="color: #94a3b8;">${safePrimaryRecipient}</a>
+        ${safeCcRecipient ? ` • CC: <a href="mailto:${safeCcRecipient}" style="color: #94a3b8;">${safeCcRecipient}</a>` : ''}
       </div>
     </div>
   `;
 
+  const safeBuffer = Buffer.isBuffer(resumeBuffer) ? resumeBuffer : Buffer.from(resumeBuffer || '');
+  const ext = (resumeFileName.split('.').pop() || '').toLowerCase();
+  const mimeTypeMap: Record<string, string> = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+  };
+  const contentType = mimeTypeMap[ext] || 'application/octet-stream';
+
+  const attachments = [
+    {
+      filename: resumeFileName,
+      content: safeBuffer,
+      contentType,
+    },
+  ];
+
   try {
-    const data = await resend.emails.send({
+    const emailPayload: Parameters<typeof resend.emails.send>[0] = {
       from: process.env.RESEND_FROM_EMAIL || 'Talenezio <onboarding@resend.dev>',
-      to: recipient,
+      to: primaryRecipient,
       subject,
       text,
       html,
-      attachments: [
-        {
-          filename: resumeFileName,
-          content: resumeBuffer,
-        },
-      ],
-    });
+      attachments,
+    };
 
-    console.log(`Internship application email sent successfully to ${recipient}:`, data);
-    return { success: true, data };
+    if (ccRecipient) {
+      emailPayload.cc = ccRecipient;
+    }
+
+    const response = await resend.emails.send(emailPayload);
+
+    if (response.error) {
+      const errorDetail = response.error.message || 'Resend API rejected the email delivery';
+      console.error(
+        `Error sending internship application email to ${primaryRecipientStr} (CC: ${ccRecipientStr || 'none'}):`,
+        response.error
+      );
+      return { success: false, error: new Error(errorDetail), resendError: response.error };
+    }
+
+    console.log(
+      `Internship application email sent successfully to ${primaryRecipientStr} (CC: ${ccRecipientStr || 'none'}):`,
+      response.data
+    );
+    return { success: true, data: response.data };
   } catch (error) {
-    console.error(`Error sending internship application email to ${recipient}:`, error);
-    return { success: false, error };
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`Unexpected exception sending internship application email to ${primaryRecipientStr}:`, err);
+    return { success: false, error: err };
   }
 }
 

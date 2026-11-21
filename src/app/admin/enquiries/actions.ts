@@ -19,5 +19,7 @@ export async function updateEnquiry(formData: FormData) {
 
   const { error } = await admin.from('service_enquiries').update({ status, admin_note: note || null }).eq('id', id);
   if (error) return;
+  revalidatePath('/admin/applications');
   revalidatePath('/admin/enquiries');
+  revalidatePath('/admin');
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath } from '@/lib/auth/redirect'
 import {
@@ -46,7 +46,6 @@ export async function login(formData: FormData): Promise<void> {
     redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
   }
 
-  revalidatePath('/', 'layout')
   redirect(next)
 }
 
@@ -100,7 +99,6 @@ export async function signup(formData: FormData): Promise<void> {
   }
   
   if (data.session) {
-    revalidatePath('/', 'layout')
     redirect(next)
   }
 
@@ -209,12 +207,27 @@ export async function updatePassword(formData: FormData): Promise<void> {
 export async function signout() {
   if (await isLocalDemoSession()) {
     await endLocalDemoSession()
-    revalidatePath('/', 'layout')
     redirect('/login')
   }
 
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  revalidatePath('/', 'layout')
+  try {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+  } catch (err) {
+    console.error('Supabase signOut error:', err)
+  }
+
+  try {
+    const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+    for (const cookie of allCookies) {
+      if (cookie.name.startsWith('sb-') && (cookie.name.includes('-auth-token') || cookie.name.includes('-code-verifier'))) {
+        cookieStore.delete(cookie.name)
+      }
+    }
+  } catch (err) {
+    console.error('Cookie deletion error:', err)
+  }
+
   redirect('/login')
 }
