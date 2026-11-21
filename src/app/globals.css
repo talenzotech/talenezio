@@ -31,3 +31,35 @@ body {
 nextjs-portal {
   display: none !important;
 }
+
+.resume-preview-frame {
+  width: var(--resume-preview-compact-width);
+  height: var(--resume-preview-compact-height);
+}
+
+.resume-preview-frame__content {
+  transform: scale(var(--resume-preview-compact-scale));
+  transform-origin: top left;
+}
+
+@media (min-width: 1200px) {
+  .resume-preview-frame {
+    width: var(--resume-preview-desktop-width);
+    height: var(--resume-preview-desktop-height);
+  }
+
+  .resume-preview-frame__content {
+    transform: scale(var(--resume-preview-desktop-scale));
+  }
+}
+
+@media (min-width: 1400px) {
+  .resume-preview-frame {
+    width: var(--resume-preview-wide-width);
+    height: var(--resume-preview-wide-height);
+  }
+
+  .resume-preview-frame__content {
+    transform: scale(var(--resume-preview-wide-scale));
+  }
+}

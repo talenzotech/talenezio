@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 import { validateFullName } from '@/lib/validation/form-fields'
+
+const EXIT_CONFIRMATION = 'Your progress will be lost. Are you sure you want to exit?'
 
 export default function TestInterface({ 
   category, 
@@ -30,7 +33,19 @@ export default function TestInterface({
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
   const [certificateError, setCertificateError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
+  const router = useRouter()
+  const [isRetaking, setIsRetaking] = useState(false)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
+  const testOptionsPath = `/tests/${category}`
+
+  const handleRetake = () => {
+    setIsRetaking(true)
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(`test_completed_${attemptId}`)
+      window.location.href = `/tests/${category}?type=${type}&retake=${Date.now()}`
+    }
+  }
 
   // Navigation Fix: If user refreshed the completion page, redirect to Dashboard Home
   useEffect(() => {
@@ -57,11 +72,100 @@ export default function TestInterface({
     return () => window.removeEventListener('popstate', onPopState)
   }, [isSubmitted, attemptId])
 
+  // Keep active test progress protected when browser navigation or unload is used.
+  useEffect(() => {
+    if (isSubmitted || isExiting || typeof window === 'undefined') return
+
+    window.history.replaceState({ ...window.history.state, testInProgress: true }, '', window.location.href)
+    let restoringHistory = false
+
+    const onPopState = () => {
+      if (restoringHistory) {
+        restoringHistory = false
+        return
+      }
+
+      if (window.confirm(EXIT_CONFIRMATION)) {
+        setIsExiting(true)
+        router.replace(testOptionsPath)
+        return
+      }
+
+      // Return to the protected entry without adding another history entry.
+      restoringHistory = true
+      window.history.go(1)
+    }
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('popstate', onPopState)
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [isSubmitted, isExiting, router, testOptionsPath])
+
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
 
+  const handleSubmit = async (isAutoSubmit = false) => {
+    if (isSubmitting || isSubmitted) return
+    if (!isAutoSubmit && !confirm("Are you sure you want to submit the test?")) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const response = await fetch('/api/tests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attemptId,
+          answers,
+          category,
+          type,
+          questionIds: questions.map(q => q.id),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        setSubmitError(payload?.error || 'Could not submit the test')
+        return
+      }
+
+      // Mark test as completed without adding another history entry.
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
+        window.history.replaceState({ ...window.history.state, testCompleted: true }, '', window.location.href)
+      }
+
+      if (payload?.certificateId) {
+        setGeneratedCertificateId(payload.certificateId)
+      }
+
+      setResult(payload)
+      setIsSubmitted(true)
+    } catch (err) {
+      console.error('Submission error:', err)
+      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSubmitRef = useRef(handleSubmit)
   useEffect(() => {
-    if (isSubmitted || timeLeft <= 0) return
+    handleSubmitRef.current = handleSubmit
+  })
+
+  useEffect(() => {
+    if (isSubmitted) return
+    if (timeLeft <= 0) {
+      void handleSubmitRef.current(true)
+      return
+    }
     const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
     return () => clearInterval(timer)
   }, [isSubmitted, timeLeft])
@@ -97,41 +201,10 @@ export default function TestInterface({
     }
   }
 
-  const handleSubmit = async () => {
-    if (!confirm("Are you sure you want to submit the test?")) return
-    setIsSubmitting(true)
-    setSubmitError(null)
-    try {
-      const response = await fetch('/api/tests/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attemptId,
-          answers,
-          category,
-          type,
-          questionIds: questions.map(q => q.id),
-        }),
-      })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) {
-        setSubmitError(payload?.error || 'Could not submit the test')
-        return
-      }
-
-      // Mark test as completed in session storage and push history state
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem(`test_completed_${attemptId}`, 'true')
-        window.history.pushState({ testCompleted: true }, '', window.location.href)
-      }
-
-      setResult(payload)
-      setIsSubmitted(true)
-    } catch (err) {
-      console.error('Submission error:', err)
-      setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
-    } finally {
-      setIsSubmitting(false)
+  const handleExit = () => {
+    if (window.confirm(EXIT_CONFIRMATION)) {
+      setIsExiting(true)
+      router.replace(testOptionsPath)
     }
   }
 
@@ -219,24 +292,38 @@ export default function TestInterface({
             Confirm your name to generate your certificate for <strong className="text-gray-800 dark:text-gray-200">{categoryTitle}</strong>.
           </p>
 
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              Name on Certificate:
-            </label>
-            <input
-              type="text"
-              minLength={2}
-              maxLength={100}
-              value={candidateName}
-              disabled={isGenerating}
-              onChange={(e) => {
-                setCandidateName(e.target.value)
-                setGeneratedCertificateId(null)
-              }}
-              placeholder="Enter your full name"
-              className="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3.5 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+          {(() => {
+            const isCertGenerated = Boolean(generatedCertificateId || result?.certificateId)
+            return (
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Name on Certificate:
+                </label>
+                <input
+                  type="text"
+                  minLength={2}
+                  maxLength={100}
+                  value={candidateName}
+                  disabled={isCertGenerated || isGenerating}
+                  onChange={(e) => {
+                    if (isCertGenerated) return
+                    setCandidateName(e.target.value)
+                  }}
+                  placeholder="Enter your full name"
+                  className={`w-full h-10 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 text-sm font-medium outline-none transition-colors ${
+                    isCertGenerated
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                  }`}
+                />
+                {isCertGenerated && (
+                  <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                    Certificate has been officially issued to this name.
+                  </p>
+                )}
+              </div>
+            )
+          })()}
 
           <button
             type="button"
@@ -280,17 +367,14 @@ export default function TestInterface({
           >
             All Skill Tests
           </Link>
-          <Link
-            href={`/tests/${category}?type=${type}`}
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.sessionStorage.removeItem(`test_completed_${attemptId}`)
-              }
-            }}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm"
+          <button
+            type="button"
+            onClick={handleRetake}
+            disabled={isRetaking}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-white text-white dark:text-gray-900 font-medium transition-colors text-sm disabled:opacity-50 inline-flex items-center justify-center cursor-pointer"
           >
-            Retake Assessment
-          </Link>
+            {isRetaking ? 'Starting Assessment...' : 'Retake Assessment'}
+          </button>
         </div>
       </div>
     )
@@ -310,16 +394,25 @@ export default function TestInterface({
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-        <div>
-          <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
-           <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (45 Questions)'}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div>
+            <h1 className="text-xl font-bold capitalize text-gray-900 dark:text-white">{category.replace('-', ' ')} Assessment</h1>
+            <p className="text-sm text-gray-500">{type === 'free' ? 'Free Tier (20 Questions)' : 'Pro Tier (45 Questions)'}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExit}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4" /> Exit Test
+            </button>
+            <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
+              <Clock className="w-5 h-5" />
+              {formatTime(timeLeft)}
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-xl font-mono text-lg font-semibold">
-          <Clock className="w-5 h-5" />
-          {formatTime(timeLeft)}
-        </div>
-      </div>
 
       {/* Main Question Area */}
       <div className="bg-white dark:bg-gray-900 p-6 sm:p-10 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6 min-h-[400px] flex flex-col">
@@ -414,11 +507,19 @@ export default function TestInterface({
           {currentQuestion === questions.length - 1 ? (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors"
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Test'} <CheckCircle2 className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Test <CheckCircle2 className="w-4 h-4" />
+                </>
+              )}
             </button>
           ) : (
             <button
