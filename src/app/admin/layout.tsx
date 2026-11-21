@@ -12,7 +12,7 @@ const navigation = [
   { href: '/admin/bookings', label: 'Career Guidance', icon: 'calendar' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },
   { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
-  { href: '/admin/enquiries', label: 'Support', icon: 'inbox' },
+  { href: '/admin/enquiries', label: 'Applications & Enquiries', icon: 'inbox' },
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -79,7 +79,7 @@ export default async function AdminOverviewPage() {
     admin.from('test_attempts').select('*', { count: 'exact', head: true }),
     admin.from('unlock_submissions').select('id, created_at, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
     admin.from('bookings').select('id, created_at, service_code, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
-    admin.from('service_enquiries').select('id, created_at, interest, profiles:user_id(full_name)').eq('status', 'new').order('created_at', { ascending: false }).limit(5),
+    admin.from('service_enquiries').select('id, created_at, interest, service_code, message, profiles:user_id(full_name)').order('created_at', { ascending: false }).limit(5),
     admin.from('profiles').select('id, full_name, created_at').order('created_at', { ascending: false }).limit(4),
     admin.from('payments').select('id, amount_paise, created_at, status, profiles:user_id(full_name)').order('created_at', { ascending: false }).limit(4),
     admin.from('test_attempts').select('id, category, started_at, profiles:user_id(full_name)').order('started_at', { ascending: false }).limit(4),
@@ -99,8 +99,26 @@ const queue: QueueItem[] = [
       return { name, detail: `Session: ${item.service_code.replaceAll('-', ' ')}`, type: 'Guidance', status: 'Pending Scheduling', submitted: relativeTime(item.created_at), href: '/admin/bookings', initials: initials(name), tone: 'bg-rose-50 text-rose-600' };
     }),
     ...(newEnquiries.data || []).map((item) => {
-      const name = profileName(item.profiles);
-      return { name, detail: item.interest, type: 'Support', status: 'New', submitted: relativeTime(item.created_at), href: '/admin/enquiries', initials: initials(name), tone: 'bg-emerald-50 text-emerald-600' };
+      let displayName = profileName(item.profiles);
+      if (displayName === 'Unknown user' && item.message) {
+        try {
+          const parsed = JSON.parse(item.message);
+          if (parsed?.fullName) displayName = parsed.fullName;
+        } catch {
+          // ignore
+        }
+      }
+      const isInternship = item.service_code === 'internships';
+      return {
+        name: displayName,
+        detail: item.interest,
+        type: isInternship ? 'Internship' : 'Application',
+        status: 'New',
+        submitted: relativeTime(item.created_at),
+        href: '/admin/enquiries',
+        initials: initials(displayName),
+        tone: isInternship ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600',
+      };
     }),
   ].slice(0, 6);
 

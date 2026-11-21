@@ -69,36 +69,64 @@ export async function POST(request: Request) {
     let resumePath: string | null = null
     let resumeStorageUrl: string | null = null
 
-    // Attempt upload to Supabase storage if authenticated
-    if (user) {
-      try {
-        const admin = createAdminClient()
-        const safeName = `${Date.now()}_resume.${fileExt}`
-        const storagePath = `internships/${user.id}/${safeName}`
+    // Attempt upload to Supabase storage
+    const ownerFolder = user?.id || 'guest'
+    try {
+      const admin = createAdminClient()
+      const safeName = `${Date.now()}_resume.${fileExt}`
+      const storagePath = `internships/${ownerFolder}/${safeName}`
 
-        const { error: uploadError } = await admin.storage
-          .from('unlock_evidence')
-          .upload(storagePath, buffer, {
-            contentType: resumeFile.type || 'application/pdf',
-            upsert: true,
-          })
+      const { error: uploadError } = await admin.storage
+        .from('unlock_evidence')
+        .upload(storagePath, buffer, {
+          contentType: resumeFile.type || 'application/pdf',
+          upsert: true,
+        })
 
-        if (!uploadError) {
-          resumePath = storagePath
-        } else {
-          console.warn('Notice: resume upload to unlock_evidence bucket returned:', uploadError.message)
+      if (!uploadError) {
+        resumePath = storagePath
+      } else {
+        console.warn('Notice: resume upload to unlock_evidence bucket returned:', uploadError.message)
+      }
+    } catch (storageErr) {
+      console.warn('Storage upload notice (falling back to record submission):', storageErr)
+    }
+
+    // Record application in service_enquiries so it appears on the admin dashboard
+    try {
+      const admin = createAdminClient()
+      let targetUserId = user?.id || null
+
+      if (targetUserId) {
+        try {
+          await admin.from('profiles').upsert(
+            {
+              id: targetUserId,
+              full_name: fullName,
+            },
+            { onConflict: 'id', ignoreDuplicates: true }
+          )
+        } catch (profileErr) {
+          console.warn('Notice: profile verification note:', profileErr)
         }
-      } catch (storageErr) {
-        console.warn('Storage upload notice (falling back to record submission):', storageErr)
+      } else {
+        // Fallback for demo or guest test sessions to satisfy non-null foreign key constraint
+        try {
+          const { data: fallbackUser } = await admin.from('profiles').select('id').limit(1).maybeSingle()
+          if (fallbackUser?.id) {
+            targetUserId = fallbackUser.id
+          }
+        } catch {
+          // ignore
+        }
       }
 
-      // Record application in service_enquiries
-      try {
-        const admin = createAdminClient()
-        await admin.from('service_enquiries').insert({
-          user_id: user.id,
+      if (targetUserId) {
+        const { error: dbErr } = await admin.from('service_enquiries').insert({
+          user_id: targetUserId,
           service_code: 'internships',
           interest: internshipTitle,
+          status: 'new',
           message: JSON.stringify({
             internshipId,
             internshipTitle,
@@ -112,9 +140,17 @@ export async function POST(request: Request) {
             appliedAt: new Date().toISOString(),
           }),
         })
-      } catch (dbErr) {
-        console.error('Error inserting internship enquiry into DB:', dbErr)
+
+        if (dbErr) {
+          console.error('Error inserting internship enquiry into DB:', dbErr)
+        } else {
+          console.log('Notice: internship application recorded in service_enquiries successfully')
+        }
+      } else {
+        console.warn('Notice: could not record internship enquiry in DB: no valid user profile ID found')
       }
+    } catch (dbErr) {
+      console.error('Error inserting internship enquiry into DB:', dbErr)
     }
 
     // Email is non-blocking after the application has been recorded.
@@ -139,6 +175,8 @@ export async function POST(request: Request) {
         });
         if (!emailResult.success) {
           console.error('Notice: error sending internship application notification email:', emailResult.error);
+        } else {
+          console.log('Notice: internship application notification email dispatched successfully:', emailResult.data);
         }
       } catch (error) {
         console.error('Notice: internship application notification failed:', error)

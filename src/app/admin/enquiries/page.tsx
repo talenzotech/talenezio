@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateEnquiry } from './actions';
 
@@ -18,15 +19,34 @@ interface ParsedEnquiryDetails {
   [key: string]: unknown;
 }
 
-export default async function AdminEnquiriesPage() {
+export default async function AdminEnquiriesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const currentTab = resolvedParams?.tab || 'all';
+
   const admin = createAdminClient();
-  const { data: rawEnquiries } = await admin
+  let rawEnquiries: any[] = [];
+  const { data, error: fetchError } = await admin
     .from('service_enquiries')
     .select('*, profiles:user_id(full_name)')
     .order('created_at', { ascending: false });
 
+  if (fetchError) {
+    console.warn('Notice: joined service_enquiries query failed, falling back to direct select:', fetchError.message);
+    const fallback = await admin
+      .from('service_enquiries')
+      .select('*')
+      .order('created_at', { ascending: false });
+    rawEnquiries = fallback.data || [];
+  } else {
+    rawEnquiries = data || [];
+  }
+
   const enquiries = await Promise.all(
-    (rawEnquiries || []).map(async (enquiry) => {
+    rawEnquiries.map(async (enquiry) => {
       let parsedDetails: ParsedEnquiryDetails | null = null;
       let resumeSignedUrl: string | null = null;
 
@@ -52,15 +72,58 @@ export default async function AdminEnquiriesPage() {
     })
   );
 
+  const internshipCount = enquiries.filter((e) => e.service_code === 'internships').length;
+  const coursesCount = enquiries.filter((e) => e.service_code === 'courses').length;
+
+  const filteredEnquiries = enquiries.filter((enquiry) => {
+    if (currentTab === 'internships') return enquiry.service_code === 'internships';
+    if (currentTab === 'courses') return enquiry.service_code === 'courses';
+    return true;
+  });
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Course & Internship Enquiries</h1>
-        <p className="mt-1 text-gray-500">Review catalogue enquiries, applications, resumes, and track follow-up.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Internship & Course Applications</h1>
+          <p className="mt-1 text-gray-500">Review catalogue enquiries, applications, resumes, and track follow-up.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/enquiries"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+              currentTab === 'all'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            All ({enquiries.length})
+          </Link>
+          <Link
+            href="/admin/enquiries?tab=internships"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+              currentTab === 'internships'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            Internships ({internshipCount})
+          </Link>
+          <Link
+            href="/admin/enquiries?tab=courses"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+              currentTab === 'courses'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            Courses ({coursesCount})
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-4">
-        {enquiries.map((enquiry) => {
+        {filteredEnquiries.map((enquiry) => {
           const details = enquiry.parsedDetails;
 
           return (
