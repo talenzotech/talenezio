@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import AdminDashboardControls, { type AnalyticsPoint } from './AdminDashboardControls';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type QueueItem = {

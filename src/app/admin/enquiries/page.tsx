@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
+import AdminApplicationsPage from '../applications/page';
 
-export default function AdminEnquiriesPage() {
-  redirect('/admin/applications');
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default AdminApplicationsPage;
