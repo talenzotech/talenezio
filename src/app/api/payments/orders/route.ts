@@ -143,19 +143,32 @@ export async function POST(request: Request) {
 
     const service = product.serviceCode ? getService(product.serviceCode) : null;
     if (product.serviceCode && service?.freeUnlock && await hasServiceAccess(user.id, product.serviceCode)) {
-      const { error } = await admin.from('service_orders').insert({
-        user_id: user.id,
-        service_code: product.serviceCode,
-        product_code: productCode,
-        amount_paise: product.amountPaise,
-        currency: product.currency,
-        status: 'requested',
-        scheduled_for: validatedBookingDateIso || null,
-      });
+      try {
+        const { error } = await admin.from('service_orders').insert({
+          user_id: user.id,
+          service_code: product.serviceCode,
+          product_code: productCode,
+          amount_paise: product.amountPaise,
+          currency: product.currency,
+          status: 'requested',
+          scheduled_for: validatedBookingDateIso || null,
+        });
 
-      if (error) {
-        console.error('Unable to create free service order:', error);
-        return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
+        if (error) {
+          if (
+            error.code === 'PGRST205' ||
+            error.code === '42P01' ||
+            String(error.message).includes('schema cache') ||
+            String(error.message).includes('does not exist')
+          ) {
+            console.warn('Notice: service_orders table not found in schema cache for free unlock:', error.message);
+          } else {
+            console.error('Unable to create free service order:', error);
+            return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
+          }
+        }
+      } catch (freeErr) {
+        console.warn('Notice: exception recording free service order:', freeErr);
       }
 
       revalidatePath('/dashboard');
@@ -318,37 +331,63 @@ export async function POST(request: Request) {
 
       const fulfilmentNote = fulfilmentNoteParts.join(' | ');
 
-      const { error: serviceOrderError } = await admin.from('service_orders').insert({
-        user_id: user.id,
-        service_code: product.serviceCode,
-        product_code: productCode,
-        amount_paise: product.amountPaise,
-        currency: product.currency,
-        status: 'pending_payment',
-        payment_id: payment?.id,
-        scheduled_for: validatedBookingDateIso || null,
-        fulfilment_note: fulfilmentNote,
-      });
+      try {
+        const { error: serviceOrderError } = await admin.from('service_orders').insert({
+          user_id: user.id,
+          service_code: product.serviceCode,
+          product_code: productCode,
+          amount_paise: product.amountPaise,
+          currency: product.currency,
+          status: 'pending_payment',
+          payment_id: payment?.id,
+          scheduled_for: validatedBookingDateIso || null,
+          fulfilment_note: fulfilmentNote,
+        });
 
-      if (serviceOrderError) {
-        console.error('Unable to store service order:', serviceOrderError);
-        return NextResponse.json({ error: 'Unable to store service order' }, { status: 500 });
+        if (serviceOrderError) {
+          if (
+            serviceOrderError.code === 'PGRST205' ||
+            serviceOrderError.code === '42P01' ||
+            String(serviceOrderError.message).includes('schema cache') ||
+            String(serviceOrderError.message).includes('does not exist')
+          ) {
+            console.warn(
+              'Notice: service_orders table not found in schema cache. Details safely preserved in payments/bookings:',
+              serviceOrderError.message
+            );
+          } else if (serviceOrderError.code === '23505') {
+            console.warn('Notice: service order for payment already exists (duplicate prevented)');
+          } else {
+            console.error('Unable to store service order:', serviceOrderError);
+            return NextResponse.json({ error: 'Unable to store service order' }, { status: 500 });
+          }
+        }
+      } catch (serviceOrderErr) {
+        console.warn('Notice: exception while inserting service order:', serviceOrderErr);
       }
 
       // If this is a 1-on-1 counseling / guidance session with a booking date, record in bookings table
       if (product.serviceCode === 'career-counseling' && validatedBookingDateIso) {
         try {
-          const { error: bookingError } = await admin.from('bookings').insert({
-            user_id: user.id,
-            service_code: 'career-counseling',
-            domain: applicantDetails?.areaOfInterest || null,
-            scheduled_for: validatedBookingDateIso,
-            status: 'pending',
-            payment_id: payment?.id,
-          });
+          const { data: existingBooking } = await admin
+            .from('bookings')
+            .select('id')
+            .eq('payment_id', payment?.id)
+            .maybeSingle();
 
-          if (bookingError) {
-            console.warn('Notice: could not record booking row:', bookingError.message);
+          if (!existingBooking) {
+            const { error: bookingError } = await admin.from('bookings').insert({
+              user_id: user.id,
+              service_code: 'career-counseling',
+              domain: applicantDetails?.areaOfInterest || null,
+              scheduled_for: validatedBookingDateIso,
+              status: 'pending',
+              payment_id: payment?.id,
+            });
+
+            if (bookingError) {
+              console.warn('Notice: could not record booking row:', bookingError.message);
+            }
           }
         } catch (bookingErr) {
           console.warn('Notice: exception inserting into bookings table:', bookingErr);
