@@ -100,17 +100,18 @@ export async function POST(request: Request) {
     }
 
     // Record application in service_enquiries
+    let enquiryId: string | undefined;
     try {
       const admin = createAdminClient();
-      await admin.from('service_enquiries').insert({
+      const { data: insertedEnquiry } = await admin.from('service_enquiries').insert({
         user_id: user?.id || null,
         service_code: 'courses',
         interest: `${programTitle} - ${batch || 'Upcoming Cohort'}`,
         message: JSON.stringify({
           type: 'training_application',
-          productCode: productCode || 'training',
+          productCode: productCode || 'training:graphic-designing',
           programTitle,
-          fee,
+          fee: fee || '₹4,999 / month',
           fullName: nameValidation.normalized || fullName,
           email,
           phone: phoneValidation.normalized || phone,
@@ -120,9 +121,11 @@ export async function POST(request: Request) {
           batch: batch || 'Upcoming Cohort',
           resumeFileName: resumeFileName || null,
           resumeStoragePath: resumePath,
+          paymentStatus: 'pending',
           appliedAt: new Date().toISOString(),
         }),
-      });
+      }).select('id').single();
+      enquiryId = insertedEnquiry?.id;
     } catch (dbErr) {
       console.warn('Notice: could not record training enquiry in DB:', dbErr);
     }
@@ -160,9 +163,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Your application for ${programTitle} has been submitted successfully! Our admissions team will review it.`,
+      enquiryId,
       programTitle,
+      productCode: productCode || 'training:graphic-designing',
+      fee: fee || '₹4,999 / month',
       fullName,
+      email,
+      phone,
+      message: `Your application for ${programTitle} has been submitted successfully!`,
     });
   } catch (error) {
     console.error('Unexpected error in /api/training/apply:', error);

@@ -8,22 +8,33 @@ export default async function AdminApplicationsPage() {
   const admin = createAdminClient();
 
   let rawEnquiries: any[] = [];
-  try {
-    const { data, error: fetchError } = await admin
-      .from('service_enquiries')
-      .select('*, profiles:user_id(full_name, avatar_url)')
-      .order('created_at', { ascending: false });
+  let rawPayments: any[] = [];
 
-    if (fetchError || !data) {
-      console.warn('Notice: joined service_enquiries query fallback:', fetchError?.message);
+  try {
+    const [enquiriesRes, paymentsRes] = await Promise.all([
+      admin
+        .from('service_enquiries')
+        .select('*, profiles:user_id(full_name, avatar_url)')
+        .order('created_at', { ascending: false }),
+      admin
+        .from('payments')
+        .select('id, provider_order_id, provider_payment_id, status, amount_paise, product_code, created_at')
+        .order('created_at', { ascending: false })
+        .limit(300),
+    ]);
+
+    if (enquiriesRes.error || !enquiriesRes.data) {
+      console.warn('Notice: joined service_enquiries query fallback:', enquiriesRes.error?.message);
       const fallback = await admin
         .from('service_enquiries')
         .select('*')
         .order('created_at', { ascending: false });
       rawEnquiries = fallback.data || [];
     } else {
-      rawEnquiries = data;
+      rawEnquiries = enquiriesRes.data;
     }
+
+    rawPayments = paymentsRes.data || [];
   } catch (err) {
     console.warn('Notice: service_enquiries query exception:', err);
     const fallback = await admin
@@ -31,6 +42,14 @@ export default async function AdminApplicationsPage() {
       .select('*')
       .order('created_at', { ascending: false });
     rawEnquiries = fallback.data || [];
+  }
+
+  // Create payment lookups by provider_order_id and payment id
+  const paymentByOrderId = new Map<string, any>();
+  const paymentById = new Map<string, any>();
+  for (const pay of rawPayments) {
+    if (pay.provider_order_id) paymentByOrderId.set(pay.provider_order_id, pay);
+    if (pay.id) paymentById.set(pay.id, pay);
   }
 
   const applications: ApplicationItem[] = await Promise.all(
@@ -56,6 +75,25 @@ export default async function AdminApplicationsPage() {
         } catch (storageErr) {
           console.warn('Notice: could not generate signed resume URL:', storageErr);
         }
+      }
+
+      // Associate payment record
+      const matchedPayment =
+        (parsed?.providerOrderId && paymentByOrderId.get(parsed.providerOrderId)) ||
+        (parsed?.paymentId && paymentById.get(parsed.paymentId));
+
+      let paymentStatus: string | undefined = undefined;
+      let amountPaid: number | undefined = undefined;
+
+      if (matchedPayment) {
+        paymentStatus = matchedPayment.status;
+        amountPaid = matchedPayment.amount_paise ? matchedPayment.amount_paise / 100 : undefined;
+      } else if (parsed?.paymentStatus) {
+        paymentStatus = parsed.paymentStatus;
+      } else if (enquiry.service_code === 'internships') {
+        paymentStatus = 'free';
+      } else if (parsed?.fee || enquiry.service_code === 'courses' || enquiry.service_code === 'interview-prep') {
+        paymentStatus = 'pending';
       }
 
       // Resolve applicant name: prioritize form-submitted name, then profile, then fallback
@@ -85,7 +123,14 @@ export default async function AdminApplicationsPage() {
         city: parsed?.city || undefined,
         age: parsed?.age || undefined,
         batch: parsed?.batch || undefined,
+        domain: parsed?.domain || parsed?.role || undefined,
+        qualification: parsed?.qualification || undefined,
+        experience: parsed?.experience || undefined,
         fee: parsed?.fee || undefined,
+        amount: amountPaid || (parsed?.amountPaise ? parsed.amountPaise / 100 : undefined),
+        paymentStatus,
+        paymentId: matchedPayment?.id || parsed?.paymentId || undefined,
+        providerOrderId: matchedPayment?.provider_order_id || parsed?.providerOrderId || undefined,
         resumeFileName: parsed?.resumeFileName || undefined,
         resumeFileSize: parsed?.resumeFileSize || undefined,
         resumeStoragePath: storagePath || undefined,

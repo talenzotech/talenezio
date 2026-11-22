@@ -13,11 +13,14 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  AlertCircle,
   Briefcase,
   GraduationCap,
   Sparkles,
   Copy,
   Check,
+  CreditCard,
+  User,
 } from 'lucide-react';
 import { updateEnquiry } from '../enquiries/actions';
 
@@ -36,7 +39,14 @@ export interface ApplicationItem {
   city?: string;
   age?: number | string;
   batch?: string;
+  domain?: string;
+  qualification?: string;
+  experience?: string;
   fee?: string;
+  amount?: number;
+  paymentStatus?: 'paid' | 'pending' | 'failed' | 'cancelled' | 'free' | string;
+  paymentId?: string;
+  providerOrderId?: string;
   resumeFileName?: string;
   resumeFileSize?: number;
   resumeStoragePath?: string;
@@ -79,6 +89,7 @@ export default function ApplicationsClient({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'internships' | 'courses' | 'interview-prep'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'contacted' | 'closed'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'pending' | 'free' | 'incomplete'>('all');
   const [hasResumeOnly, setHasResumeOnly] = useState(false);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
 
@@ -96,6 +107,9 @@ export default function ApplicationsClient({
       courses: applications.filter((a) => a.serviceCode === 'courses').length,
       interviewPrep: applications.filter((a) => a.serviceCode === 'interview-prep').length,
       withResume: applications.filter((a) => Boolean(a.resumeSignedUrl || a.resumeFileName)).length,
+      paid: applications.filter((a) => a.paymentStatus === 'paid').length,
+      pendingPayment: applications.filter((a) => a.paymentStatus === 'pending' || a.paymentStatus === 'pending_payment').length,
+      free: applications.filter((a) => a.paymentStatus === 'free' || a.serviceCode === 'internships').length,
     };
   }, [applications]);
 
@@ -109,6 +123,12 @@ export default function ApplicationsClient({
       // Status filter
       if (statusFilter !== 'all' && item.status !== statusFilter) return false;
 
+      // Payment filter
+      if (paymentFilter === 'paid' && item.paymentStatus !== 'paid') return false;
+      if (paymentFilter === 'pending' && item.paymentStatus !== 'pending' && item.paymentStatus !== 'pending_payment') return false;
+      if (paymentFilter === 'free' && item.paymentStatus !== 'free' && item.serviceCode !== 'internships') return false;
+      if (paymentFilter === 'incomplete' && item.paymentStatus !== 'failed' && item.paymentStatus !== 'cancelled') return false;
+
       // Has resume filter
       if (hasResumeOnly && !item.resumeSignedUrl && !item.resumeFileName) return false;
 
@@ -120,14 +140,24 @@ export default function ApplicationsClient({
         const matchesPhone = item.applicantPhone.toLowerCase().includes(query);
         const matchesInterest = item.interest.toLowerCase().includes(query);
         const matchesCollege = item.collegeOrCompany.toLowerCase().includes(query);
-        if (!matchesName && !matchesEmail && !matchesPhone && !matchesInterest && !matchesCollege) {
+        const matchesDomain = (item.domain || '').toLowerCase().includes(query);
+        const matchesBatch = (item.batch || '').toLowerCase().includes(query);
+        if (
+          !matchesName &&
+          !matchesEmail &&
+          !matchesPhone &&
+          !matchesInterest &&
+          !matchesCollege &&
+          !matchesDomain &&
+          !matchesBatch
+        ) {
           return false;
         }
       }
 
       return true;
     });
-  }, [applications, activeTab, statusFilter, hasResumeOnly, searchTerm]);
+  }, [applications, activeTab, statusFilter, paymentFilter, hasResumeOnly, searchTerm]);
 
   const getServiceBadge = (code: string) => {
     switch (code) {
@@ -183,6 +213,43 @@ export default function ApplicationsClient({
     }
   };
 
+  const getPaymentBadge = (status?: string, amount?: number, fee?: string) => {
+    if (status === 'paid') {
+      const displayAmount = amount ? `₹${amount.toLocaleString('en-IN')}` : fee;
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          {displayAmount ? `${displayAmount} Paid` : 'Paid'}
+        </span>
+      );
+    }
+    if (status === 'free') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <Sparkles className="w-3 h-3 text-slate-500" />
+          Free Application
+        </span>
+      );
+    }
+    if (status === 'failed' || status === 'cancelled') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+          <AlertCircle className="w-3 h-3 text-rose-600" />
+          Payment Incomplete
+        </span>
+      );
+    }
+    if (status === 'pending' || status === 'pending_payment') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <Clock className="w-3 h-3 text-amber-600" />
+          Payment Pending {fee ? `(${fee})` : ''}
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and Filter Controls */}
@@ -193,18 +260,24 @@ export default function ApplicationsClient({
               Applications & Resumes
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Centralized workspace to view submitted applications, download resumes, and manage applicant follow-up.
+              Centralized workspace to view submitted applications, download resumes, track payments, and manage follow-ups.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800">
               <FileText className="w-4 h-4" />
               {counts.withResume} Resumes on File
             </span>
+            {counts.paid > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                {counts.paid} Paid
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Tab Pills */}
+        {/* Tab Pills - Always Displayed */}
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3">
           <button
             type="button"
@@ -239,48 +312,60 @@ export default function ApplicationsClient({
           >
             Training Courses ({counts.courses})
           </button>
-          {counts.interviewPrep > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('interview-prep')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'interview-prep'
-                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-            >
-              Interview Prep ({counts.interviewPrep})
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setActiveTab('interview-prep')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'interview-prep'
+                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            Interview Prep ({counts.interviewPrep})
+          </button>
         </div>
 
         {/* Search & Filter Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-          <div className="relative sm:col-span-6 lg:col-span-7">
+          <div className="relative sm:col-span-5 lg:col-span-5">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by name, email, phone, role, or college..."
+              placeholder="Search by name, email, phone, role, batch, or college..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 text-xs font-medium rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             />
           </div>
 
-          <div className="sm:col-span-3 lg:col-span-3">
+          <div className="sm:col-span-3 lg:col-span-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="w-full px-3 py-2.5 text-xs font-medium rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">All Follow-up Statuses</option>
               <option value="new">Status: New</option>
               <option value="contacted">Status: Contacted</option>
               <option value="closed">Status: Closed</option>
             </select>
           </div>
 
-          <div className="sm:col-span-3 lg:col-span-2 flex items-center">
+          <div className="sm:col-span-4 lg:col-span-3">
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value as any)}
+              className="w-full px-3 py-2.5 text-xs font-medium rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            >
+              <option value="all">All Payment States</option>
+              <option value="paid">Payment: Paid Only ({counts.paid})</option>
+              <option value="pending">Payment: Pending ({counts.pendingPayment})</option>
+              <option value="free">Payment: Free Only ({counts.free})</option>
+              <option value="incomplete">Payment: Incomplete/Cancelled</option>
+            </select>
+          </div>
+
+          <div className="sm:col-span-12 lg:col-span-2 flex items-center">
             <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
@@ -309,6 +394,7 @@ export default function ApplicationsClient({
                   <div className="flex flex-wrap items-center gap-2">
                     {getServiceBadge(item.serviceCode)}
                     {getStatusBadge(item.status)}
+                    {getPaymentBadge(item.paymentStatus, item.amount, item.fee)}
                     <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                       <Calendar className="w-3 h-3" />
                       {new Date(item.createdAt).toLocaleDateString('en-IN', {
@@ -361,7 +447,7 @@ export default function ApplicationsClient({
                           type="button"
                           onClick={() => handleCopyPhone(item.id, item.applicantPhone)}
                           title="Copy phone number"
-                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded"
+                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded cursor-pointer"
                         >
                           {copiedPhoneId === item.id ? (
                             <Check className="w-3 h-3 text-emerald-600" />
@@ -382,10 +468,32 @@ export default function ApplicationsClient({
                         {item.age && <span>· Age: {item.age}</span>}
                       </div>
                     )}
-                    {item.batch && (
+                    {(item.batch || item.domain) && (
                       <div className="sm:col-span-2 text-gray-500">
-                        <strong>Batch / Cohort:</strong> {item.batch}
-                        {item.fee && <span> · Fee: {item.fee}</span>}
+                        {item.batch && (
+                          <span>
+                            <strong>Batch / Cohort:</strong> {item.batch}{' '}
+                          </span>
+                        )}
+                        {item.domain && (
+                          <span>
+                            · <strong>Domain:</strong> {item.domain}{' '}
+                          </span>
+                        )}
+                        {item.fee && <span>· <strong>Program Fee:</strong> {item.fee}</span>}
+                      </div>
+                    )}
+                    {(item.qualification || item.experience) && (
+                      <div className="sm:col-span-2 text-gray-500 text-[11px]">
+                        {item.qualification && <span><strong>Qualification:</strong> {item.qualification} </span>}
+                        {item.experience && <span>· <strong>Experience:</strong> {item.experience}</span>}
+                      </div>
+                    )}
+                    {item.paymentId && (
+                      <div className="sm:col-span-2 text-[11px] text-gray-400">
+                        <CreditCard className="w-3 h-3 inline mr-1 text-emerald-500" />
+                        Payment Reference: {item.paymentId}
+                        {item.providerOrderId ? ` (Order: ${item.providerOrderId})` : ''}
                       </div>
                     )}
                   </div>
@@ -428,10 +536,10 @@ export default function ApplicationsClient({
                   className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 lg:w-64 pt-3 lg:pt-0 lg:border-l lg:border-gray-100 lg:dark:border-gray-800 lg:pl-5"
                 >
                   <input type="hidden" name="id" value={item.id} />
-                  
+
                   <div className="w-full">
                     <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                      Status
+                      Follow-up Status
                     </label>
                     <select
                       name="status"
@@ -473,7 +581,7 @@ export default function ApplicationsClient({
               No matching applications found
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Try adjusting your search query, status filter, or active tab.
+              Try adjusting your search query, status filter, payment filter, or active tab.
             </p>
           </div>
         )}

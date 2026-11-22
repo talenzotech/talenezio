@@ -104,7 +104,44 @@ export async function POST(request: Request) {
     }
   }
 
+  // Update linked service_enquiries record if this payment was for an application
+  try {
+    const meta = payment.metadata as Record<string, any> | null;
+    const enquiryId = meta?.enquiry_id || meta?.applicant_details?.enquiryId;
+    if (enquiryId) {
+      const { data: enquiry } = await admin.from('service_enquiries').select('message').eq('id', enquiryId).maybeSingle();
+      if (enquiry?.message) {
+        let msgObj: Record<string, any> = {};
+        try { msgObj = JSON.parse(enquiry.message); } catch { msgObj = {}; }
+        msgObj.paymentStatus = 'paid';
+        msgObj.paymentId = payment.id;
+        msgObj.providerPaymentId = body.razorpay_payment_id;
+        msgObj.paidAt = new Date().toISOString();
+        await admin.from('service_enquiries').update({ message: JSON.stringify(msgObj) }).eq('id', enquiryId);
+      }
+    } else if (body.razorpay_order_id) {
+      const { data: enquiries } = await admin.from('service_enquiries').select('id, message').order('created_at', { ascending: false }).limit(20);
+      for (const enq of (enquiries || [])) {
+        if (enq.message && enq.message.includes(body.razorpay_order_id)) {
+          let msgObj: Record<string, any> = {};
+          try { msgObj = JSON.parse(enq.message); } catch { msgObj = {}; }
+          if (msgObj.providerOrderId === body.razorpay_order_id) {
+            msgObj.paymentStatus = 'paid';
+            msgObj.paymentId = payment.id;
+            msgObj.providerPaymentId = body.razorpay_payment_id;
+            msgObj.paidAt = new Date().toISOString();
+            await admin.from('service_enquiries').update({ message: JSON.stringify(msgObj) }).eq('id', enq.id);
+            break;
+          }
+        }
+      }
+    }
+  } catch (enquiryUpdateErr) {
+    console.warn('Notice: could not update linked service_enquiry payment status:', enquiryUpdateErr);
+  }
+
   revalidatePath('/dashboard');
+  revalidatePath('/admin/applications');
 
   return NextResponse.json({ verified: true });
 }

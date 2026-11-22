@@ -21,6 +21,7 @@ import {
 import { type TrainingProgram } from '@/lib/internships-training/data'
 import { isValidResumeFile } from '@/lib/interview-prep/batches'
 import { validateFullName, validatePhoneNumber } from '@/lib/validation/form-fields'
+import type { PaymentOrderResponse, RazorpayPaymentFailure } from '@/lib/payments/client-types'
 
 
 interface TrainingApplyModalProps {
@@ -75,6 +76,18 @@ export function TrainingApplyModal({
     }
 
     setResumeFile(file)
+  }
+
+  const loadRazorpay = async () => {
+    if (typeof window !== 'undefined' && window.Razorpay) return
+
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('Could not load payment gateway checkout'))
+      document.body.appendChild(script)
+    })
   }
 
   const handleRemoveFile = () => {
@@ -143,6 +156,7 @@ export function TrainingApplyModal({
         formData.append('resume', resumeFile)
       }
 
+      // Step 1: Save application form and resume
       const response = await fetch('/api/training/apply', {
         method: 'POST',
         body: formData,
@@ -166,6 +180,109 @@ export function TrainingApplyModal({
           (typeof data.error === 'string' && data.error) ||
             'Failed to submit training application. Please try again.'
         )
+      }
+
+      // Step 2: Initialize Razorpay payment order for the training program
+      try {
+        const orderRes = await fetch('/api/payments/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productCode: (data.productCode as string) || program.productCode,
+            applicantDetails: {
+              fullName: trimmedName,
+              name: trimmedName,
+              email: trimmedEmail,
+              phone: phoneValidation.normalized || trimmedPhone,
+              contactNumber: phoneValidation.normalized || trimmedPhone,
+              city: trimmedCity,
+              collegeOrCompany: trimmedCollegeOrCompany,
+              age: parsedAge,
+              batch,
+              serviceName: program.title,
+              enquiryId: data.enquiryId as string | undefined,
+            },
+          }),
+        })
+
+        if (orderRes.ok) {
+          const order = (await orderRes.json()) as PaymentOrderResponse
+
+          if (order.freeAccess) {
+            setIsSuccess(true)
+            setIsLoading(false)
+            return
+          }
+
+          if (order.orderId && order.keyId) {
+            await loadRazorpay()
+
+            const checkout = new window.Razorpay({
+              key: order.keyId,
+              order_id: order.orderId,
+              amount: order.amount,
+              currency: order.currency || 'INR',
+              name: 'Talenezio',
+              description: `${program.title} Enrollment`,
+              prefill: {
+                name: trimmedName,
+                email: trimmedEmail,
+                contact: phoneValidation.normalized || trimmedPhone,
+              },
+              handler: async (paymentResult: Record<string, string>) => {
+                try {
+                  const verifyRes = await fetch('/api/payments/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentResult),
+                  })
+
+                  if (verifyRes.ok) {
+                    setIsSuccess(true)
+                  } else {
+                    setErrorMessage('Payment verification is pending. Your application is saved in our system.')
+                  }
+                } catch {
+                  setErrorMessage('Application saved. Network issue while verifying payment receipt.')
+                } finally {
+                  setIsLoading(false)
+                }
+              },
+              modal: {
+                ondismiss: () => {
+                  setIsLoading(false)
+                  setErrorMessage('Payment was not completed. Your application details and resume have been safely saved in the system.')
+                  void fetch('/api/payments/failed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: order.orderId, status: 'cancelled' }),
+                  }).catch(() => null)
+                },
+              },
+            })
+
+            checkout.on?.('payment.failed', (failedRes: RazorpayPaymentFailure) => {
+              setIsLoading(false)
+              const desc = failedRes?.error?.description || 'Payment failed during checkout. Your application details are saved.'
+              setErrorMessage(desc)
+              void fetch('/api/payments/failed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: failedRes?.error?.metadata?.order_id || order.orderId,
+                  status: 'failed',
+                  code: failedRes?.error?.code,
+                  description: failedRes?.error?.description,
+                }),
+              }).catch(() => null)
+            })
+
+            checkout.open()
+            return
+          }
+        }
+      } catch (payErr) {
+        console.warn('Payment gateway prompt bypassed:', payErr)
       }
 
       setIsSuccess(true)

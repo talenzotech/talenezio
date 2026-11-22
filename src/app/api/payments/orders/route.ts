@@ -45,6 +45,9 @@ export async function POST(request: Request) {
         selectedBookingDate?: string;
         scheduledFor?: string;
         linkedinUrl?: string;
+        batch?: string;
+        domain?: string;
+        enquiryId?: string;
       };
     } | null;
 
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
     // Handle Career Service validations and email dispatch
     const isCareerRegistration = Boolean(
       body?.applicantDetails &&
-      (body.applicantDetails.careerDetails || body.applicantDetails.serviceName || productCode.startsWith('career:'))
+      (body.applicantDetails.careerDetails || body.applicantDetails.serviceName || productCode.startsWith('career:') || productCode === 'service:interview-prep')
     );
 
     let validatedPhone: string | undefined;
@@ -71,8 +74,11 @@ export async function POST(request: Request) {
     if (isCareerRegistration && body?.applicantDetails) {
       const details = body.applicantDetails;
       const fullName = (details.fullName || details.name || '').trim();
-      const careerDetails = (details.careerDetails || '').trim();
-      const areaOfInterest = (details.areaOfInterest || '').trim();
+      const isInterviewPrep = productCode === 'career:interview-prep' || productCode === 'service:interview-prep';
+      const isTraining = productCode.startsWith('training:');
+
+      const careerDetails = (details.careerDetails || (details.batch ? `Batch: ${details.batch}` : '') || details.serviceName || (isInterviewPrep ? 'Interview Preparation' : '')).trim();
+      const areaOfInterest = (details.areaOfInterest || details.domain || details.serviceName || (isInterviewPrep ? 'Software Engineering' : '')).trim();
       const phoneInput = (details.phone || details.contactNumber || '').trim();
 
       const nameValidation = validateFullName(fullName, { minLength: 2, maxLength: 50, fieldName: 'Full name' });
@@ -90,12 +96,14 @@ export async function POST(request: Request) {
       }
       validatedPhone = phoneValidation.normalized;
 
-      if (!careerDetails || careerDetails.length < 2) {
-        return NextResponse.json({ error: 'Please provide your career details (current education, role, or background).' }, { status: 400 });
-      }
+      if (!isInterviewPrep && !isTraining) {
+        if (!careerDetails || careerDetails.length < 2) {
+          return NextResponse.json({ error: 'Please provide your career details (current education, role, or background).' }, { status: 400 });
+        }
 
-      if (!areaOfInterest || areaOfInterest.length < 2) {
-        return NextResponse.json({ error: 'Please provide your area of interest or target domain.' }, { status: 400 });
+        if (!areaOfInterest || areaOfInterest.length < 2) {
+          return NextResponse.json({ error: 'Please provide your area of interest or target domain.' }, { status: 400 });
+        }
       }
 
       // 1. Career Guidance (1:1) specific validation: mandatory booking date
@@ -247,6 +255,7 @@ export async function POST(request: Request) {
         category: product.category ?? null,
         service_code: product.serviceCode ?? null,
         training_code: product.trainingCode ?? null,
+        enquiry_id: body?.applicantDetails?.enquiryId || null,
         applicant_details: consolidatedDetails,
         receipt,
       },
@@ -257,7 +266,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unable to store payment order' }, { status: 500 });
     }
 
-    if (product.trainingCode && body?.applicantDetails) {
+    // Link application enquiry with payment order if enquiryId provided
+    if (body?.applicantDetails?.enquiryId) {
+      try {
+        const { data: enq } = await admin.from('service_enquiries').select('message').eq('id', body.applicantDetails.enquiryId).maybeSingle();
+        if (enq?.message) {
+          let msgObj: Record<string, any> = {};
+          try { msgObj = JSON.parse(enq.message); } catch { msgObj = {}; }
+          msgObj.providerOrderId = order.id;
+          msgObj.paymentId = payment?.id;
+          msgObj.amountPaise = product.amountPaise;
+          msgObj.paymentStatus = 'pending';
+          await admin.from('service_enquiries').update({ message: JSON.stringify(msgObj) }).eq('id', body.applicantDetails.enquiryId);
+        }
+      } catch (linkErr) {
+        console.warn('Notice: could not link enquiry with payment order:', linkErr);
+      }
+    } else if (product.trainingCode && body?.applicantDetails) {
+      // Only insert fallback enquiry if not already created
       try {
         await admin.from('service_enquiries').insert({
           user_id: user.id,
@@ -266,6 +292,10 @@ export async function POST(request: Request) {
           message: JSON.stringify({
             type: 'training_application',
             productCode,
+            providerOrderId: order.id,
+            paymentId: payment?.id,
+            amountPaise: product.amountPaise,
+            paymentStatus: 'pending',
             ...consolidatedDetails,
             appliedAt: new Date().toISOString(),
           }),
