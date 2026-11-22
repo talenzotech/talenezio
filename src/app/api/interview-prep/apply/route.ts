@@ -95,15 +95,19 @@ export async function POST(request: Request) {
     }
 
     // Record application in service_enquiries
+    let enquiryId: string | undefined;
     try {
       const admin = createAdminClient();
-      await admin.from('service_enquiries').insert({
+      const { data: insertedEnquiry } = await admin.from('service_enquiries').insert({
         user_id: user?.id || null,
         service_code: 'interview-prep',
         interest: `Interview Preparation - ${batch}`,
         message: JSON.stringify({
           serviceCode: 'interview-prep',
           serviceTitle: 'Interview Preparation',
+          productCode: 'career:interview-prep',
+          fee: '₹499',
+          amountPaise: 49900,
           fullName: nameValidation.normalized || fullName,
           email,
           phone: phoneValidation.normalized || phone,
@@ -112,9 +116,11 @@ export async function POST(request: Request) {
           resumeFileName: resumeFile.name,
           resumeFileSize: resumeFile.size,
           resumeStoragePath: resumePath,
+          paymentStatus: 'pending',
           appliedAt: new Date().toISOString(),
         }),
-      });
+      }).select('id').single();
+      enquiryId = insertedEnquiry?.id;
     } catch (dbErr) {
       console.warn('Notice: could not record interview prep enquiry in DB:', dbErr);
     }
@@ -148,9 +154,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Your application for the ${batch} batch has been submitted successfully! Our team will review your resume and details.`,
+      enquiryId,
+      productCode: 'career:interview-prep',
+      fee: '₹499',
+      amountPaise: 49900,
+      message: `Your application for the ${batch} batch has been submitted successfully!`,
       batch,
       fullName,
+      email,
+      phone,
     });
   } catch (error) {
     console.error('Unexpected error in /api/interview-prep/apply:', error);

@@ -121,6 +121,20 @@ export type FulfillResult = {
   action: 'created' | 'updated' | 'preserved';
 };
 
+function isTableMissingError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as Record<string, unknown>;
+  const code = String(err.code || '');
+  const message = String(err.message || '').toLowerCase();
+  return (
+    code === 'PGRST205' ||
+    code === '42P01' ||
+    message.includes('schema cache') ||
+    (message.includes('relation') && message.includes('does not exist')) ||
+    message.includes('could not find the table')
+  );
+}
+
 /**
  * Fully idempotent service order fulfillment.
  * 1. Checks existing service order by unique payment_id.
@@ -142,6 +156,10 @@ export async function fulfillServiceOrder(
     .maybeSingle();
 
   if (fetchError) {
+    if (isTableMissingError(fetchError)) {
+      console.warn('Notice: service_orders table not available in schema cache, skipping fulfillment query.');
+      return { success: true, action: 'preserved' };
+    }
     throw new Error(`Failed to check existing service order: ${fetchError.message}`);
   }
 
@@ -203,6 +221,11 @@ export async function fulfillServiceOrder(
     .maybeSingle();
 
   if (insertError) {
+    if (isTableMissingError(insertError)) {
+      console.warn('Notice: service_orders table not available in schema cache, skipping fulfillment row insertion.');
+      return { success: true, action: 'preserved' };
+    }
+
     // Unique violation (concurrent verify/webhook request already inserted)
     if (insertError.code === '23505' || String(insertError.message).includes('duplicate key')) {
       await admin

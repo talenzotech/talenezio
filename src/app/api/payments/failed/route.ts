@@ -47,6 +47,24 @@ export async function POST(request: Request) {
             .eq('id', payment.id)
             .in('status', ['created', 'pending']);
         }
+
+        // Update linked enquiry payment status if present
+        try {
+          const { data: enquiries } = await admin.from('service_enquiries').select('id, message').order('created_at', { ascending: false }).limit(20);
+          for (const enq of (enquiries || [])) {
+            if (enq.message && enq.message.includes(body.orderId)) {
+              let msgObj: Record<string, any> = {};
+              try { msgObj = JSON.parse(enq.message); } catch { msgObj = {}; }
+              if (msgObj.providerOrderId === body.orderId && msgObj.paymentStatus !== 'paid') {
+                msgObj.paymentStatus = 'cancelled';
+                await admin.from('service_enquiries').update({ message: JSON.stringify(msgObj) }).eq('id', enq.id);
+                break;
+              }
+            }
+          }
+        } catch (enqErr) {
+          console.warn('Notice: could not update enquiry cancellation status:', enqErr);
+        }
       }
 
       return NextResponse.json({ recorded: true, state: 'dismissed' });
@@ -66,6 +84,24 @@ export async function POST(request: Request) {
       .eq('provider_order_id', body.orderId)
       .eq('user_id', user.id)
       .in('status', ['created', 'pending']);
+
+    // Update linked enquiry to failed
+    try {
+      const { data: enquiries } = await admin.from('service_enquiries').select('id, message').order('created_at', { ascending: false }).limit(20);
+      for (const enq of (enquiries || [])) {
+        if (enq.message && enq.message.includes(body.orderId)) {
+          let msgObj: Record<string, any> = {};
+          try { msgObj = JSON.parse(enq.message); } catch { msgObj = {}; }
+          if (msgObj.providerOrderId === body.orderId && msgObj.paymentStatus !== 'paid') {
+            msgObj.paymentStatus = 'failed';
+            await admin.from('service_enquiries').update({ message: JSON.stringify(msgObj) }).eq('id', enq.id);
+            break;
+          }
+        }
+      }
+    } catch (enqErr) {
+      console.warn('Notice: could not update enquiry failure status:', enqErr);
+    }
 
     return NextResponse.json({ recorded: true, state: 'failed' });
   } catch (error) {

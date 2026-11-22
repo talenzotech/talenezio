@@ -12,6 +12,7 @@ const navigation = [
   { href: '/admin/tests', label: 'Test Attempts', icon: 'clipboard' },
   { href: '/admin/bookings', label: 'Career Guidance', icon: 'calendar' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },
+  { href: '/admin/unlock-submissions', label: 'Unlock Submissions', icon: 'inbox' },
   { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
 ] as const;
 
