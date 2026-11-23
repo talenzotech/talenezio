@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Briefcase, Compass, FileText, GraduationCap, Home } from 'lucide-react'
+import SameRouteLink from '@/components/SameRouteLink'
 
 const navigationItems = [
   { label: 'Home', href: '/dashboard', path: '/dashboard', icon: Home },
@@ -19,12 +20,13 @@ export default function FeatureBottomNav() {
     <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
       <div className="mx-auto grid max-w-xl grid-cols-5 py-2 px-1">
         {navigationItems.map(({ label, href, path, icon: Icon }) => {
+          const ItemLink = label === 'Home' ? SameRouteLink : Link
           const active = path === '/dashboard'
             ? pathname === '/dashboard'
             : pathname === path || (path !== '/' && pathname.startsWith(`${path}/`))
 
           return (
-            <Link
+            <ItemLink
               key={label}
               href={href}
               aria-current={active ? 'page' : undefined}
@@ -39,7 +41,7 @@ export default function FeatureBottomNav() {
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] leading-tight font-medium whitespace-nowrap">{label}</span>
-            </Link>
+            </ItemLink>
           )
         })}
       </div>

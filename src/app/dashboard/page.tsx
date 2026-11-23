@@ -21,6 +21,7 @@ import FeatureBottomNav from '@/components/FeatureBottomNav'
 import { DashboardHeroBanner } from '@/components/dashboard/DashboardHeroBanner'
 import { MotivationBanner } from '@/components/dashboard/MotivationBanner'
 import { DashboardProfileMenu } from '@/components/dashboard/DashboardProfileMenu'
+import SameRouteLink from '@/components/SameRouteLink'
 import { type ExperienceLevel } from '@/lib/profile/validation'
 import { getAdminUser } from '@/lib/auth/admin'
 import { getCurrentUser } from '@/lib/auth/current-user'
@@ -156,10 +157,10 @@ export default async function DashboardPage() {
       {/* Top Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-8 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
+          <SameRouteLink href="/dashboard" className="flex items-center gap-2.5" aria-label="Talenezio home">
             <ThemeWordmark />
             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Talenezio</span>
-          </Link>
+          </SameRouteLink>
           
            <div className="flex items-center gap-4">
              {/* ThemeToggle is retained but intentionally disabled for the light-only experience. */}
