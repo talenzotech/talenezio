@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2 } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft, CheckCircle2, Award, SkipForward, Download, Loader2, X } from 'lucide-react'
 import type { PublicQuestion } from '@/lib/tests/questionBank'
 import { validateFullName } from '@/lib/validation/form-fields'
 
@@ -28,6 +28,7 @@ export default function TestInterface({
   const [result, setResult] = useState<{ score: number; total: number; certificateId: string | null } | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitConfirmationOpen, setIsSubmitConfirmationOpen] = useState(false)
   const [timeLeft, setTimeLeft] = useState(type === 'free' ? 20 * 60 : 45 * 60) // 20 mins free, 45 mins pro
   const [editedCandidateName, setCandidateName] = useState<string | null>(null)
   const [generatedCertificateId, setGeneratedCertificateId] = useState<string | null>(null)
@@ -36,6 +37,9 @@ export default function TestInterface({
   const [isExiting, setIsExiting] = useState(false)
   const router = useRouter()
   const [isRetaking, setIsRetaking] = useState(false)
+  const submissionInFlightRef = useRef(false)
+  const submitDialogRef = useRef<HTMLDivElement>(null)
+  const cancelSubmitRef = useRef<HTMLButtonElement>(null)
   const candidateName = editedCandidateName ?? (userName || 'Talenezio Learner')
   const testOptionsPath = `/tests/${category}`
 
@@ -112,9 +116,53 @@ export default function TestInterface({
   // Fallback to empty array if no questions
   const questions = initialQuestions && initialQuestions.length > 0 ? initialQuestions : []
 
+  useEffect(() => {
+    if (!isSubmitConfirmationOpen) return
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    cancelSubmitRef.current?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (!submissionInFlightRef.current) setIsSubmitConfirmationOpen(false)
+        event.preventDefault()
+      }
+      if (event.key !== 'Tab') return
+
+      const buttons = Array.from(submitDialogRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])
+      if (buttons.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = buttons[0]
+      const last = buttons[buttons.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !submitDialogRef.current?.contains(document.activeElement))) {
+        last.focus()
+        event.preventDefault()
+      } else if (!event.shiftKey && (document.activeElement === last || !submitDialogRef.current?.contains(document.activeElement))) {
+        first.focus()
+        event.preventDefault()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKeyDown)
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [isSubmitConfirmationOpen])
+
   const handleSubmit = async (isAutoSubmit = false) => {
-    if (isSubmitting || isSubmitted) return
-    if (!isAutoSubmit && !confirm("Are you sure you want to submit the test?")) return
+    if (submissionInFlightRef.current || isSubmitted) return
+    if (!isAutoSubmit) {
+      setIsSubmitConfirmationOpen(true)
+      return
+    }
+    submissionInFlightRef.current = true
     setIsSubmitting(true)
     setSubmitError(null)
     try {
@@ -132,6 +180,7 @@ export default function TestInterface({
       const payload = await response.json().catch(() => null)
       if (!response.ok) {
         setSubmitError(payload?.error || 'Could not submit the test')
+        setIsSubmitConfirmationOpen(false)
         return
       }
 
@@ -146,11 +195,14 @@ export default function TestInterface({
       }
 
       setResult(payload)
+      setIsSubmitConfirmationOpen(false)
       setIsSubmitted(true)
     } catch (err) {
       console.error('Submission error:', err)
       setSubmitError('Network error: Unable to reach the server. Please check your connection or restart the dev server and try again.')
+      setIsSubmitConfirmationOpen(false)
     } finally {
+      submissionInFlightRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -533,6 +585,60 @@ export default function TestInterface({
         </div>
       </div>
       {submitError && <p className="mt-4 text-center text-sm text-red-600">{submitError}</p>}
+      {isSubmitConfirmationOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !submissionInFlightRef.current) setIsSubmitConfirmationOpen(false)
+          }}
+        >
+          <div
+            ref={submitDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-confirmation-title"
+            aria-describedby="submit-confirmation-description"
+            aria-busy={isSubmitting}
+            className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900"
+          >
+            <button
+              type="button"
+              onClick={() => setIsSubmitConfirmationOpen(false)}
+              disabled={isSubmitting}
+              aria-label="Close submission confirmation"
+              className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <h2 id="submit-confirmation-title" className="pr-8 text-xl font-bold text-gray-900 dark:text-white">
+              Submit assessment?
+            </h2>
+            <p id="submit-confirmation-description" className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+              Your answers will be submitted and you will not be able to change them afterward.
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                ref={cancelSubmitRef}
+                type="button"
+                onClick={() => setIsSubmitConfirmationOpen(false)}
+                disabled={isSubmitting}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSubmit(true)}
+                aria-disabled={isSubmitting}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {isSubmitting ? 'Submitting...' : 'Submit assessment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
