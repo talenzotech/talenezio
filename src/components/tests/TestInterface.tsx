@@ -485,23 +485,23 @@ export default function TestInterface({
       </div>
 
       {/* Navigation Footer */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={handlePrev}
           disabled={currentQuestion === 0}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-2 px-4 py-3 sm:px-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Previous
         </button>
         
-        <div className="flex items-center gap-2">
+        <div className="flex w-full min-w-0 items-center justify-end gap-2 sm:w-auto">
           {currentQuestion < questions.length - 1 && (
             <button
               type="button"
               onClick={handleSkip}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex min-w-0 items-center gap-2 px-3 py-3 text-sm sm:px-5 sm:text-base rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              Skip Question <SkipForward className="w-4 h-4" />
+              Skip Question <SkipForward className="w-4 h-4 shrink-0" />
             </button>
           )}
           {currentQuestion === questions.length - 1 ? (
@@ -509,7 +509,7 @@ export default function TestInterface({
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3 sm:px-8 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -525,7 +525,7 @@ export default function TestInterface({
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
+              className="flex items-center gap-2 px-5 py-3 sm:px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm transition-colors"
             >
               Next <ArrowRight className="w-4 h-4" />
             </button>

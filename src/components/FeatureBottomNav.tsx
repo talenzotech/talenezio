@@ -28,7 +28,7 @@ export default function FeatureBottomNav() {
               key={label}
               href={href}
               aria-current={active ? 'page' : undefined}
-              className={`relative flex min-h-12 flex-col items-center justify-center gap-1 px-0.5 text-center transition-colors ${
+              className={`relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-center transition-colors ${
                 active ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
             >
@@ -38,7 +38,7 @@ export default function FeatureBottomNav() {
                   <span className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] leading-tight font-medium whitespace-nowrap">{label}</span>
+              <span className="max-w-full break-words text-[10px] leading-tight font-medium sm:text-[11px]">{label}</span>
             </Link>
           )
         })}

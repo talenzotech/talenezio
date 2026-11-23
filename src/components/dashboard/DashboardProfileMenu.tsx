@@ -101,7 +101,7 @@ export function DashboardProfileMenu({ initialProfile, signoutAction }: Dashboar
           </div>
         )}
 
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <span className="hidden max-w-28 truncate text-sm font-semibold text-gray-700 dark:text-gray-300 sm:block">
           {firstName}
         </span>
 
