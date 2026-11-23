@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Search,
   FileText,
-  Download,
   ExternalLink,
   Mail,
   Phone,
@@ -270,7 +269,7 @@ export default function ApplicationsClient({
           <div className="sm:col-span-3 lg:col-span-3">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="w-full px-3 py-2.5 text-xs font-medium rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             >
               <option value="all">All Statuses</option>

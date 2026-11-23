@@ -4,10 +4,38 @@ import ApplicationsClient, { type ApplicationItem } from './ApplicationsClient';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Disable caching for real-time admin view
 
+type Enquiry = {
+  id: string;
+  user_id: string | null;
+  service_code: string | null;
+  interest: string | null;
+  status: string | null;
+  admin_note: string | null;
+  created_at: string;
+  message: string | null;
+  profiles?: { full_name: string | null; avatar_url: string | null } | { full_name: string | null; avatar_url: string | null }[] | null;
+};
+
+type ApplicationPayload = {
+  resumeStoragePath?: string;
+  fullName?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  college?: string;
+  collegeOrCompany?: string;
+  city?: string;
+  age?: number | string;
+  batch?: string;
+  fee?: string;
+  resumeFileName?: string;
+  resumeFileSize?: number;
+};
+
 export default async function AdminApplicationsPage() {
   const admin = createAdminClient();
 
-  let rawEnquiries: any[] = [];
+  let rawEnquiries: Enquiry[] = [];
   try {
     const { data, error: fetchError } = await admin
       .from('service_enquiries')
@@ -35,7 +63,7 @@ export default async function AdminApplicationsPage() {
 
   const applications: ApplicationItem[] = await Promise.all(
     rawEnquiries.map(async (enquiry) => {
-      let parsed: Record<string, any> | null = null;
+      let parsed: ApplicationPayload | null = null;
       let resumeSignedUrl: string | null = null;
 
       if (enquiry.message && typeof enquiry.message === 'string' && enquiry.message.trim().startsWith('{')) {
