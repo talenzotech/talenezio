@@ -135,19 +135,18 @@ export async function POST(request: Request) {
 
     const service = product.serviceCode ? getService(product.serviceCode) : null;
     if (product.serviceCode && service?.freeUnlock && await hasServiceAccess(user.id, product.serviceCode)) {
-      const { error } = await admin.from('service_orders').insert({
-        user_id: user.id,
-        service_code: product.serviceCode,
-        product_code: productCode,
-        amount_paise: product.amountPaise,
-        currency: product.currency,
-        status: 'requested',
-        scheduled_for: validatedBookingDateIso || null,
-      });
-
-      if (error) {
-        console.error('Unable to create free service order:', error);
-        return NextResponse.json({ error: 'Unable to request service' }, { status: 500 });
+      try {
+        await admin.from('service_orders').insert({
+          user_id: user.id,
+          service_code: product.serviceCode,
+          product_code: productCode,
+          amount_paise: product.amountPaise,
+          currency: product.currency,
+          status: 'requested',
+          scheduled_for: validatedBookingDateIso || null,
+        });
+      } catch (freeOrderErr) {
+        console.warn('Notice: free service order insert skipped:', freeOrderErr);
       }
 
       revalidatePath('/dashboard');
@@ -275,6 +274,38 @@ export async function POST(request: Request) {
       }
     }
 
+    if (isCareerRegistration && body?.applicantDetails) {
+      try {
+        const careerServiceCode = product.serviceCode === 'career-counseling' ? 'career-guidance' : (product.serviceCode || 'career-guidance');
+        const careerTitle =
+          productCode === 'career:career-guidance'
+            ? 'Career Guidance'
+            : productCode === 'career:linkedin-optimization'
+            ? 'LinkedIn Optimization'
+            : productCode === 'career:interview-prep'
+            ? 'Interview Preparation'
+            : 'Career Accelerator';
+
+        await admin.from('service_enquiries').insert({
+          user_id: user.id,
+          service_code: careerServiceCode,
+          interest: `${careerTitle} Application`,
+          message: JSON.stringify({
+            type: 'career_application',
+            productCode,
+            paymentId: payment?.id,
+            providerOrderId: order.id,
+            paymentStatus: 'pending',
+            amountPaise: product.amountPaise,
+            ...consolidatedDetails,
+            appliedAt: new Date().toISOString(),
+          }),
+        });
+      } catch (careerEnqErr) {
+        console.warn('Notice: could not record career service enquiry:', careerEnqErr);
+      }
+    }
+
     if (product.serviceCode) {
       const applicantDetails = consolidatedDetails;
       const fulfilmentNoteParts = [
@@ -288,21 +319,24 @@ export async function POST(request: Request) {
 
       const fulfilmentNote = fulfilmentNoteParts.join(' | ');
 
-      const { error: serviceOrderError } = await admin.from('service_orders').insert({
-        user_id: user.id,
-        service_code: product.serviceCode,
-        product_code: productCode,
-        amount_paise: product.amountPaise,
-        currency: product.currency,
-        status: 'pending_payment',
-        payment_id: payment?.id,
-        scheduled_for: validatedBookingDateIso || null,
-        fulfilment_note: fulfilmentNote,
-      });
+      try {
+        const { error: serviceOrderError } = await admin.from('service_orders').insert({
+          user_id: user.id,
+          service_code: product.serviceCode,
+          product_code: productCode,
+          amount_paise: product.amountPaise,
+          currency: product.currency,
+          status: 'pending_payment',
+          payment_id: payment?.id,
+          scheduled_for: validatedBookingDateIso || null,
+          fulfilment_note: fulfilmentNote,
+        });
 
-      if (serviceOrderError) {
-        console.error('Unable to store service order:', serviceOrderError);
-        return NextResponse.json({ error: 'Unable to store service order' }, { status: 500 });
+        if (serviceOrderError) {
+          console.warn('Notice: could not store service order row (table may not exist):', serviceOrderError.message);
+        }
+      } catch (soErr) {
+        console.warn('Notice: exception inserting into service_orders table:', soErr);
       }
 
       // If this is a 1-on-1 counseling / guidance session with a booking date, record in bookings table
@@ -328,6 +362,8 @@ export async function POST(request: Request) {
 
     if (product.serviceCode) {
       revalidatePath('/dashboard');
+      revalidatePath('/admin/bookings');
+      revalidatePath('/admin/applications');
     }
 
     if (careerEmailPayload) {

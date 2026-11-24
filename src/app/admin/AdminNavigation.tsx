@@ -8,8 +8,10 @@ import {
   ClipboardCheck,
   CreditCard,
   FileText,
+  GraduationCap,
   Inbox,
   LayoutDashboard,
+  Sparkles,
   Users,
 } from 'lucide-react';
 
@@ -19,8 +21,10 @@ const icons = {
   clipboard: ClipboardCheck,
   creditCard: CreditCard,
   fileText: FileText,
+  graduationCap: GraduationCap,
   inbox: Inbox,
   layout: LayoutDashboard,
+  sparkles: Sparkles,
   users: Users,
 } as const;
 

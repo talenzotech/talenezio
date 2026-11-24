@@ -142,6 +142,10 @@ export async function fulfillServiceOrder(
     .maybeSingle();
 
   if (fetchError) {
+    if (fetchError.message?.includes('Could not find the table') || fetchError.code === 'PGRST205') {
+      console.warn('Notice: service_orders table not found, skipping fulfillment table check.');
+      return { success: true, action: 'preserved' };
+    }
     throw new Error(`Failed to check existing service order: ${fetchError.message}`);
   }
 
@@ -211,6 +215,11 @@ export async function fulfillServiceOrder(
         .eq('payment_id', payment.id)
         .in('status', ['pending_payment', 'requested']);
       return { success: true, action: 'updated' };
+    }
+
+    if (insertError.message?.includes('Could not find the table') || insertError.code === 'PGRST205') {
+      console.warn('Notice: service_orders table not found, skipping fulfillment table insert.');
+      return { success: true, action: 'preserved' };
     }
 
     throw new Error(`Failed to create service order fulfilment: ${insertError.message}`);

@@ -105,6 +105,8 @@ export async function POST(request: Request) {
   }
 
   revalidatePath('/dashboard');
+  revalidatePath('/admin/bookings');
+  revalidatePath('/admin/applications');
 
   return NextResponse.json({ verified: true });
 }
