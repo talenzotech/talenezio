@@ -7,10 +7,10 @@ import AdminNavigation from './AdminNavigation';
 
 const navigation = [
   { href: '/admin', label: 'Overview', icon: 'layout' },
-  { href: '/admin/applications', label: 'Applications', icon: 'fileText' },
+  { href: '/admin/applications', label: 'Trainings & Internships', icon: 'graduationCap' },
+  { href: '/admin/bookings', label: 'Career Accelerators', icon: 'sparkles' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { href: '/admin/tests', label: 'Test Attempts', icon: 'clipboard' },
-  { href: '/admin/bookings', label: 'Career Guidance', icon: 'calendar' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },
   { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
 ] as const;

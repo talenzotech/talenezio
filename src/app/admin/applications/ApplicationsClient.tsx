@@ -37,6 +37,13 @@ export interface ApplicationItem {
   age?: number | string;
   batch?: string;
   fee?: string;
+  amount?: number;
+  paymentStatus?: 'paid' | 'pending' | 'failed' | 'cancelled' | 'free' | string;
+  paymentId?: string;
+  providerOrderId?: string;
+  domain?: string;
+  qualification?: string;
+  experience?: string;
   resumeFileName?: string;
   resumeFileSize?: number;
   resumeStoragePath?: string;
@@ -77,7 +84,7 @@ export default function ApplicationsClient({
   applications: ApplicationItem[];
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'internships' | 'courses' | 'interview-prep'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'courses' | 'internships'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'contacted' | 'closed'>('all');
   const [hasResumeOnly, setHasResumeOnly] = useState(false);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
@@ -92,9 +99,8 @@ export default function ApplicationsClient({
   const counts = useMemo(() => {
     return {
       all: applications.length,
-      internships: applications.filter((a) => a.serviceCode === 'internships').length,
       courses: applications.filter((a) => a.serviceCode === 'courses').length,
-      interviewPrep: applications.filter((a) => a.serviceCode === 'interview-prep').length,
+      internships: applications.filter((a) => a.serviceCode === 'internships').length,
       withResume: applications.filter((a) => Boolean(a.resumeSignedUrl || a.resumeFileName)).length,
     };
   }, [applications]);
@@ -102,9 +108,8 @@ export default function ApplicationsClient({
   const filteredApplications = useMemo(() => {
     return applications.filter((item) => {
       // Tab filter
-      if (activeTab === 'internships' && item.serviceCode !== 'internships') return false;
       if (activeTab === 'courses' && item.serviceCode !== 'courses') return false;
-      if (activeTab === 'interview-prep' && item.serviceCode !== 'interview-prep') return false;
+      if (activeTab === 'internships' && item.serviceCode !== 'internships') return false;
 
       // Status filter
       if (statusFilter !== 'all' && item.status !== statusFilter) return false;
@@ -131,22 +136,16 @@ export default function ApplicationsClient({
 
   const getServiceBadge = (code: string) => {
     switch (code) {
-      case 'internships':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
-            <Briefcase className="w-3 h-3" /> Internship
-          </span>
-        );
       case 'courses':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
             <GraduationCap className="w-3 h-3" /> Training Course
           </span>
         );
-      case 'interview-prep':
+      case 'internships':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-            <Sparkles className="w-3 h-3" /> Interview Prep
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+            <Briefcase className="w-3 h-3" /> Internship
           </span>
         );
       default:
@@ -190,10 +189,10 @@ export default function ApplicationsClient({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-              Applications & Resumes
+              Trainings &amp; Internships
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Centralized workspace to view submitted applications, download resumes, and manage applicant follow-up.
+              Centralized workspace to view training cohort registrations, internship applications, resumes, and candidate follow-ups.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -219,17 +218,6 @@ export default function ApplicationsClient({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('internships')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'internships'
-                ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/20'
-                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
-          >
-            Internships ({counts.internships})
-          </button>
-          <button
-            type="button"
             onClick={() => setActiveTab('courses')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'courses'
@@ -239,19 +227,17 @@ export default function ApplicationsClient({
           >
             Training Courses ({counts.courses})
           </button>
-          {counts.interviewPrep > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('interview-prep')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'interview-prep'
-                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-            >
-              Interview Prep ({counts.interviewPrep})
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setActiveTab('internships')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'internships'
+                ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/20'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            Internships ({counts.internships})
+          </button>
         </div>
 
         {/* Search & Filter Bar */}

@@ -73,12 +73,11 @@ export default async function AdminOverviewPage() {
   const since = new Date(now);
   since.setDate(since.getDate() - 30);
 
-  const [users, activeToday, paidPayments, attempts, pendingSubmissions, pendingBookings, newEnquiries, recentUsers, recentPayments, recentAttempts, analyticsUsers] = await Promise.all([
+  const [users, activeToday, paidPayments, attempts, pendingBookings, newEnquiries, recentUsers, recentPayments, recentAttempts, analyticsUsers] = await Promise.all([
     admin.from('profiles').select('*', { count: 'exact', head: true }),
     admin.from('profiles').select('id', { count: 'exact', head: true }).gte('updated_at', dayAgo.toISOString()),
     admin.from('payments').select('amount_paise').eq('status', 'paid').gte('paid_at', since.toISOString()),
     admin.from('test_attempts').select('*', { count: 'exact', head: true }),
-    admin.from('unlock_submissions').select('id, created_at, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
     admin.from('bookings').select('id, created_at, service_code, profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
     admin.from('service_enquiries').select('id, created_at, interest, service_code, message, profiles:user_id(full_name)').order('created_at', { ascending: false }).limit(5),
     admin.from('profiles').select('id, full_name, created_at').order('created_at', { ascending: false }).limit(4),
@@ -90,11 +89,7 @@ export default async function AdminOverviewPage() {
   const revenue = (paidPayments.data || []).reduce((sum, payment) => sum + (payment.amount_paise || 0), 0);
   const analytics = buildAnalytics(analyticsUsers.data || [], now);
 
-const queue: QueueItem[] = [
-    ...(pendingSubmissions.data || []).map((item) => {
-      const name = profileName(item.profiles);
-      return { name, detail: 'Free Unlock Review', type: 'Service', status: 'Pending Approval', submitted: relativeTime(item.created_at), href: '/admin/unlock-submissions', initials: initials(name), tone: 'bg-blue-50 text-blue-600' };
-    }),
+  const queue: QueueItem[] = [
     ...(pendingBookings.data || []).map((item) => {
       const name = profileName(item.profiles);
       return { name, detail: `Session: ${item.service_code.replaceAll('-', ' ')}`, type: 'Guidance', status: 'Pending Scheduling', submitted: relativeTime(item.created_at), href: '/admin/bookings', initials: initials(name), tone: 'bg-rose-50 text-rose-600' };
