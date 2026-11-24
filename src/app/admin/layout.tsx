@@ -9,7 +9,6 @@ const navigation = [
   { href: '/admin', label: 'Overview', icon: 'layout' },
   { href: '/admin/applications', label: 'Trainings & Internships', icon: 'graduationCap' },
   { href: '/admin/bookings', label: 'Career Accelerators', icon: 'sparkles' },
-  { href: '/admin/unlock-submissions', label: 'Unlock Submissions', icon: 'inbox' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { href: '/admin/tests', label: 'Test Attempts', icon: 'clipboard' },
   { href: '/admin/services', label: 'Service Fulfilment', icon: 'briefcase' },
