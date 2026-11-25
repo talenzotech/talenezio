@@ -6,6 +6,7 @@
 2. Open SQL Editor and run `supabase/migrations/202607240001_initial_schema.sql`.
 3. Add the project URL, anon key, and service-role key to `.env.local` using `.env.example`.
 4. Set the Auth Site URL to `http://localhost:3000` for now.
+5. Configure custom Resend SMTP for Supabase Auth by following `docs/auth-configuration.md` before testing public email signup.
 
 ## Google Sheets
 
