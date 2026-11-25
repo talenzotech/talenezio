@@ -8,6 +8,22 @@ import {
   endLocalDemoSession,
   isLocalDemoSession,
 } from '@/lib/auth/local-demo'
+import {
+  getAppUrl,
+  formatOAuthErrorMessage,
+  buildOAuthCallbackUrl,
+  type OAuthProvider,
+} from '@/lib/auth/oauth'
+
+function formatSignupError(message: string): string {
+  if (/email rate limit exceeded/i.test(message)) {
+    return 'Email delivery is temporarily unavailable. Please try again later.'
+  }
+
+  return message
+}
+
+export { getAppUrl, formatOAuthErrorMessage, buildOAuthCallbackUrl, type OAuthProvider }
 
 export async function login(formData: FormData): Promise<void> {
   // type-casting here for convenience
@@ -79,7 +95,7 @@ export async function signup(formData: FormData): Promise<void> {
   })
 
   if (error) {
-    redirect(`/register?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
+    redirect(`/register?error=${encodeURIComponent(formatSignupError(error.message))}&next=${encodeURIComponent(next)}`)
   }
   
   if (data.session) {
